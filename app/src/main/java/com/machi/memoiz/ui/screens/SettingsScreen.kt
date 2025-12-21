@@ -164,35 +164,10 @@ fun SettingsScreen(
                 items(customCategories) { category ->
                     CategoryListItem(
                         category = category,
-                        onToggleFavorite = { viewModel.toggleFavorite(category) },
                         onDelete = { viewModel.deleteCategory(category) },
                         showDelete = true
                     )
                 }
-            }
-            
-            // All Categories Section
-            item {
-                Spacer(modifier = Modifier.height(16.dp))
-                Text(
-                    text = "All Categories",
-                    style = MaterialTheme.typography.titleLarge
-                )
-                Text(
-                    text = "Mark categories as favorites. AI will prioritize these when merging.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-            
-            val nonCustomCategories = allCategories.filter { !it.isCustom }
-            items(nonCustomCategories) { category ->
-                CategoryListItem(
-                    category = category,
-                    onToggleFavorite = { viewModel.toggleFavorite(category) },
-                    onDelete = null,
-                    showDelete = false
-                )
             }
         }
     }
@@ -211,7 +186,6 @@ fun SettingsScreen(
 @Composable
 private fun CategoryListItem(
     category: Category,
-    onToggleFavorite: () -> Unit,
     onDelete: (() -> Unit)?,
     showDelete: Boolean
 ) {
@@ -241,31 +215,12 @@ private fun CategoryListItem(
                         text = category.name,
                         style = MaterialTheme.typography.bodyLarge
                     )
-                    if (category.isCustom) {
-                        Text(
-                            text = "Custom Category",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                    }
                 }
             }
             
             Row(
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                IconButton(onClick = onToggleFavorite) {
-                    Icon(
-                        if (category.isFavorite) Icons.Default.Star else Icons.Default.StarBorder,
-                        contentDescription = "Toggle Favorite",
-                        tint = if (category.isFavorite) {
-                            MaterialTheme.colorScheme.primary
-                        } else {
-                            MaterialTheme.colorScheme.onSurfaceVariant
-                        }
-                    )
-                }
-                
                 if (showDelete && onDelete != null) {
                     IconButton(onClick = { showDeleteDialog = true }) {
                         Icon(Icons.Default.Delete, "Delete")
@@ -384,16 +339,7 @@ fun SettingsScreenPreview() {
 
             // Custom category items
             sampleCustom.forEach { category ->
-                CategoryListItem(category = category, onToggleFavorite = {}, onDelete = {}, showDelete = true)
-                Spacer(modifier = Modifier.height(8.dp))
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Text(text = "All Categories", style = MaterialTheme.typography.titleLarge)
-            Spacer(modifier = Modifier.height(8.dp))
-            sampleAll.forEach { category ->
-                CategoryListItem(category = category, onToggleFavorite = {}, onDelete = null, showDelete = false)
+                CategoryListItem(category = category, onDelete = {}, showDelete = true)
                 Spacer(modifier = Modifier.height(8.dp))
             }
         }
