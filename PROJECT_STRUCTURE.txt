@@ -1,0 +1,195 @@
+Memoiz - Android App Project Structure
+=======================================
+
+ROOT DIRECTORY
+├── README.md                           # Project overview and usage guide
+├── ARCHITECTURE.md                     # Detailed architecture documentation
+├── BUILDING.md                         # Build and development guide
+├── IMPLEMENTATION_SUMMARY.md           # Complete implementation summary
+├── LICENSE                             # Apache 2.0 License
+├── .gitignore                          # Git ignore rules
+├── settings.gradle.kts                 # Gradle settings
+├── build.gradle.kts                    # Root build configuration
+├── gradle.properties                   # Gradle properties
+├── gradlew                             # Gradle wrapper (Unix)
+├── gradlew.bat                         # Gradle wrapper (Windows)
+│
+├── gradle/wrapper/                     # Gradle wrapper files
+│   ├── gradle-wrapper.properties
+│   └── gradle-wrapper.jar
+│
+└── app/                                # Main application module
+    ├── build.gradle.kts                # App build configuration
+    ├── proguard-rules.pro              # ProGuard rules
+    │
+    └── src/main/
+        ├── AndroidManifest.xml         # App manifest with permissions & services
+        │
+        ├── java/com/machika/memoiz/
+        │   │
+        │   ├── MemoizApplication.kt            # Application class
+        │   ├── MainActivity.kt                 # Main activity with navigation
+        │   │
+        │   ├── data/                           # Data layer
+        │   │   ├── MemoizDatabase.kt           # Room database
+        │   │   │
+        │   │   ├── entity/                     # Database entities
+        │   │   │   ├── CategoryEntity.kt       # Category table
+        │   │   │   └── MemoEntity.kt           # Memo table
+        │   │   │
+        │   │   ├── dao/                        # Data Access Objects
+        │   │   │   ├── CategoryDao.kt          # Category queries
+        │   │   │   └── MemoDao.kt              # Memo queries
+        │   │   │
+        │   │   └── repository/                 # Repository pattern
+        │   │       ├── CategoryRepository.kt   # Category data operations
+        │   │       └── MemoRepository.kt       # Memo data operations
+        │   │
+        │   ├── domain/                         # Domain layer
+        │   │   └── model/                      # Domain models
+        │   │       ├── Category.kt             # Category model
+        │   │       ├── Memo.kt                 # Memo model
+        │   │       └── CategorizationResult.kt # AI result model
+        │   │
+        │   ├── service/                        # Services
+        │   │   ├── AiCategorizationService.kt  # 2-stage AI categorization
+        │   │   ├── ClipboardMonitorService.kt  # Notification-based clipboard
+        │   │   └── ClipboardTileService.kt     # Quick Settings Tile
+        │   │
+        │   ├── worker/                         # Background workers
+        │   │   └── ClipboardProcessingWorker.kt # WorkManager background processing
+        │   │
+        │   └── ui/                             # UI layer
+        │       ├── ViewModelFactory.kt         # ViewModel factory for DI
+        │       │
+        │       ├── screens/                    # Compose screens
+        │       │   ├── MainScreen.kt           # Main screen UI
+        │       │   ├── MainViewModel.kt        # Main screen ViewModel
+        │       │   ├── SettingsScreen.kt       # Settings screen UI
+        │       │   └── SettingsViewModel.kt    # Settings ViewModel
+        │       │
+        │       └── theme/                      # Material 3 theme
+        │           ├── Color.kt                # Color definitions
+        │           ├── Theme.kt                # Theme configuration
+        │           └── Type.kt                 # Typography
+        │
+        └── res/                                # Android resources
+            ├── values/
+            │   ├── strings.xml                 # String resources
+            │   └── themes.xml                  # Theme definitions
+            │
+            ├── drawable/
+            │   └── ic_clipboard.xml            # Clipboard icon
+            │
+            ├── mipmap-anydpi-v26/
+            │   ├── ic_launcher.xml             # Adaptive launcher icon
+            │   └── ic_launcher_round.xml       # Round launcher icon
+            │
+            └── xml/
+                ├── backup_rules.xml            # Backup configuration
+                └── data_extraction_rules.xml   # Data extraction rules
+
+
+KEY FEATURES BY FILE
+====================
+
+DATABASE LAYER (Room)
+---------------------
+CategoryEntity.kt       - Stores categories with isCustom (max 20) and isFavorite flags
+MemoEntity.kt          - Stores memos with foreign key to category, preserves originalCategory
+CategoryDao.kt         - Reactive queries with Flow for categories
+MemoDao.kt            - Reactive queries with Flow for memos
+MemoizDatabase.kt     - Database configuration with proper relationships
+
+REPOSITORY PATTERN
+------------------
+CategoryRepository.kt  - findOrCreateCategory(), toggleFavorite(), enforces max 20 custom
+MemoRepository.kt     - CRUD operations with entity-to-domain mapping
+
+AI CATEGORIZATION
+-----------------
+AiCategorizationService.kt
+  - performFirstStageCategorization()  : Stage 1 - Free categorization
+  - performSecondStageMerge()          : Stage 2 - Merge with custom/favorite
+  - isSimilarCategory()                : Semantic similarity checking
+  - Placeholder for Gemini Nano with integration plan
+
+CLIPBOARD ACCESS (Android 10+ Compliant)
+----------------------------------------
+ClipboardMonitorService.kt    - Foreground service with notification trigger
+ClipboardTileService.kt       - Quick Settings Tile for instant capture
+
+BACKGROUND PROCESSING
+---------------------
+ClipboardProcessingWorker.kt  - WorkManager async processing
+  1. Gets clipboard content
+  2. Fetches custom/favorite categories
+  3. Calls AI 2-stage categorization
+  4. Saves memo to database
+
+UI LAYER (Jetpack Compose + Material 3)
+---------------------------------------
+MainScreen.kt              - Shows memos by category with filtering
+  - CategoryFilterRow      - Filter chips for categories (shows favorites)
+  - MemosList             - Scrollable list of memos
+  - MemoCard              - Individual memo with original category display
+
+SettingsScreen.kt          - Manage custom categories and favorites
+  - Custom categories counter: "My Categories (X/20)"
+  - Add/remove custom categories
+  - Toggle favorite on any category
+  - Delete confirmation dialogs
+
+ViewModels (with StateFlow)
+---------------------------
+MainViewModel.kt           - Manages memos, categories, filtering
+SettingsViewModel.kt       - Manages user preferences, enforces max 20 custom
+
+ViewModelFactory.kt        - Proper dependency injection for ViewModels
+
+
+REQUIREMENTS MAPPING
+====================
+
+Requirement                          | Implementation
+-------------------------------------|----------------------------------------------
+AI auto-categorization               | AiCategorizationService.kt
+2-stage process                      | performFirstStageCategorization() + 
+                                     | performSecondStageMerge()
+On-device LLM (Gemini Nano)         | Placeholder + integration plan
+Android 10+ clipboard restrictions   | ClipboardMonitorService + ClipboardTileService
+WorkManager background              | ClipboardProcessingWorker.kt
+Room database                       | MemoizDatabase + entities + DAOs
+Custom categories (max 20)          | SettingsViewModel.MAX_CUSTOM_CATEGORIES
+Favorite categories                 | CategoryEntity.isFavorite flag
+AI respects preferences             | Stage 2 prioritizes custom/favorite
+
+
+DEVELOPMENT WORKFLOW
+====================
+
+1. Open in Android Studio
+2. Gradle sync (automatic)
+3. Build → Make Project
+4. Run on device (API 29+)
+5. Test:
+   - Copy text
+   - Tap notification or QS tile
+   - View categorized memos
+   - Add custom categories
+   - Toggle favorites
+
+
+STATISTICS
+==========
+
+Kotlin Source Files:  24
+Packages/Directories: 15
+Lines of Code:        ~3,000+
+Database Entities:    2 (Category, Memo)
+Database Tables:      2 with foreign key
+Services:             3 (Monitor, Tile, AI)
+Workers:              1 (ClipboardProcessing)
+Screens:              2 (Main, Settings)
+ViewModels:           2 with StateFlow
+Documentation:        4 comprehensive guides
