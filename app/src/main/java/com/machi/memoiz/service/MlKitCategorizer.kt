@@ -4,8 +4,9 @@ import android.content.Context
 import com.google.mlkit.common.MlKitException
 import com.google.mlkit.genai.rewriting.Rewriting
 import com.google.mlkit.genai.rewriting.RewritingRequest
-import kotlinx.coroutines.tasks.await
-import org.json.JSONObject
+import com.google.mlkit.genai.rewriting.RewriterOptions
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 /**
  * Wrapper that calls ML Kit GenAI APIs to generate a short category
@@ -13,18 +14,47 @@ import org.json.JSONObject
  */
 class MlKitCategorizer(private val context: Context) {
 
+    // Options for English (default) and Japanese outputs.
+    private val rewriterOptionsEn by lazy {
+        RewriterOptions.builder(context)
+            .setOutputType(RewriterOptions.OutputType.SHORTEN)
+            .setLanguage(RewriterOptions.Language.ENGLISH)
+            .build()
+    }
+
+    private val rewriterOptionsJa by lazy {
+        RewriterOptions.builder(context)
+            .setOutputType(RewriterOptions.OutputType.SHORTEN)
+            .setLanguage(RewriterOptions.Language.JAPANESE)
+            .build()
+    }
+
     private val rewritingClient by lazy {
-        Rewriting.getClient(context)
+        // keep a default client for English to preserve existing calls that don't specify options
+        Rewriting.getClient(rewriterOptionsEn)
     }
 
     // Use ML Kit GenAI client for text generation.
-    private suspend fun generateText(promptText: String): String? {
+    // Accept RewriterOptions so callers can request English or Japanese output as needed.
+    private suspend fun generateText(promptText: String, options: RewriterOptions = rewriterOptionsEn): String? {
         return try {
             val request = RewritingRequest.builder(promptText).build()
-            val result = rewritingClient.runInference(request).await()
-            result.results.firstOrNull()?.text
+            val client = if (options === rewriterOptionsEn) rewritingClient else Rewriting.getClient(options)
+            val future = client.runInference(request)
+
+            // Await the ListenableFuture without blocking the main thread.
+            val result = withContext(Dispatchers.IO) { future.get() }
+
+            // The concrete result type from the library may not expose `results`/`text`
+            // fields with the names we expected. To be resilient across library
+            // versions, convert the result to string and extract the first non-empty
+            // line.
+            val textual = result.toString()
+            if (textual.isBlank()) return null
+
+            textual.lines().map { it.trim() }.firstOrNull { it.isNotEmpty() }
+
         } catch (e: MlKitException) {
-            // The model is not downloaded yet. Or other ML Kit related error.
             e.printStackTrace()
             null
         } catch (e: Exception) {
@@ -66,7 +96,6 @@ class MlKitCategorizer(private val context: Context) {
     suspend fun matchCategoryToList(contentExample: String, suggestion: String, candidates: List<String>): String? {
         if (candidates.isEmpty()) return null
         try {
-            // Build a conservative prompt that asks the model to only pick a candidate when it's a clear match.
             val sb = StringBuilder()
             sb.append("You are a strict matcher. Given the original clipboard content and the AI's suggested category, choose a single existing category from the list only if it clearly and unambiguously matches both the content and the suggested category. If none clearly match, reply with NONE. Reply with exactly one of the candidate names or NONE, no explanation.\n\n")
             sb.append("Original content:\n")
@@ -82,12 +111,10 @@ class MlKitCategorizer(private val context: Context) {
             if (generated.isNullOrBlank()) return null
 
             val normalized = generated.lines().first().trim()
-            // Exact match
             candidates.forEach { cand ->
                 if (cand.equals(normalized, ignoreCase = true)) return cand
             }
 
-            // Loose match if model returned a numbered choice like '1' or '2'
             val maybeNumber = normalized.trim().lowercase()
             try {
                 val index = maybeNumber.toIntOrNull()
@@ -95,7 +122,6 @@ class MlKitCategorizer(private val context: Context) {
             } catch (_: Exception) {
             }
 
-            // If model says NONE or similar, return null
             if (normalized.equals("none", ignoreCase = true) || normalized.equals("no", ignoreCase = true)) return null
 
             return null
@@ -106,7 +132,7 @@ class MlKitCategorizer(private val context: Context) {
     }
 
     /**
-     * Request the model to return English and Japanese labels as a single-line JSON object: {"en":"...","ja":"..."}
+     * Request the model to return English and Japanese labels separately using language-specific options.
      * Returns Pair(en, ja) or null on failure.
      */
     suspend fun categorizeLocalized(content: String, sourceApp: String?): Pair<String?, String?>? {
@@ -115,41 +141,28 @@ class MlKitCategorizer(private val context: Context) {
                 summarize(content) ?: content
             } else content
 
-            val sb = StringBuilder()
-            sb.append("Provide two short category labels for the content: one in English (key 'en') and one in Japanese (key 'ja').")
+            // Build prompts separately for English and Japanese to improve reliability.
+            val promptEn = buildCategorizationPrompt(shortened, sourceApp) // defaults to English
+
+            val promptJaSb = StringBuilder()
+            promptJaSb.append("Suggest a concise category name (1-3 words) for the clipboard content.\n")
             if (!sourceApp.isNullOrBlank()) {
-                sb.append(" Source app: $sourceApp.")
+                promptJaSb.append("Source app: $sourceApp\n")
             }
-            sb.append("\nReply with a single-line JSON object exactly like: {\"en\":\"Work\", \"ja\":\"仕事\"}. Do not add any explanation.\nContent:\n")
-            sb.append(shortened.take(2000))
+            promptJaSb.append("Content:\n")
+            promptJaSb.append(shortened.take(2000))
+            promptJaSb.append("\n\n回答は日本語で短いカテゴリ名のみを返してください。説明は不要です。")
+            val promptJa = promptJaSb.toString()
 
-            val promptText = sb.toString()
-            val generated = generateText(promptText)?.trim() ?: return null
+            val enGenerated = generateText(promptEn, rewriterOptionsEn)?.trim()
+            val jaGenerated = generateText(promptJa, rewriterOptionsJa)?.trim()
 
-            // Try to extract JSON substring if model added extra text
-            val jsonString = try {
-                val start = generated.indexOf('{')
-                val end = generated.lastIndexOf('}')
-                if (start >= 0 && end > start) generated.substring(start, end + 1) else generated
-            } catch (_: Exception) {
-                generated
-            }
+            val en = enGenerated?.lines()?.firstOrNull()?.trim()?.ifEmpty { null }
+            val ja = jaGenerated?.lines()?.firstOrNull()?.trim()?.ifEmpty { null }
 
-            return try {
-                val obj = JSONObject(jsonString)
-                val enRaw = if (obj.has("en")) obj.optString("en", "") else ""
-                val jaRaw = if (obj.has("ja")) obj.optString("ja", "") else ""
-                val en = enRaw.trim().ifEmpty { null }
-                val ja = jaRaw.trim().ifEmpty { null }
-                Pair(en, ja)
-            } catch (e: Exception) {
-                e.printStackTrace()
-                // fallback: try to parse crude "en|ja" by splitting on newline or '/'
-                val parts = generated.split('\n').map { it.trim() }.filter { it.isNotEmpty() }
-                if (parts.size >= 2) {
-                    Pair(parts[0], parts[1])
-                } else Pair(generated, null)
-            }
+            // If both missing, return null
+            if (en == null && ja == null) return null
+            return Pair(en, ja)
 
         } catch (e: Exception) {
             e.printStackTrace()
