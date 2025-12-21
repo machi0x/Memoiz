@@ -1,3 +1,5 @@
+@file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+
 package com.machi.memoiz.ui.screens
 
 import android.content.Intent
@@ -13,14 +15,15 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.machi.memoiz.domain.model.Category
 import com.machi.memoiz.util.UsageStatsHelper
+import com.machi.memoiz.ui.theme.MemoizTheme
 
 /**
  * Settings screen for managing custom categories and favorites.
  */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
     viewModel: SettingsViewModel,
@@ -342,4 +345,57 @@ private fun AddCategoryDialog(
             }
         }
     )
+}
+
+// Preview for Settings screen
+@Preview(showBackground = true)
+@Composable
+fun SettingsScreenPreview() {
+    val sampleAll = listOf(
+        Category(id = 1, name = "Work", isFavorite = true),
+        Category(id = 2, name = "Personal"),
+        Category(id = 3, name = "Ideas")
+    )
+    val sampleCustom = listOf(
+        Category(id = 100, name = "Invoices", isCustom = true),
+        Category(id = 101, name = "Recipes", isCustom = true, isFavorite = true)
+    )
+
+    MemoizTheme {
+        Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+            // Usage stats card preview
+            Card(modifier = Modifier.fillMaxWidth()) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Icon(Icons.Default.CheckCircle, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                        Column {
+                            Text(text = "Source App Detection", style = MaterialTheme.typography.titleMedium)
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(text = "Enabled - AI can see which app you copied from", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Text(text = "My Categories (2/${SettingsViewModel.MAX_CUSTOM_CATEGORIES})", style = MaterialTheme.typography.titleLarge)
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Custom category items
+            sampleCustom.forEach { category ->
+                CategoryListItem(category = category, onToggleFavorite = {}, onDelete = {}, showDelete = true)
+                Spacer(modifier = Modifier.height(8.dp))
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Text(text = "All Categories", style = MaterialTheme.typography.titleLarge)
+            Spacer(modifier = Modifier.height(8.dp))
+            sampleAll.forEach { category ->
+                CategoryListItem(category = category, onToggleFavorite = {}, onDelete = null, showDelete = false)
+                Spacer(modifier = Modifier.height(8.dp))
+            }
+        }
+    }
 }

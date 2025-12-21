@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalMaterial3Api::class)
+
 package com.machi.memoiz.ui.screens
 
 import android.content.Intent
@@ -14,17 +16,18 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.machi.memoiz.domain.model.Category
 import com.machi.memoiz.domain.model.Memo
 import com.machi.memoiz.service.ClipboardMonitorService
+import com.machi.memoiz.ui.theme.MemoizTheme
 import java.text.SimpleDateFormat
 import java.util.*
 
 /**
  * Main screen showing memos organized by categories.
  */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen(
     viewModel: MainViewModel,
@@ -95,6 +98,7 @@ fun MainScreen(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun CategoryFilterRow(
     categories: List<Category>,
@@ -131,7 +135,17 @@ private fun CategoryFilterRow(
                             Icon(
                                 Icons.Default.Star,
                                 contentDescription = null,
-                                modifier = Modifier.size(16.dp)
+                                modifier = Modifier
+                                    .size(16.dp)
+                                    .clickable { onToggleFavorite(category) }
+                            )
+                        } else {
+                            Icon(
+                                Icons.Default.StarBorder,
+                                contentDescription = null,
+                                modifier = Modifier
+                                    .size(16.dp)
+                                    .clickable { onToggleFavorite(category) }
                             )
                         }
                         Text(category.name)
@@ -176,6 +190,7 @@ private fun MemosList(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun MemoCard(
     memo: Memo,
@@ -311,4 +326,37 @@ private fun MemoCard(
 private fun formatTimestamp(timestamp: Long): String {
     val sdf = SimpleDateFormat("MMM dd, yyyy HH:mm", Locale.getDefault())
     return sdf.format(Date(timestamp))
+}
+
+@Preview(showBackground = true)
+@Composable
+fun MainScreenPreview() {
+    val sampleCategories = listOf(
+        Category(id = 1, name = "Work", isFavorite = true),
+        Category(id = 2, name = "Personal"),
+        Category(id = 3, name = "Ideas")
+    )
+    val sampleMemos = listOf(
+        Memo(id = 1, content = "Buy groceries", categoryId = 2, createdAt = System.currentTimeMillis()),
+        Memo(id = 2, content = "Prepare slides for meeting", categoryId = 1, createdAt = System.currentTimeMillis()),
+        Memo(id = 3, content = "App idea: smart notebook", categoryId = 3, createdAt = System.currentTimeMillis(), originalCategory = "Misc")
+    )
+
+    // Simple stateless preview: call the internal composables directly
+    MemoizTheme {
+        Column(modifier = Modifier.fillMaxSize()) {
+            CategoryFilterRow(
+                categories = sampleCategories,
+                selectedCategoryId = null,
+                onCategorySelected = {},
+                onToggleFavorite = {}
+            )
+            Divider()
+            MemosList(
+                memos = sampleMemos,
+                categories = sampleCategories,
+                onDeleteMemo = {}
+            )
+        }
+    }
 }
