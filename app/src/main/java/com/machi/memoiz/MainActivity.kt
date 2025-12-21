@@ -16,7 +16,9 @@ import com.machi.memoiz.data.repository.CategoryRepository
 import com.machi.memoiz.data.repository.MemoRepository
 import com.machi.memoiz.ui.ViewModelFactory
 import com.machi.memoiz.ui.screens.MainScreen
+import com.machi.memoiz.ui.screens.MainViewModel
 import com.machi.memoiz.ui.screens.SettingsScreen
+import com.machi.memoiz.ui.screens.SettingsViewModel
 import com.machi.memoiz.ui.theme.MemoizTheme
 
 class MainActivity : ComponentActivity() {
@@ -47,7 +49,8 @@ class MainActivity : ComponentActivity() {
                         startDestination = "main"
                     ) {
                         composable("main") {
-                            val viewModel = viewModel(factory = viewModelFactory)
+                            // Specify the ViewModel type explicitly to avoid type inference errors
+                            val viewModel: MainViewModel = viewModel(factory = viewModelFactory)
                             MainScreen(
                                 viewModel = viewModel,
                                 onNavigateToSettings = {
@@ -57,7 +60,7 @@ class MainActivity : ComponentActivity() {
                         }
                         
                         composable("settings") {
-                            val viewModel = viewModel(factory = viewModelFactory)
+                            val viewModel: SettingsViewModel = viewModel(factory = viewModelFactory)
                             SettingsScreen(
                                 viewModel = viewModel,
                                 onNavigateBack = {
