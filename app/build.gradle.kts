@@ -6,12 +6,12 @@ plugins {
 
 android {
     namespace = "com.machi.memoiz"
-    compileSdk = 34
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.machi.memoiz"
-        minSdk = 29  // Android 10 for clipboard restrictions
-        targetSdk = 34
+        minSdk = 34  // Android 14
+        targetSdk = 36
         versionCode = 1
         versionName = "1.0"
 
