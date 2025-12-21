@@ -1,5 +1,6 @@
 package com.machi.memoiz.data.entity
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 
@@ -18,6 +19,10 @@ data class CategoryEntity(
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0,
     val name: String,
+    @ColumnInfo(name = "name_en")
+    val nameEn: String? = null,
+    @ColumnInfo(name = "name_ja")
+    val nameJa: String? = null,
     val isFavorite: Boolean = false,
     val isCustom: Boolean = false,
     val createdAt: Long = System.currentTimeMillis()
