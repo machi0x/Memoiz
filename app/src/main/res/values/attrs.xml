@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Define color attrs so drawables and themes that reference ?attr/... can be linked -->
+    <attr name="colorControlNormal" format="color" />
+    <attr name="colorPrimary" format="color" />
+    <attr name="colorOnPrimary" format="color" />
+</resources>
