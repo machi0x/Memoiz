@@ -49,11 +49,22 @@ class AiCategorizationService(private val context: Context) {
     
     /**
      * First stage: AI performs free categorization based on content.
-     * This would use Gemini Nano in production.
+     * 
+     * TODO: Integrate with Gemini Nano / AICore
+     * Integration Plan:
+     * 1. Add Google AI Core dependency when available in stable release
+     * 2. Initialize AICore client in MemoizApplication.onCreate()
+     * 3. Replace rule-based logic below with Gemini Nano API call:
+     *    - Use generateText() with categorization prompt
+     *    - Handle model availability checking
+     *    - Implement fallback to rule-based for devices without AI support
+     * 4. Expected Timeline: Q2 2024 when Gemini Nano APIs stabilize
+     * 
+     * For now, using rule-based categorization as placeholder.
      */
     private suspend fun performFirstStageCategorization(content: String): String {
-        // TODO: Integrate with Gemini Nano / AICore
-        // For now, use simple keyword-based categorization as placeholder
+        // Placeholder implementation using rule-based categorization
+        // This will be replaced with Gemini Nano API
         
         val contentLower = content.lowercase()
         
