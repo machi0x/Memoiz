@@ -1,5 +1,8 @@
+@file:OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+
 package com.machi.memoiz
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -14,6 +17,7 @@ import androidx.navigation.compose.rememberNavController
 import com.machi.memoiz.data.MemoizDatabase
 import com.machi.memoiz.data.repository.CategoryRepository
 import com.machi.memoiz.data.repository.MemoRepository
+import com.machi.memoiz.service.ClipboardMonitorService
 import com.machi.memoiz.ui.ViewModelFactory
 import com.machi.memoiz.ui.screens.MainScreen
 import com.machi.memoiz.ui.screens.MainViewModel
@@ -24,18 +28,21 @@ import com.machi.memoiz.ui.theme.MemoizTheme
 class MainActivity : ComponentActivity() {
     
     private lateinit var viewModelFactory: ViewModelFactory
-    
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        
+
         // Initialize database and repositories
         val database = MemoizDatabase.getDatabase(applicationContext)
         val categoryRepository = CategoryRepository(database.categoryDao())
         val memoRepository = MemoRepository(database.memoDao())
-        
+
         // Create ViewModelFactory
         viewModelFactory = ViewModelFactory(categoryRepository, memoRepository)
-        
+
+        // If launched with request to start clipboard monitor, start service
+        handleIntent(intent)
+
         setContent {
             MemoizTheme {
                 Surface(
@@ -43,7 +50,7 @@ class MainActivity : ComponentActivity() {
                     color = MaterialTheme.colorScheme.background
                 ) {
                     val navController = rememberNavController()
-                    
+
                     NavHost(
                         navController = navController,
                         startDestination = "main"
@@ -58,7 +65,7 @@ class MainActivity : ComponentActivity() {
                                 }
                             )
                         }
-                        
+
                         composable("settings") {
                             val viewModel: SettingsViewModel = viewModel(factory = viewModelFactory)
                             SettingsScreen(
@@ -71,6 +78,21 @@ class MainActivity : ComponentActivity() {
                     }
                 }
             }
+        }
+    }
+
+    override fun onNewIntent(intent: Intent?) {
+        super.onNewIntent(intent)
+        handleIntent(intent)
+    }
+
+    private fun handleIntent(intent: Intent?) {
+        if (intent == null) return
+
+        if (intent.action == com.machi.memoiz.boot.BootReceiver.ACTION_START_CLIPBOARD_MONITOR) {
+            // Start the ClipboardMonitorService as foreground service
+            val svcIntent = Intent(this, ClipboardMonitorService::class.java)
+            startForegroundService(svcIntent)
         }
     }
 }
