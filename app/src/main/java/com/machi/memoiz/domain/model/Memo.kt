@@ -11,5 +11,7 @@ data class Memo(
     val categoryId: Long,
     val categoryName: String? = null,
     val originalCategory: String? = null,
+    val subCategory: String? = null,
+    val sourceApp: String? = null,
     val createdAt: Long = System.currentTimeMillis()
 )

@@ -14,6 +14,8 @@ import androidx.room.Index
  * @param imageUri URI for image content if applicable
  * @param categoryId Foreign key to associated category
  * @param originalCategory AI's initial free categorization
+ * @param subCategory AI-generated sub-category for additional information
+ * @param sourceApp Name of the app from which content was copied (if Usage Stats enabled)
  * @param createdAt Timestamp when memo was created
  */
 @Entity(
@@ -35,5 +37,7 @@ data class MemoEntity(
     val imageUri: String? = null,
     val categoryId: Long,
     val originalCategory: String? = null, // AI's first-stage categorization
+    val subCategory: String? = null, // AI-generated sub-category
+    val sourceApp: String? = null, // App from which content was copied
     val createdAt: Long = System.currentTimeMillis()
 )

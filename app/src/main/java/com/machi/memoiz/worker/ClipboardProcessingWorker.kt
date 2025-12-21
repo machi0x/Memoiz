@@ -1,6 +1,7 @@
 package com.machi.memoiz.worker
 
 import android.content.Context
+import android.os.Build
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import androidx.work.Data
@@ -9,6 +10,7 @@ import com.machi.memoiz.data.repository.CategoryRepository
 import com.machi.memoiz.data.repository.MemoRepository
 import com.machi.memoiz.service.AiCategorizationService
 import com.machi.memoiz.domain.model.Memo
+import com.machi.memoiz.util.UsageStatsHelper
 import kotlinx.coroutines.flow.first
 
 /**
@@ -40,15 +42,24 @@ class ClipboardProcessingWorker(
             val memoRepository = MemoRepository(database.memoDao())
             val aiService = AiCategorizationService(applicationContext)
             
+            // Try to get source app if Usage Stats permission is granted
+            val sourceApp = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                val usageStatsHelper = UsageStatsHelper(applicationContext)
+                usageStatsHelper.getLastForegroundApp()
+            } else {
+                null
+            }
+            
             // Get custom and favorite categories
             val customCategories = categoryRepository.getCustomCategories().first()
             val favoriteCategories = categoryRepository.getFavoriteCategories().first()
             
-            // Perform 2-stage AI categorization
+            // Perform 2-stage AI categorization with source app info
             val categorizationResult = aiService.categorizeContent(
                 content = content ?: "Image",
                 customCategories = customCategories,
-                favoriteCategories = favoriteCategories
+                favoriteCategories = favoriteCategories,
+                sourceApp = sourceApp
             )
             
             // Find or create the category
@@ -57,12 +68,14 @@ class ClipboardProcessingWorker(
                 isCustom = false
             )
             
-            // Create and save the memo
+            // Create and save the memo with sub-category and source app
             val memo = Memo(
                 content = content ?: "",
                 imageUri = imageUri,
                 categoryId = categoryId,
-                originalCategory = categorizationResult.originalCategory
+                originalCategory = categorizationResult.originalCategory,
+                subCategory = categorizationResult.subCategory,
+                sourceApp = sourceApp
             )
             
             memoRepository.insertMemo(memo)
