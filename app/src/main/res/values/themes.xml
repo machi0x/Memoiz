@@ -1,4 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Theme.Memoiz" parent="android:Theme.Material.Light.NoActionBar" />
+    <style name="Theme.Memoiz" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="colorPrimary">#6650A4</item>
+        <item name="colorOnPrimary">#FFFFFF</item>
+        <!-- Provide colorControlNormal attr used by drawables -->
+        <item name="colorControlNormal">#000000</item>
+    </style>
 </resources>
