@@ -4,7 +4,6 @@
 
     <!-- Permissions -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission
         android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC"
         android:minSdkVersion="34" />
@@ -23,7 +22,7 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.Memoiz"
-        tools:targetApi="31">
+        >
         
         <!-- Main Activity -->
         <activity
@@ -41,7 +40,7 @@
             android:name=".service.ClipboardMonitorService"
             android:exported="false"
             android:foregroundServiceType="dataSync"
-            tools:targetApi="34" />
+             />
 
         <!-- Quick Settings Tile -->
         <service
