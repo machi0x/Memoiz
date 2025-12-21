@@ -45,7 +45,6 @@ abstract class MemoizDatabase : RoomDatabase() {
                     "memoiz_database"
                 )
                     .addMigrations(MIGRATION_1_2)
-                    .fallbackToDestructiveMigration()
                     .build()
                 INSTANCE = instance
                 instance
