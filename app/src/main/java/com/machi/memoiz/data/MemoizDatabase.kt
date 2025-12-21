@@ -17,7 +17,7 @@ import com.machi.memoiz.data.entity.MemoEntity
  */
 @Database(
     entities = [CategoryEntity::class, MemoEntity::class],
-    version = 2,
+    version = 3,
     exportSchema = false
 )
 abstract class MemoizDatabase : RoomDatabase() {
@@ -37,6 +37,14 @@ abstract class MemoizDatabase : RoomDatabase() {
             }
         }
         
+        private val MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                // Add localized name columns to categories table
+                database.execSQL("ALTER TABLE categories ADD COLUMN name_en TEXT")
+                database.execSQL("ALTER TABLE categories ADD COLUMN name_ja TEXT")
+            }
+        }
+
         fun getDatabase(context: Context): MemoizDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
@@ -44,7 +52,7 @@ abstract class MemoizDatabase : RoomDatabase() {
                     MemoizDatabase::class.java,
                     "memoiz_database"
                 )
-                    .addMigrations(MIGRATION_1_2)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
                     .build()
                 INSTANCE = instance
                 instance

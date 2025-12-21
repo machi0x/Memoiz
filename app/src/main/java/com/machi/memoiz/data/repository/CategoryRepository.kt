@@ -1,8 +1,10 @@
 package com.machi.memoiz.data.repository
 
+import android.content.Context
 import com.machi.memoiz.data.dao.CategoryDao
 import com.machi.memoiz.data.entity.CategoryEntity
 import com.machi.memoiz.domain.model.Category
+import com.machi.memoiz.R
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
@@ -61,9 +63,9 @@ class CategoryRepository(private val categoryDao: CategoryDao) {
     
     /**
      * Finds or creates a category by name.
-     * Used during AI categorization.
+     * Overloaded: if nameEn/nameJa provided, use them when creating.
      */
-    suspend fun findOrCreateCategory(name: String, isCustom: Boolean = false): Long {
+    suspend fun findOrCreateCategory(name: String, isCustom: Boolean = false, nameEn: String? = null, nameJa: String? = null): Long {
         val existing = categoryDao.getCategoryByName(name)
         return if (existing != null) {
             existing.id
@@ -71,16 +73,42 @@ class CategoryRepository(private val categoryDao: CategoryDao) {
             categoryDao.insertCategory(
                 CategoryEntity(
                     name = name,
+                    nameEn = nameEn,
+                    nameJa = nameJa,
                     isCustom = isCustom
                 )
             )
         }
     }
-    
+
+    /**
+     * Ensure the special Failure category exists; return its categoryId.
+     */
+    suspend fun getOrCreateFailureCategory(context: Context): Long {
+        val localizedLabel = context.getString(R.string.failure_category)
+        // Try multiple name forms including canonical key
+        val candidates = listOf("FAILURE", localizedLabel)
+        for (name in candidates) {
+            val existing = categoryDao.getCategoryByName(name)
+            if (existing != null) return existing.id
+        }
+        // Not found => create with canonical key "FAILURE" and localized label
+        return categoryDao.insertCategory(
+            CategoryEntity(
+                name = "FAILURE",
+                nameEn = localizedLabel,
+                nameJa = localizedLabel,
+                isCustom = false
+            )
+        )
+    }
+
     private fun CategoryEntity.toDomain(): Category {
         return Category(
             id = id,
             name = name,
+            nameEn = nameEn,
+            nameJa = nameJa,
             isFavorite = isFavorite,
             isCustom = isCustom,
             createdAt = createdAt
@@ -91,6 +119,8 @@ class CategoryRepository(private val categoryDao: CategoryDao) {
         return CategoryEntity(
             id = id,
             name = name,
+            nameEn = nameEn,
+            nameJa = nameJa,
             isFavorite = isFavorite,
             isCustom = isCustom,
             createdAt = createdAt

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">メモイズ</string>
+    <string name="tile_label">クリップボードを保存</string>
+    <string name="failure_category">解析失敗</string>
+</resources>
+

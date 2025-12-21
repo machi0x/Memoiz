@@ -2,4 +2,5 @@
 <resources>
     <string name="app_name">Memoiz</string>
     <string name="tile_label">Save Clipboard</string>
+    <string name="failure_category">Analysis failure</string>
 </resources>
