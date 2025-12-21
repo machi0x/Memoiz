@@ -1,5 +1,8 @@
 package com.machi.memoiz.ui.screens
 
+import android.content.Intent
+import android.os.Build
+import android.provider.Settings
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -9,8 +12,10 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.machi.memoiz.domain.model.Category
+import com.machi.memoiz.util.UsageStatsHelper
 
 /**
  * Settings screen for managing custom categories and favorites.
@@ -25,6 +30,15 @@ fun SettingsScreen(
     val customCategories by viewModel.customCategories.collectAsState()
     val canAddCustomCategory by viewModel.canAddCustomCategory.collectAsState()
     val customCategoryCount by viewModel.customCategoryCount.collectAsState()
+    
+    val context = LocalContext.current
+    val hasUsageStatsPermission = remember {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            UsageStatsHelper(context).hasUsageStatsPermission()
+        } else {
+            false
+        }
+    }
     
     var showAddDialog by remember { mutableStateOf(false) }
     
@@ -56,6 +70,61 @@ fun SettingsScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
+            // Usage Stats Permission Section
+            item {
+                Card(
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp)
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Icon(
+                                if (hasUsageStatsPermission) Icons.Default.CheckCircle else Icons.Default.Info,
+                                contentDescription = null,
+                                tint = if (hasUsageStatsPermission) 
+                                    MaterialTheme.colorScheme.primary 
+                                else 
+                                    MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = "Source App Detection",
+                                    style = MaterialTheme.typography.titleMedium
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    text = if (hasUsageStatsPermission)
+                                        "Enabled - AI can see which app you copied from"
+                                    else
+                                        "Enable to detect source app for better categorization",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                        
+                        if (!hasUsageStatsPermission && Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                            Spacer(modifier = Modifier.height(12.dp))
+                            Button(
+                                onClick = {
+                                    val intent = Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS)
+                                    context.startActivity(intent)
+                                },
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text("Open Usage Access Settings")
+                            }
+                        }
+                    }
+                }
+            }
+            
             // Custom Categories Section
             item {
                 Text(

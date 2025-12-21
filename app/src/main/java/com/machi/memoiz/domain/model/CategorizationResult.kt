@@ -7,5 +7,6 @@ package com.machi.memoiz.domain.model
 data class CategorizationResult(
     val finalCategoryName: String,
     val originalCategory: String,
+    val subCategory: String? = null,
     val confidence: Float = 1.0f
 )

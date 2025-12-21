@@ -51,6 +51,8 @@ class MemoRepository(private val memoDao: MemoDao) {
             imageUri = imageUri,
             categoryId = categoryId,
             originalCategory = originalCategory,
+            subCategory = subCategory,
+            sourceApp = sourceApp,
             createdAt = createdAt
         )
     }
@@ -62,6 +64,8 @@ class MemoRepository(private val memoDao: MemoDao) {
             imageUri = imageUri,
             categoryId = categoryId,
             originalCategory = originalCategory,
+            subCategory = subCategory,
+            sourceApp = sourceApp,
             createdAt = createdAt
         )
     }

@@ -23,16 +23,21 @@ class AiCategorizationService(private val context: Context) {
      * @param content The text content to categorize
      * @param customCategories User's custom categories (max 20)
      * @param favoriteCategories User's favorite categories
-     * @return CategorizationResult with final category and original category
+     * @param sourceApp Optional app name from which content was copied
+     * @return CategorizationResult with final category, original category, and sub-category
      */
     suspend fun categorizeContent(
         content: String,
         customCategories: List<Category>,
-        favoriteCategories: List<Category>
+        favoriteCategories: List<Category>,
+        sourceApp: String? = null
     ): CategorizationResult = withContext(Dispatchers.Default) {
         
         // Stage 1: Free categorization
-        val firstStageCategory = performFirstStageCategorization(content)
+        val firstStageCategory = performFirstStageCategorization(content, sourceApp)
+        
+        // Generate sub-category for additional information
+        val subCategory = generateSubCategory(content, firstStageCategory, sourceApp)
         
         // Stage 2: Merge with custom/favorite categories
         val finalCategory = performSecondStageMerge(
@@ -43,7 +48,8 @@ class AiCategorizationService(private val context: Context) {
         
         return@withContext CategorizationResult(
             finalCategoryName = finalCategory,
-            originalCategory = firstStageCategory
+            originalCategory = firstStageCategory,
+            subCategory = subCategory
         )
     }
     
@@ -62,11 +68,17 @@ class AiCategorizationService(private val context: Context) {
      * 
      * For now, using rule-based categorization as placeholder.
      */
-    private suspend fun performFirstStageCategorization(content: String): String {
+    private suspend fun performFirstStageCategorization(content: String, sourceApp: String? = null): String {
         // Placeholder implementation using rule-based categorization
         // This will be replaced with Gemini Nano API
         
         val contentLower = content.lowercase()
+        
+        // Consider source app in categorization if available
+        val appBasedCategory = sourceApp?.let { getAppBasedCategory(it) }
+        if (appBasedCategory != null) {
+            return appBasedCategory
+        }
         
         return when {
             contentLower.contains("http") || contentLower.contains("www") -> "Links"
@@ -79,6 +91,76 @@ class AiCategorizationService(private val context: Context) {
             contentLower.contains("book") || contentLower.contains("read") -> "Reading"
             contentLower.length < 50 -> "Quick Notes"
             else -> "General"
+        }
+    }
+    
+    /**
+     * Generate sub-category for additional context.
+     * AI freely adds this to express additional information.
+     */
+    private suspend fun generateSubCategory(
+        content: String,
+        mainCategory: String,
+        sourceApp: String? = null
+    ): String? {
+        // TODO: Use Gemini Nano for intelligent sub-category generation
+        // For now, use rule-based approach
+        
+        val contentLower = content.lowercase()
+        
+        // If source app is available, use it as sub-category context
+        if (sourceApp != null) {
+            return sourceApp
+        }
+        
+        // Generate contextual sub-categories based on content
+        return when (mainCategory) {
+            "Links" -> when {
+                contentLower.contains("youtube") || contentLower.contains("video") -> "Video"
+                contentLower.contains("github") || contentLower.contains("git") -> "Code Repository"
+                contentLower.contains("twitter") || contentLower.contains("social") -> "Social Media"
+                contentLower.contains("news") || contentLower.contains("article") -> "Article"
+                else -> "Web Link"
+            }
+            "Tasks" -> when {
+                contentLower.contains("urgent") || contentLower.contains("asap") -> "Urgent"
+                contentLower.contains("today") -> "Today"
+                contentLower.contains("tomorrow") -> "Tomorrow"
+                contentLower.contains("week") -> "This Week"
+                else -> "To Do"
+            }
+            "Code" -> when {
+                contentLower.contains("function") || contentLower.contains("def ") -> "Function"
+                contentLower.contains("class") -> "Class"
+                contentLower.contains("import") -> "Import/Dependency"
+                contentLower.contains("error") || contentLower.contains("exception") -> "Error/Bug"
+                else -> "Snippet"
+            }
+            "Shopping" -> when {
+                contentLower.contains("grocery") || contentLower.contains("food") -> "Groceries"
+                contentLower.contains("electronics") -> "Electronics"
+                contentLower.contains("clothes") || contentLower.contains("fashion") -> "Clothing"
+                else -> "Shopping List"
+            }
+            else -> null
+        }
+    }
+    
+    /**
+     * Get category based on source app if Usage Stats is available.
+     */
+    private fun getAppBasedCategory(sourceApp: String): String? {
+        val appLower = sourceApp.lowercase()
+        return when {
+            appLower.contains("chrome") || appLower.contains("browser") || appLower.contains("firefox") -> "Links"
+            appLower.contains("slack") || appLower.contains("teams") || appLower.contains("discord") -> "Work Chat"
+            appLower.contains("whatsapp") || appLower.contains("telegram") || appLower.contains("messenger") -> "Messages"
+            appLower.contains("gmail") || appLower.contains("mail") || appLower.contains("outlook") -> "Email"
+            appLower.contains("notes") || appLower.contains("keep") || appLower.contains("notion") -> "Notes"
+            appLower.contains("twitter") || appLower.contains("instagram") || appLower.contains("facebook") -> "Social Media"
+            appLower.contains("youtube") -> "Videos"
+            appLower.contains("github") || appLower.contains("gitlab") -> "Code"
+            else -> null
         }
     }
     

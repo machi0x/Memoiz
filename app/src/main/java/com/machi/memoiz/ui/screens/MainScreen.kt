@@ -216,6 +216,44 @@ private fun MemoCard(
             
             Spacer(modifier = Modifier.height(8.dp))
             
+            // Display sub-category and source app if available
+            if (memo.subCategory != null || memo.sourceApp != null) {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    memo.subCategory?.let { subCat ->
+                        AssistChip(
+                            onClick = { },
+                            label = { Text(subCat) },
+                            leadingIcon = {
+                                Icon(
+                                    Icons.Default.Info,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(14.dp)
+                                )
+                            },
+                            modifier = Modifier.height(28.dp)
+                        )
+                    }
+                    memo.sourceApp?.let { app ->
+                        AssistChip(
+                            onClick = { },
+                            label = { Text("From: $app") },
+                            leadingIcon = {
+                                Icon(
+                                    Icons.Default.Apps,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(14.dp)
+                                )
+                            },
+                            modifier = Modifier.height(28.dp)
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+            }
+            
             Text(
                 text = memo.content,
                 style = MaterialTheme.typography.bodyLarge,
