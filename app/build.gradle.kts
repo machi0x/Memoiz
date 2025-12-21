@@ -5,11 +5,11 @@ plugins {
 }
 
 android {
-    namespace = "com.machika.memoiz"
+    namespace = "com.machi.memoiz"
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "com.machika.memoiz"
+        applicationId = "com.machi.memoiz"
         minSdk = 29  // Android 10 for clipboard restrictions
         targetSdk = 34
         versionCode = 1
