@@ -6,12 +6,9 @@ import androidx.work.WorkerParameters
 import com.machi.memoiz.data.MemoizDatabase
 import com.machi.memoiz.data.repository.CategoryRepository
 import com.machi.memoiz.data.repository.MemoRepository
-import com.machi.memoiz.service.AiCategorizationService
 import com.machi.memoiz.service.AiWorkerHelper
-import com.machi.memoiz.service.MlKitCategorizer
 import com.machi.memoiz.domain.model.Memo
 import com.machi.memoiz.util.UsageStatsHelper
-import kotlinx.coroutines.flow.first
 
 /**
  * WorkManager worker for processing clipboard content in background.
@@ -28,6 +25,7 @@ class ClipboardProcessingWorker(
     }
 
     override suspend fun doWork(): Result {
+        val aiService = AiWorkerHelper.getService(applicationContext)
         try {
             val content = inputData.getString(KEY_CLIPBOARD_CONTENT)
             val imageUri = inputData.getString(KEY_IMAGE_URI)
@@ -40,8 +38,6 @@ class ClipboardProcessingWorker(
             val database = MemoizDatabase.getDatabase(applicationContext)
             val categoryRepository = CategoryRepository(database.categoryDao())
             val memoRepository = MemoRepository(database.memoDao())
-            val aiService = AiCategorizationService(applicationContext)
-            val mlKit = MlKitCategorizer(applicationContext)
 
             // Try to get source app (UsageStats permission is checked inside UsageStatsHelper)
             val sourceApp = try {
@@ -52,13 +48,12 @@ class ClipboardProcessingWorker(
             }
 
             // Prepare content for categorization (uses image description when needed)
-            val contentForCategorization = AiWorkerHelper.prepareContentForCategorization(content, imageUri, mlKit)
+            val contentForCategorization = aiService.prepareContentForCategorization(content, imageUri)
 
             // Perform AI categorization with user's categories
-            val categorizationResult = AiWorkerHelper.categorizeWithUserCategories(
+            val categorizationResult = aiService.categorizeWithUserCategories(
                 contentForCategorization,
                 categoryRepository,
-                aiService,
                 sourceApp
             )
 
@@ -94,6 +89,8 @@ class ClipboardProcessingWorker(
         } catch (e: Exception) {
             e.printStackTrace()
             return Result.retry()
+        } finally {
+            AiWorkerHelper.closeService()
         }
     }
 }

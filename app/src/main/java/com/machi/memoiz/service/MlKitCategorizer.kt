@@ -34,6 +34,13 @@ class MlKitCategorizer(private val context: Context) {
         Rewriting.getClient(rewriterOptionsEn)
     }
 
+    /**
+     * Call this when the service is no longer needed to release ML Kit resources.
+     */
+    fun close() {
+        rewritingClient.close()
+    }
+
     // Use ML Kit GenAI client for text generation.
     // Accept RewriterOptions so callers can request English or Japanese output as needed.
     private suspend fun generateText(promptText: String, options: RewriterOptions = rewriterOptionsEn): String? {

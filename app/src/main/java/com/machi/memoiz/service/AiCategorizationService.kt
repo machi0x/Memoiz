@@ -16,6 +16,13 @@ class AiCategorizationService(private val context: Context) {
     private val mlKitCategorizer = MlKitCategorizer(context)
 
     /**
+     * Call this when the service is no longer needed to release ML Kit resources.
+     */
+    fun close() {
+        mlKitCategorizer.close()
+    }
+
+    /**
      * Performs AI-first categorization.
      * Stage 1: free-form category generation by AI.
      * Stage 2: if possible, merge into an existing user category; otherwise use the new category.
