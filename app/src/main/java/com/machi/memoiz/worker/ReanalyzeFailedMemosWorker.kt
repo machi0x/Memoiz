@@ -6,11 +6,8 @@ import androidx.work.WorkerParameters
 import com.machi.memoiz.data.MemoizDatabase
 import com.machi.memoiz.data.repository.CategoryRepository
 import com.machi.memoiz.data.repository.MemoRepository
-import com.machi.memoiz.domain.model.Category
 import com.machi.memoiz.domain.model.Memo
-import com.machi.memoiz.service.AiCategorizationService
 import com.machi.memoiz.service.AiWorkerHelper
-import com.machi.memoiz.service.MlKitCategorizer
 import kotlinx.coroutines.flow.first
 
 /**
@@ -23,12 +20,11 @@ class ReanalyzeFailedMemosWorker(
 ) : CoroutineWorker(context, params) {
 
     override suspend fun doWork(): Result {
+        val aiService = AiWorkerHelper.getService(applicationContext)
         try {
             val database = MemoizDatabase.getDatabase(applicationContext)
             val categoryRepository = CategoryRepository(database.categoryDao())
             val memoRepository = MemoRepository(database.memoDao())
-            val aiService = AiCategorizationService(applicationContext)
-            val mlKit = MlKitCategorizer(applicationContext)
 
             // Ensure Failure category exists (localized)
             val failureCategoryId = categoryRepository.getOrCreateFailureCategory(applicationContext)
@@ -40,12 +36,11 @@ class ReanalyzeFailedMemosWorker(
 
             for (memo in failedMemos) {
                 try {
-                    val contentForCategorization = AiWorkerHelper.prepareContentForCategorization(memo.content, memo.imageUri, mlKit)
+                    val contentForCategorization = aiService.prepareContentForCategorization(memo.content, memo.imageUri)
 
-                    val result = AiWorkerHelper.categorizeWithUserCategories(
+                    val result = aiService.categorizeWithUserCategories(
                         contentForCategorization,
                         categoryRepository,
-                        aiService,
                         memo.sourceApp
                     )
 
@@ -76,6 +71,8 @@ class ReanalyzeFailedMemosWorker(
         } catch (e: Exception) {
             e.printStackTrace()
             return Result.retry()
+        } finally {
+            AiWorkerHelper.closeService()
         }
     }
 }
