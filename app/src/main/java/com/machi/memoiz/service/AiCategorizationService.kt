@@ -65,7 +65,7 @@ class AiCategorizationService(private val context: Context) {
             val candidates = (customCategories.map { it.name } + favoriteCategories.map { it.name }).distinct()
             val mergeTarget: String? = if (candidates.isNotEmpty()) {
                 try {
-                    mlKitCategorizer.matchCategoryToList(content, enLabel, jaLabel, candidates)
+                    mlKitCategorizer.matchCategoryToListLocalized(content, enLabel, jaLabel, candidates)
                 } catch (e: Exception) {
                     e.printStackTrace()
                     null

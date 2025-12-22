@@ -174,7 +174,7 @@ class MlKitCategorizer(private val context: Context) {
      * Conservative matcher: given original content and AI's English/Ja suggestions, pick one existing candidate only if it clearly matches.
      * Otherwise return null.
      */
-    suspend fun matchCategoryToList(contentExample: String, suggestionEn: String?, suggestionJa: String?, candidates: List<String>): String? {
+    suspend fun matchCategoryToListLocalized(contentExample: String, suggestionEn: String?, suggestionJa: String?, candidates: List<String>): String? {
         if (candidates.isEmpty()) return null
         try {
             // Build a conservative prompt that asks the model to only pick a candidate when it's a clear match.
