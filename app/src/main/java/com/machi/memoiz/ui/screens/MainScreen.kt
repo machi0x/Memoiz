@@ -11,6 +11,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -45,10 +46,9 @@ fun MainScreen(
     val context = LocalContext.current
 
     // Find Failure category id if exists (check canonical or localized labels)
-    val enLabel = context.getString(R.string.failure_category_en)
-    val jaLabel = context.getString(R.string.failure_category_ja)
-    val failureCategory = remember(categories, enLabel, jaLabel) {
-        categories.find { it.name == "FAILURE" || it.name == enLabel || it.name == jaLabel || it.nameEn == enLabel || it.nameJa == jaLabel }
+    val failureLabel = context.getString(R.string.failure_category)
+    val failureCategory = remember(categories, failureLabel) {
+        categories.find { it.name == "FAILURE" || it.name == failureLabel || it.nameEn == failureLabel || it.nameJa == failureLabel }
     }
     val failureCategoryId = failureCategory?.id
 
@@ -98,7 +98,7 @@ fun MainScreen(
                 onToggleFavorite = { viewModel.toggleFavorite(it) }
             )
 
-            Divider()
+            HorizontalDivider()
 
             // Memos list
             if (filteredMemos.isEmpty()) {
@@ -405,7 +405,7 @@ fun MainScreenPreview() {
                 onCategorySelected = {},
                 onToggleFavorite = {}
             )
-            Divider()
+            HorizontalDivider()
             MemosList(
                 memos = sampleMemos,
                 categories = sampleCategories,
