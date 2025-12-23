@@ -1,5 +1,3 @@
-@file:OptIn(ExperimentalMaterial3ai::class)
-
 package com.machi.memoiz.ui.screens
 
 import android.content.Intent
@@ -34,6 +32,7 @@ import java.util.*
 /**
  * Main screen showing memos organized by categories.
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen(
     viewModel: MainViewModel,
