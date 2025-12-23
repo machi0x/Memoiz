@@ -1,9 +1,11 @@
 package com.machi.memoiz.service
 
 import android.content.Context
+import com.machi.memoiz.data.repository.CategoryRepository
 import com.machi.memoiz.domain.model.CategorizationResult
 import com.machi.memoiz.domain.model.Category
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 
 /**
@@ -23,12 +25,42 @@ class AiCategorizationService(private val context: Context) {
     }
 
     /**
+     * Prepares the content that will be sent to the AI for categorization.
+     * If an image URI is present, it will be described by the AI; otherwise, the text content is used.
+     */
+    suspend fun prepareContentForCategorization(content: String?, imageUri: String?): String {
+        if (imageUri != null) {
+            return mlKitCategorizer.describeImageUri(imageUri)
+        }
+        return content ?: ""
+    }
+
+    /**
+     * Higher-level function that orchestrates the two-stage categorization process.
+     * It fetches user categories to provide them as context to the AI.
+     */
+    suspend fun categorizeWithUserCategories(
+        content: String,
+        categoryRepository: CategoryRepository,
+        sourceApp: String?
+    ): CategorizationResult {
+        val customCategories = categoryRepository.getCustomCategories().first()
+        val favoriteCategories = categoryRepository.getFavoriteCategories().first()
+        return categorizeContent(
+            content,
+            customCategories,
+            favoriteCategories,
+            sourceApp
+        )
+    }
+
+    /**
      * Performs AI-first categorization.
      * Stage 1: free-form category generation by AI.
      * Stage 2: if possible, merge into an existing user category; otherwise use the new category.
      * On AI total failure, returns finalCategoryName = "Failure".
      */
-    suspend fun categorizeContent(
+    private suspend fun categorizeContent(
         content: String,
         customCategories: List<Category>,
         favoriteCategories: List<Category>,
