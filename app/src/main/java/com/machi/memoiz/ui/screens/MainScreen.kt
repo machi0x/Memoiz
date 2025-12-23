@@ -1,4 +1,4 @@
-@file:OptIn(ExperimentalMaterial3Api::class)
+@file:OptIn(ExperimentalMaterial3ai::class)
 
 package com.machi.memoiz.ui.screens
 
@@ -11,7 +11,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -98,7 +97,7 @@ fun MainScreen(
                 onToggleFavorite = { viewModel.toggleFavorite(it) }
             )
 
-            HorizontalDivider()
+            Divider()
 
             // Memos list
             if (filteredMemos.isEmpty()) {
@@ -160,40 +159,14 @@ private fun CategoryFilterRow(
             FilterChip(
                 selected = selectedCategoryId == category.id,
                 onClick = { onCategorySelected(category.id) },
-                label = {
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(4.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        if (category.isFavorite) {
-                            Icon(
-                                Icons.Default.Star,
-                                contentDescription = null,
-                                modifier = Modifier
-                                    .size(16.dp)
-                                    .clickable { onToggleFavorite(category) }
-                            )
-                        } else {
-                            Icon(
-                                Icons.Default.StarBorder,
-                                contentDescription = null,
-                                modifier = Modifier
-                                    .size(16.dp)
-                                    .clickable { onToggleFavorite(category) }
-                            )
-                        }
-                        Text(getCategoryDisplayName(category))
-                    }
-                },
-                trailingIcon = if (selectedCategoryId == category.id) {
-                    {
-                        Icon(
-                            Icons.Default.Check,
-                            contentDescription = null,
-                            modifier = Modifier.size(18.dp)
-                        )
-                    }
-                } else null
+                label = { Text(getCategoryDisplayName(category)) },
+                leadingIcon = {
+                    Icon(
+                        imageVector = if (category.isFavorite) Icons.Default.Star else Icons.Default.StarBorder,
+                        contentDescription = "Toggle Favorite",
+                        modifier = Modifier.clickable { onToggleFavorite(category) }
+                    )
+                }
             )
         }
     }
@@ -405,7 +378,7 @@ fun MainScreenPreview() {
                 onCategorySelected = {},
                 onToggleFavorite = {}
             )
-            HorizontalDivider()
+            Divider()
             MemosList(
                 memos = sampleMemos,
                 categories = sampleCategories,
