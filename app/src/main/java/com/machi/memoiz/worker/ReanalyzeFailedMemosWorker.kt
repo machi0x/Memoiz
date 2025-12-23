@@ -7,7 +7,7 @@ import com.machi.memoiz.data.MemoizDatabase
 import com.machi.memoiz.data.repository.CategoryRepository
 import com.machi.memoiz.data.repository.MemoRepository
 import com.machi.memoiz.domain.model.Memo
-import com.machi.memoiz.service.AiWorkerHelper
+import com.machi.memoiz.service.AiCategorizationService
 import kotlinx.coroutines.flow.first
 
 /**
@@ -20,7 +20,7 @@ class ReanalyzeFailedMemosWorker(
 ) : CoroutineWorker(context, params) {
 
     override suspend fun doWork(): Result {
-        val aiService = AiWorkerHelper.getService(applicationContext)
+        val aiService = AiCategorizationService(applicationContext)
         try {
             val database = MemoizDatabase.getDatabase(applicationContext)
             val categoryRepository = CategoryRepository(database.categoryDao())
@@ -44,7 +44,7 @@ class ReanalyzeFailedMemosWorker(
                         memo.sourceApp
                     )
 
-                    if (result?.finalCategoryName != null && result.finalCategoryName != "FAILURE") {
+                    if (result.finalCategoryName != "FAILURE") {
                         // Find or create the category and update memo
                         val categoryId = categoryRepository.findOrCreateCategory(
                             result.finalCategoryName,
@@ -72,7 +72,7 @@ class ReanalyzeFailedMemosWorker(
             e.printStackTrace()
             return Result.retry()
         } finally {
-            AiWorkerHelper.closeService()
+            aiService.close()
         }
     }
 }

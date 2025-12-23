@@ -6,7 +6,7 @@ import androidx.work.WorkerParameters
 import com.machi.memoiz.data.MemoizDatabase
 import com.machi.memoiz.data.repository.CategoryRepository
 import com.machi.memoiz.data.repository.MemoRepository
-import com.machi.memoiz.service.AiWorkerHelper
+import com.machi.memoiz.service.AiCategorizationService
 
 /**
  * Worker that re-analyzes a single memo specified by memo_id input data.
@@ -22,7 +22,7 @@ class ReanalyzeSingleMemoWorker(
     }
 
     override suspend fun doWork(): Result {
-        val aiService = AiWorkerHelper.getService(applicationContext)
+        val aiService = AiCategorizationService(applicationContext)
         try {
             val memoId = inputData.getLong(KEY_MEMO_ID, -1L)
             if (memoId <= 0L) return Result.failure()
@@ -42,7 +42,7 @@ class ReanalyzeSingleMemoWorker(
                 memo.sourceApp
             )
 
-            if (result?.finalCategoryName != null && result.finalCategoryName != "FAILURE") {
+            if (result.finalCategoryName != "FAILURE") {
                 val categoryId = categoryRepository.findOrCreateCategory(
                     result.finalCategoryName,
                     isCustom = false,
@@ -62,7 +62,7 @@ class ReanalyzeSingleMemoWorker(
             e.printStackTrace()
             return Result.retry()
         } finally {
-            AiWorkerHelper.closeService()
+            aiService.close()
         }
     }
 }

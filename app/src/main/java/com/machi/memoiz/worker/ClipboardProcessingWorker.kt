@@ -6,7 +6,7 @@ import androidx.work.WorkerParameters
 import com.machi.memoiz.data.MemoizDatabase
 import com.machi.memoiz.data.repository.CategoryRepository
 import com.machi.memoiz.data.repository.MemoRepository
-import com.machi.memoiz.service.AiWorkerHelper
+import com.machi.memoiz.service.AiCategorizationService
 import com.machi.memoiz.domain.model.Memo
 import com.machi.memoiz.util.UsageStatsHelper
 
@@ -25,7 +25,7 @@ class ClipboardProcessingWorker(
     }
 
     override suspend fun doWork(): Result {
-        val aiService = AiWorkerHelper.getService(applicationContext)
+        val aiService = AiCategorizationService(applicationContext)
         try {
             val content = inputData.getString(KEY_CLIPBOARD_CONTENT)
             val imageUri = inputData.getString(KEY_IMAGE_URI)
@@ -57,8 +57,8 @@ class ClipboardProcessingWorker(
                 sourceApp
             )
 
-            // If categorization failed (null or finalCategory == FAILURE), mark as Failure
-            val finalCategoryName = categorizationResult?.finalCategoryName ?: "FAILURE"
+            // If categorization failed (finalCategory == FAILURE), mark as Failure
+            val finalCategoryName = categorizationResult.finalCategoryName
 
             // Find or create the category, passing localized labels when available
             val categoryId = if (finalCategoryName == "FAILURE") {
@@ -67,8 +67,8 @@ class ClipboardProcessingWorker(
                 categoryRepository.findOrCreateCategory(
                     finalCategoryName,
                     isCustom = false,
-                    nameEn = categorizationResult?.finalCategoryNameEn,
-                    nameJa = categorizationResult?.finalCategoryNameJa
+                    nameEn = categorizationResult.finalCategoryNameEn,
+                    nameJa = categorizationResult.finalCategoryNameJa
                 )
             }
 
@@ -77,8 +77,8 @@ class ClipboardProcessingWorker(
                 content = content ?: "",
                 imageUri = imageUri,
                 categoryId = categoryId,
-                originalCategory = categorizationResult?.originalCategory,
-                subCategory = categorizationResult?.subCategory,
+                originalCategory = categorizationResult.originalCategory,
+                subCategory = categorizationResult.subCategory,
                 sourceApp = sourceApp
             )
 
@@ -90,7 +90,7 @@ class ClipboardProcessingWorker(
             e.printStackTrace()
             return Result.retry()
         } finally {
-            AiWorkerHelper.closeService()
+            aiService.close()
         }
     }
 }
