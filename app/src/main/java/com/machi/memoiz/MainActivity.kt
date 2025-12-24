@@ -10,6 +10,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -24,13 +26,21 @@ import com.machi.memoiz.ui.screens.MainViewModel
 import com.machi.memoiz.ui.screens.SettingsScreen
 import com.machi.memoiz.ui.screens.SettingsViewModel
 import com.machi.memoiz.ui.theme.MemoizTheme
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
     
     private lateinit var viewModelFactory: ViewModelFactory
+    private var keepSplash = true
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // Install splash screen
+        installSplashScreen().setKeepOnScreenCondition {
+            keepSplash
+        }
 
         // Initialize database and repositories
         val database = MemoizDatabase.getDatabase(applicationContext)
@@ -42,6 +52,12 @@ class MainActivity : ComponentActivity() {
 
         // If launched with request to start clipboard monitor, start service
         handleIntent(intent)
+        
+        // Hide splash screen after 1.5 seconds
+        lifecycleScope.launch {
+            delay(1500)
+            keepSplash = false
+        }
 
         setContent {
             MemoizTheme {

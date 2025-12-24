@@ -19,4 +19,7 @@
 
     <!-- This attribute was referenced by drawables -->
     <color name="colorControlNormal">#000000</color>
+    
+    <!-- Splash Screen Color -->
+    <color name="splash_background">#E8F5E9</color>
 </resources>
