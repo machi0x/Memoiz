@@ -1,9 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- Base application theme. -->
     <style name="Theme.Memoiz" parent="android:Theme.Material.Light.NoActionBar">
         <item name="colorPrimary">#6650A4</item>
         <item name="colorOnPrimary">#FFFFFF</item>
         <!-- Provide colorControlNormal attr used by drawables -->
         <item name="colorControlNormal">#000000</item>
+    </style>
+
+    <!-- Splash Screen Theme. -->
+    <style name="Theme.Memoiz.Splash" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/splash_background</item>
+        <item name="windowSplashScreenAnimatedIcon">@mipmap/ic_launcher</item>
+        <item name="postSplashScreenTheme">@style/Theme.Memoiz</item>
     </style>
 </resources>
