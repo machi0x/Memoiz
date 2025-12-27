@@ -74,34 +74,20 @@ suspend fun toggleFavorite(category: Category) {
 
 ### 4. Android 10+ Clipboard Restrictions
 
-Android 10 introduced restrictions on background clipboard access. Memoiz handles this through:
+Android 10 introduced restrictions on background clipboard access. Memoiz handles this through **explicit user-triggered entry points instead of a long-running foreground service**:
 
-#### Notification-Based Trigger (`ClipboardMonitorService`)
-- Shows a foreground notification
-- User taps notification to explicitly grant clipboard access
-- Service reads clipboard and queues work
+#### Process Text + Share Entry (`ProcessTextActivity`)
+- Exposes the "Categorize with Memoiz" option when users select text (ACTION_PROCESS_TEXT)
+- Also registered for ACTION_SEND so anything shared via the system share sheet (text/image) flows into Memoiz
+- Activity extracts the shared payload and enqueues `ClipboardProcessingWorker`
 
-```kotlin
-class ClipboardMonitorService : Service() {
-    // Foreground service with notification
-    // User taps → ACTION_SAVE_CLIPBOARD → processClipboard()
-}
-```
+#### In-App Clipboard Button
+- The main screen surface includes a "Paste from clipboard" FAB that pulls current clipboard content only when the user taps it
+- Clipboard access is therefore always tied to an explicit user gesture inside the app
 
-#### Quick Settings Tile (`ClipboardTileService`)
-- Adds a Quick Settings tile
-- User taps tile for immediate capture
-- Explicit user action satisfies Android restrictions
-
-```kotlin
-@RequiresApi(Build.VERSION_CODES.N)
-class ClipboardTileService : TileService() {
-    override fun onClick() {
-        // User tap = explicit consent
-        // Read clipboard and process
-    }
-}
-```
+#### Share Sheet Shortcut
+- Users can invoke Memoiz from the Android share sheet (`ACTION_SEND` / `ACTION_SEND_MULTIPLE`)
+- Supports both text and images so no foreground service polling is required
 
 ### 5. Background Processing with WorkManager
 
@@ -163,26 +149,24 @@ class ClipboardProcessingWorker(
 
 ## Data Flow
 
-### Clipboard Capture to Memo Storage
+### Capture Triggers to Memo Storage
 
 ```
-1. User copies content
+1. User selects, shares, or pastes content explicitly
    ↓
-2. User triggers capture (notification tap or QS tile)
+2. Entry point (ProcessTextActivity, Share sheet, clipboard button) collects payload
    ↓
-3. Service reads clipboard
+3. Entry point enqueues WorkManager job via ContentProcessingLauncher
    ↓
-4. Service enqueues WorkManager work
+4. Worker fetches custom/favorite categories
    ↓
-5. Worker fetches custom/favorite categories
-   ↓
-6. Worker calls AiCategorizationService
+5. Worker calls AiCategorizationService
    ├─→ Stage 1: Free categorization
    └─→ Stage 2: Merge with user preferences
    ↓
-7. Worker finds/creates category in DB
+6. Worker finds/creates category in DB
    ↓
-8. Worker saves memo with:
+7. Worker saves memo with:
    - Final category ID
    - Original category name (for transparency)
 ```
@@ -196,6 +180,7 @@ class ClipboardProcessingWorker(
 - Filter chips for category selection
 - Displays original vs final category in memo cards
 - FAB to trigger clipboard monitoring
+- Floating actions: "Paste from clipboard" button plus shortcut to share sheet
 
 **SettingsScreen** (`app/src/main/java/com/machika/memoiz/ui/screens/SettingsScreen.kt`)
 - Manage custom categories (max 20)
@@ -316,18 +301,12 @@ private fun isSimilarCategory(category1: String, category2: String): Boolean
 ### Required Permissions
 ```xml
 <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
-<uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-<uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+<!-- Usage stats for source app lookup -->
+<uses-permission android:name="android.permission.PACKAGE_USAGE_STATS" tools:ignore="ProtectedPermissions" />
 ```
 
-### Service Declarations
-- `ClipboardMonitorService`: Foreground service with dataSync type
-- `ClipboardTileService`: Quick Settings Tile with proper intent filter
-
-### Minimum SDK
-```gradle
-minSdk = 29  // Android 10 - for clipboard restrictions
-```
+### Components
+- `ProcessTextActivity`: handles ACTION_PROCESS_TEXT and ACTION_SEND intents
 
 ## Summary
 
@@ -335,11 +314,5 @@ Memoiz implements all requirements from the problem statement:
 
 ✅ **AI-powered categorization** with 2-stage process  
 ✅ **On-device processing** (Gemini Nano placeholder)  
-✅ **Android 10+ clipboard handling** (notification + tile)  
+✅ **Android 10+ clipboard handling** (Process Text, share sheet, clipboard button)  
 ✅ **WorkManager** for background processing  
-✅ **Room database** for persistence  
-✅ **Custom categories** (max 20)  
-✅ **Favorite categories** for AI prioritization  
-✅ **Material 3 UI** with Jetpack Compose  
-
-The architecture is clean, maintainable, and ready for Gemini Nano integration when available.

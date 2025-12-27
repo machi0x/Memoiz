@@ -63,20 +63,17 @@ companion object {
 ### 3. Android 10+ Clipboard Handling ✅
 
 **Locations**: 
-- `app/src/main/java/com/machika/memoiz/service/ClipboardMonitorService.kt`
-- `app/src/main/java/com/machika/memoiz/service/ClipboardTileService.kt`
+- `app/src/main/java/com/machika/memoiz/processtext/ProcessTextActivity.kt`
+- `app/src/main/java/com/machika/memoiz/service/ContentProcessingLauncher.kt`
 
-#### Notification-Based Trigger
-- Foreground service shows persistent notification
-- User taps notification → explicit clipboard access
-- Service reads clipboard and queues work
-- Complies with Android 10+ restrictions
+#### Process Text + Share Entry Point
+- Provides "Categorize with Memoiz" in the text selection menu (ACTION_PROCESS_TEXT)
+- Also acts as share target for ACTION_SEND (text/image)
+- Minimal UI, immediately enqueues WorkManager job
 
-#### Quick Settings Tile
-- Adds "Save Clipboard" tile to Quick Settings
-- Tap tile for instant capture
-- Explicit user action = permission granted
-- Shows confirmation dialog
+#### In-App Clipboard Button
+- Main screen FAB reads clipboard only when tapped
+- Ensures clipboard access is tied to explicit user action inside Memoiz
 
 ### 4. Background Processing ✅
 
@@ -184,15 +181,14 @@ class ClipboardProcessingWorker : CoroutineWorker {
 
 ```
 ┌──────────────────────────────────┐
-│   ClipboardMonitorService        │
-│   (Notification-based)           │
+│  ProcessTextActivity / FAB       │
+│  (User-triggered intents)        │
 └────────────┬─────────────────────┘
              │
 ┌────────────▼─────────────────────┐
-│   ClipboardTileService           │
-│   (Quick Settings Tile)          │
+│ ContentProcessingLauncher        │
+│  (Work request helper)           │
 └────────────┬─────────────────────┘
-             │
              ▼
 ┌──────────────────────────────────┐
 │   ClipboardProcessingWorker      │
@@ -286,7 +282,7 @@ The architecture is designed for easy testing:
 ## Security & Privacy
 
 ✅ **On-device processing**: All AI runs locally
-✅ **Explicit consent**: Clipboard only accessed on user tap
+✅ **Explicit consent**: Clipboard only accessed on explicit user actions (Process Text, share sheet, in-app button)
 ✅ **No network requests**: Zero data leaves device
 ✅ **Local storage**: Room database, no cloud sync
 ✅ **Compliant**: Follows Android 10+ restrictions
@@ -294,45 +290,23 @@ The architecture is designed for easy testing:
 
 ## Requirements Fulfillment
 
-### From Problem Statement:
-
 | Requirement | Status | Implementation |
 |------------|--------|----------------|
 | AI auto-categorization | ✅ | `AiCategorizationService` |
 | 2-stage process | ✅ | Stage 1 + Stage 2 merge |
 | On-device LLM (Gemini Nano) | ✅ | Placeholder + integration plan |
-| Android 10+ clipboard | ✅ | Notification + QS Tile |
+| Android 10+ clipboard | ✅ | ProcessTextActivity + clipboard FAB + share sheet |
 | WorkManager background | ✅ | `ClipboardProcessingWorker` |
 | Room database | ✅ | Full schema with relationships |
 | Custom categories (max 20) | ✅ | Enforced in `SettingsViewModel` |
 | Favorite categories | ✅ | Toggle in UI + DB flag |
 | AI respects preferences | ✅ | Stage 2 prioritizes custom/fav |
 
-## Build Status
-
-### Gradle Configuration: ✅
-- Build files created
-- Dependencies configured
-- Gradle wrapper included (Unix + Windows)
-- Android SDK references correct
-
-### Resource Files: ✅
-- Manifest with permissions
-- Strings, themes, drawables
-- Adaptive icons configured
-- Backup rules defined
-
-### Code Completeness: ✅
-- All packages populated
-- No TODOs (except Gemini Nano integration)
-- Proper imports and syntax
-- Documentation complete
-
 ## Next Steps for Developer
 
 1. **Open in Android Studio**:
-   ```bash
-   # Open the project directory
+   ```powershell
+   cd C:\Users\user\StudioProjects\Memoiz
    ```
 
 2. **Sync and Build**:
@@ -344,11 +318,11 @@ The architecture is designed for easy testing:
    - Run → Run 'app'
 
 4. **Test Features**:
-   - Copy text to clipboard
-   - Tap notification or QS tile
+   - Long-press text → Process Text entry
+   - Share text or images to Memoiz
+   - Tap "Paste from clipboard" in the app
    - View categorized memos
-   - Add custom categories
-   - Toggle favorites
+   - Add custom categories / toggle favorites
 
 5. **Integrate Gemini Nano** (when available):
    - Follow plan in `AiCategorizationService.kt`
