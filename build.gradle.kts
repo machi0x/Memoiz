@@ -6,4 +6,5 @@ plugins {
     // Compose Gradle plugin to provide Compose compiler plugin for Kotlin 2.x
     id("org.jetbrains.compose") version "1.7.0" apply false
     id("com.google.gms.google-services") version "4.4.4" apply false
+    id("com.google.firebase.crashlytics") version "3.0.6" apply false
 }
