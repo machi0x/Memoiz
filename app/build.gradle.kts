@@ -1,8 +1,23 @@
+import java.util.concurrent.TimeUnit
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
     id("org.jetbrains.kotlin.plugin.compose")
     id("com.google.devtools.ksp")
+    id("com.google.gms.google-services")
+}
+
+// Gitのコミット数を取得する関数
+fun getGitCommitCount(): Int {
+    return try {
+        val process = ProcessBuilder("git", "rev-list", "--count", "HEAD").start()
+        process.waitFor(5, TimeUnit.SECONDS)
+        process.inputStream.bufferedReader().readText().trim().toInt()
+    } catch (e: Exception) {
+        // Gitが利用できない環境やエラー発生時のデフォルト値
+        1
+    }
 }
 
 android {
@@ -13,8 +28,9 @@ android {
         applicationId = "com.machi.memoiz"
         minSdk = 34  // Android 14
         targetSdk = 36
-        versionCode = 1
-        versionName = "1.0"
+        // versionCodeとversionNameを動的に設定
+        versionCode = getGitCommitCount()
+        versionName = "0.0.${getGitCommitCount()}"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -94,6 +110,11 @@ dependencies {
 
     // Coroutines helpers to await Tasks
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.10.2")
+
+    // Firebase
+    implementation(platform("com.google.firebase:firebase-bom:34.7.0"))
+    implementation("com.google.firebase:firebase-analytics")
+    implementation("com.google.firebase:firebase-crashlytics")
 
     // Testing
     testImplementation("junit:junit:4.13.2")
