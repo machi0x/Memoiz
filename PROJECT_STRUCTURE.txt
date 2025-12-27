@@ -51,10 +51,15 @@ ROOT DIRECTORY
         │   │       ├── Memo.kt                 # Memo model
         │   │       └── CategorizationResult.kt # AI result model
         │   │
+        │   ├── processtext/                    # ACTION_PROCESS_TEXT + share entry point
+        │   │   └── ProcessTextActivity.kt
+        │   │
+        │   ├── share/                          # Share sheet entry point
+        │   │   └── ShareActivity.kt
+        │   │
         │   ├── service/                        # Services
         │   │   ├── AiCategorizationService.kt  # 2-stage AI categorization
-        │   │   ├── ClipboardMonitorService.kt  # Notification-based clipboard
-        │   │   └── ClipboardTileService.kt     # Quick Settings Tile
+        │   │   └── AiWorkerHelper.kt           # Work enqueue helper
         │   │
         │   ├── worker/                         # Background workers
         │   │   └── ClipboardProcessingWorker.kt # WorkManager background processing
@@ -114,22 +119,23 @@ AiCategorizationService.kt
   - isSimilarCategory()                : Semantic similarity checking
   - Placeholder for Gemini Nano with integration plan
 
-CLIPBOARD ACCESS (Android 10+ Compliant)
-----------------------------------------
-ClipboardMonitorService.kt    - Foreground service with notification trigger
-ClipboardTileService.kt       - Quick Settings Tile for instant capture
+PASSIVE DATA CAPTURE
+--------------------
+ProcessTextActivity.kt        - Handles ACTION_PROCESS_TEXT and ACTION_SEND intents
+ShareActivity.kt              - Dedicated share target for text/images
+ContentProcessingLauncher.kt  - Shared helper to enqueue WorkManager jobs
 
 BACKGROUND PROCESSING
 ---------------------
 ClipboardProcessingWorker.kt  - WorkManager async processing
-  1. Gets clipboard content
+  1. Gets content from intents
   2. Fetches custom/favorite categories
   3. Calls AI 2-stage categorization
   4. Saves memo to database
 
 UI LAYER (Jetpack Compose + Material 3)
 ---------------------------------------
-MainScreen.kt              - Shows memos by category with filtering
+MainScreen.kt              - Shows memos by category with filtering and clipboard paste button
   - CategoryFilterRow      - Filter chips for categories (shows favorites)
   - MemosList             - Scrollable list of memos
   - MemoCard              - Individual memo with original category display
@@ -157,7 +163,7 @@ AI auto-categorization               | AiCategorizationService.kt
 2-stage process                      | performFirstStageCategorization() + 
                                      | performSecondStageMerge()
 On-device LLM (Gemini Nano)         | Placeholder + integration plan
-Android 10+ clipboard restrictions   | ClipboardMonitorService + ClipboardTileService
+Android 10+ clipboard handling       | ProcessTextActivity + in-app clipboard button + share sheet
 WorkManager background              | ClipboardProcessingWorker.kt
 Room database                       | MemoizDatabase + entities + DAOs
 Custom categories (max 20)          | SettingsViewModel.MAX_CUSTOM_CATEGORIES
@@ -173,23 +179,10 @@ DEVELOPMENT WORKFLOW
 3. Build → Make Project
 4. Run on device (API 29+)
 5. Test:
-   - Copy text
-   - Tap notification or QS tile
+   - Select text and use Process Text entry
+   - Share text or images to Memoiz
+   - Tap "Paste from clipboard" in the app
    - View categorized memos
    - Add custom categories
    - Toggle favorites
 
-
-STATISTICS
-==========
-
-Kotlin Source Files:  24
-Packages/Directories: 15
-Lines of Code:        ~3,000+
-Database Entities:    2 (Category, Memo)
-Database Tables:      2 with foreign key
-Services:             3 (Monitor, Tile, AI)
-Workers:              1 (ClipboardProcessing)
-Screens:              2 (Main, Settings)
-ViewModels:           2 with StateFlow
-Documentation:        4 comprehensive guides

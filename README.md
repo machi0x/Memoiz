@@ -9,9 +9,10 @@ Android app that automatically categorizes clipboard content (text, images) usin
 - **2-Stage Categorization Process**:
   1. First stage: AI performs free categorization based on content analysis
   2. Second stage: AI merges with user's custom categories or favorite categories when possible
-- **Clipboard Monitoring**: Respects Android 10+ clipboard restrictions by using:
-  - Notification-based trigger (user taps notification after copying)
-  - Quick Settings Tile for quick capture
+- **Passive Clipboard Capture**: Respects Android 10+ clipboard restrictions by using:
+  - System "Process Text" action (long-press selected text → "Categorize with Memoiz")
+  - Android share sheet (`ACTION_SEND` / `ACTION_SEND_MULTIPLE`) entry for any shareable text or image
+  - In-app "Paste from clipboard" button that reads clipboard only on tap
 - **Background Processing**: Heavy AI processing handled by WorkManager to avoid blocking UI
 
 ### User Features
@@ -96,18 +97,18 @@ If no match is found, the first-stage category is used as-is.
 2. **Grant permissions** for notifications and clipboard access
 3. **Add custom categories** (optional) in Settings - up to 20
 4. **Mark favorites** (optional) to help AI prioritize certain categories
-5. **Copy content** to clipboard
+5. **Copy or select content** to categorize
 6. **Trigger save** via:
-   - Tap the notification that appears
-   - Use the Quick Settings Tile
-   - Tap the FAB in the app
+   - Select text → tap "Categorize with Memoiz" in Process Text menu
+   - Share any text/image → choose Memoiz from share sheet
+   - Open Memoiz → tap "Paste from clipboard"
 7. **View organized memos** by category in the main screen
 
 ## Privacy
 
 - **On-device processing**: All AI categorization happens on-device (when Gemini Nano is integrated)
 - **No cloud uploads**: Your data never leaves your device
-- **Explicit consent**: Clipboard is only accessed when you explicitly tap notification or tile
+- **Explicit consent**: Clipboard is only accessed when you explicitly share/select/paste
 - **Respects Android restrictions**: Fully compliant with Android 10+ clipboard access restrictions
 
 ## Future Enhancements

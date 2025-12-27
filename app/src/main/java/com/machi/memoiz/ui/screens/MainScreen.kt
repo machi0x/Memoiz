@@ -1,6 +1,7 @@
 package com.machi.memoiz.ui.screens
 
 import android.content.Intent
+import android.widget.Toast
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -22,7 +23,7 @@ import androidx.work.WorkManager
 import com.machi.memoiz.R
 import com.machi.memoiz.domain.model.Category
 import com.machi.memoiz.domain.model.Memo
-import com.machi.memoiz.service.ClipboardMonitorService
+import com.machi.memoiz.service.ContentProcessingLauncher
 import com.machi.memoiz.ui.theme.MemoizTheme
 import com.machi.memoiz.worker.ReanalyzeFailedMemosWorker
 import com.machi.memoiz.worker.ReanalyzeSingleMemoWorker
@@ -73,13 +74,31 @@ fun MainScreen(
             )
         },
         floatingActionButton = {
-            FloatingActionButton(
-                onClick = {
-                    val intent = Intent(context, ClipboardMonitorService::class.java)
-                    context.startForegroundService(intent)
-                }
+            Column(
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+                horizontalAlignment = Alignment.End
             ) {
-                Icon(Icons.Default.Add, "Capture Clipboard")
+                ExtendedFloatingActionButton(
+                    text = { Text(text = context.getString(R.string.fab_paste_clipboard)) },
+                    icon = { Icon(Icons.Default.ContentPaste, contentDescription = null) },
+                    onClick = {
+                        val enqueued = ContentProcessingLauncher.enqueueFromClipboard(context)
+                        if (!enqueued) {
+                            Toast.makeText(context, R.string.nothing_to_categorize, Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                )
+                FloatingActionButton(
+                    onClick = {
+                        val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                            type = "text/plain"
+                            putExtra(Intent.EXTRA_TEXT, "")
+                        }
+                        context.startActivity(Intent.createChooser(shareIntent, context.getString(R.string.share_to_memoiz)))
+                    }
+                ) {
+                    Icon(Icons.Default.Share, "Share to Memoiz")
+                }
             }
         }
     ) { padding ->
@@ -105,7 +124,7 @@ fun MainScreen(
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = "No memos yet.\nTap + to capture clipboard content.",
+                        text = context.getString(R.string.empty_state_message),
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )

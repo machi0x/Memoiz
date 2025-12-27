@@ -26,7 +26,7 @@ android {
 
     defaultConfig {
         applicationId = "com.machi.memoiz"
-        minSdk = 34  // Android 14
+        minSdk = 29
         targetSdk = 36
         // versionCodeとversionNameを動的に設定
         versionCode = getGitCommitCount()

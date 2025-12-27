@@ -241,3 +241,9 @@ suspend fun categorizeContent(content: String, params: Any) {
     }
 }
 ```
+
+## 6. Passive Clipboard Capture Responsibilities
+
+- Memoiz no longer runs a foreground clipboard-monitoring service. Agents must respect this power-saving design and rely on user-triggered entry points only (Process Text action, share intents, clipboard button).
+- When adding new clipboard-related functionality, always confirm it is initiated by explicit user action and flows through `ContentProcessingLauncher` so WorkManager can handle heavy work off the main thread.
+- Documentation updates are mandatory whenever a new trigger or entry point is introduced so that privacy expectations remain transparent.

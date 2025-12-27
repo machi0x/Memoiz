@@ -2,7 +2,6 @@
 
 package com.machi.memoiz
 
-import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -19,7 +18,6 @@ import androidx.navigation.compose.rememberNavController
 import com.machi.memoiz.data.MemoizDatabase
 import com.machi.memoiz.data.repository.CategoryRepository
 import com.machi.memoiz.data.repository.MemoRepository
-import com.machi.memoiz.service.ClipboardMonitorService
 import com.machi.memoiz.ui.ViewModelFactory
 import com.machi.memoiz.ui.screens.MainScreen
 import com.machi.memoiz.ui.screens.MainViewModel
@@ -50,9 +48,6 @@ class MainActivity : ComponentActivity() {
         // Create ViewModelFactory
         viewModelFactory = ViewModelFactory(categoryRepository, memoRepository)
 
-        // If launched with request to start clipboard monitor, start service
-        handleIntent(intent)
-        
         // Hide splash screen after 1.5 seconds
         lifecycleScope.launch {
             delay(1500)
@@ -94,21 +89,6 @@ class MainActivity : ComponentActivity() {
                     }
                 }
             }
-        }
-    }
-
-    override fun onNewIntent(intent: Intent) {
-        super.onNewIntent(intent)
-        handleIntent(intent)
-    }
-
-    private fun handleIntent(intent: Intent?) {
-        if (intent == null) return
-
-        if (intent.action == com.machi.memoiz.boot.BootReceiver.ACTION_START_CLIPBOARD_MONITOR) {
-            // Start the ClipboardMonitorService as foreground service
-            val svcIntent = Intent(this, ClipboardMonitorService::class.java)
-            startForegroundService(svcIntent)
         }
     }
 }
