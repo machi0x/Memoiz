@@ -5,4 +5,5 @@ plugins {
     id("com.google.devtools.ksp") version "2.0.0-1.0.21" apply false
     // Compose Gradle plugin to provide Compose compiler plugin for Kotlin 2.x
     id("org.jetbrains.compose") version "1.7.0" apply false
+    id("com.google.gms.google-services") version "4.4.4" apply false
 }
