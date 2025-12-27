@@ -2,7 +2,9 @@ package com.machi.memoiz.ui.screens
 
 import android.content.Intent
 import android.widget.Toast
+import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -179,10 +181,18 @@ private fun CategoryFilterRow(
                 onClick = { onCategorySelected(category.id) },
                 label = { Text(getCategoryDisplayName(category)) },
                 leadingIcon = {
+                    val interactionSource = remember { MutableInteractionSource() }
                     Icon(
                         imageVector = if (category.isFavorite) Icons.Default.Star else Icons.Default.StarBorder,
                         contentDescription = "Toggle Favorite",
-                        modifier = Modifier.clickable { onToggleFavorite(category) }
+                        modifier = Modifier
+                            .size(16.dp)
+                            .clickable(
+                                interactionSource = interactionSource,
+                                indication = LocalIndication.current
+                            ) {
+                                onToggleFavorite(category)
+                            }
                     )
                 }
             )
