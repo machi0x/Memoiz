@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "119814397154",
+    "project_id": "memoiz-81659",
+    "storage_bucket": "memoiz-81659.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:119814397154:android:4ae5d19931794bd18d52bb",
+        "android_client_info": {
+          "package_name": "com.machi.memoiz"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCGphGQzB7OrG3-tUu8Ca8gbIJJFVxGbbg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

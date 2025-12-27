@@ -115,7 +115,7 @@ fun MainScreen(
                 onToggleFavorite = { viewModel.toggleFavorite(it) }
             )
 
-            Divider()
+            HorizontalDivider()
 
             // Memos list
             if (filteredMemos.isEmpty()) {
