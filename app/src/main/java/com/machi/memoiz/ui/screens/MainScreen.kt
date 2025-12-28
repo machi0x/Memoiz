@@ -112,7 +112,7 @@ fun MainScreen(
                 .padding(padding)
         ) {
             Image(
-                painter = painterResource(id = R.drawable.top_banner),
+                painter = painterResource(id = R.mipmap.ic_launcher),
                 contentDescription = "Top Banner",
                 modifier = Modifier.fillMaxWidth()
             )
