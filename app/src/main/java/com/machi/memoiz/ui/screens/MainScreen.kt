@@ -15,13 +15,13 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.paint
-import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import androidx.work.Data
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
@@ -116,10 +116,11 @@ fun MainScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp)
-                    .paint(
-                        painter = painterResource(id = R.drawable.top_banner),
-                        contentScale = ContentScale.FillBounds
-                    )
+                    .drawBehind {
+                        val drawable = ContextCompat.getDrawable(context, R.drawable.top_banner)
+                        drawable?.setBounds(0, 0, size.width.toInt(), size.height.toInt())
+                        drawable?.draw(drawContext.canvas.nativeCanvas)
+                    }
             )
 
             // Category filter chips
