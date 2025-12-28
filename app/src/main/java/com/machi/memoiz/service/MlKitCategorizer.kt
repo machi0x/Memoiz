@@ -4,6 +4,7 @@ import android.content.Context
 import com.google.mlkit.common.MlKitException
 import com.google.mlkit.genai.rewriting.Rewriting
 import com.google.mlkit.genai.rewriting.RewritingRequest
+import com.google.mlkit.genai.rewriting.RewritingResult
 import com.google.mlkit.genai.rewriting.RewriterOptions
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -29,44 +30,33 @@ class MlKitCategorizer(private val context: Context) {
             .build()
     }
 
-    private val rewritingClient by lazy {
-        // keep a default client for English to preserve existing calls that don't specify options
-        Rewriting.getClient(rewriterOptionsEn)
-    }
-
     /**
      * Call this when the service is no longer needed to release ML Kit resources.
      */
     fun close() {
-        rewritingClient.close()
+        // All rewriting clients are now created on-demand and closed after use.
     }
 
     // Use ML Kit GenAI client for text generation.
     // Accept RewriterOptions so callers can request English or Japanese output as needed.
     private suspend fun generateText(promptText: String, options: RewriterOptions = rewriterOptionsEn): String? {
+        var client: com.google.mlkit.genai.rewriting.Rewriter? = null
         return try {
             val request = RewritingRequest.builder(promptText).build()
-            val client = if (options === rewriterOptionsEn) rewritingClient else Rewriting.getClient(options)
+            client = Rewriting.getClient(options)
             val future = client.runInference(request)
 
             // Await the ListenableFuture without blocking the main thread.
             val result = withContext(Dispatchers.IO) { future.get() }
-
-            // The concrete result type from the library may not expose `results`/`text`
-            // fields with the names we expected. To be resilient across library
-            // versions, convert the result to string and extract the first non-empty
-            // line.
-            val textual = result.toString()
-            if (textual.isBlank()) return null
-
-            textual.lines().map { it.trim() }.firstOrNull { it.isNotEmpty() }
-
+            extractSuggestionText(result)
         } catch (e: MlKitException) {
             e.printStackTrace()
             null
         } catch (e: Exception) {
             e.printStackTrace()
             null
+        } finally {
+            client?.close()
         }
     }
 
@@ -276,5 +266,31 @@ class MlKitCategorizer(private val context: Context) {
         sb.append(content.take(2000))
         sb.append("\n\nReply with a short phrase (or single word) representing context; return empty if none.")
         return sb.toString()
+    }
+
+    // Prefer the API-provided suggestion text when available.
+    private fun extractSuggestionText(result: RewritingResult?): String? {
+        // Directly access the structured result from the API, removing the need for reflection.
+        val candidate = result?.results?.firstOrNull()?.text?.trim()
+
+        if (!candidate.isNullOrBlank()) {
+            return candidate
+        }
+
+        // Fallback to parsing the raw toString() output. This was the source of the bug
+        // where the entire RewritingResult object was displayed.
+        val textual = result?.toString()?.takeIf { it.isNotBlank() } ?: return null
+
+        // Manually parse the "text=" field from the toString() output as a robust fallback.
+        // Example: "RewritingResult{results=[RewritingSuggestion(text=MyText, score=...)]}"
+        val prefix = "RewritingSuggestion(text="
+        val suffix = ", score="
+        val fromString = textual.substringAfter(prefix, "").substringBefore(suffix, "")
+        if (fromString.isNotBlank() && fromString != textual) {
+            return fromString.trim()
+        }
+
+        // Final fallback to the original line-based parsing if manual parsing fails.
+        return textual.lines().mapNotNull { it.trim().takeIf { text -> text.isNotEmpty() } }.firstOrNull()
     }
 }
