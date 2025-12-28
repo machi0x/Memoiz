@@ -30,6 +30,8 @@ Our current two-stage categorization is a robust model:
 
 ## 3. Advanced API Usage (from GenAI Samples)
 
+**Reference Implementation:** For guidance, consult Google's GenAI API demo code, which can be found locally at `C:/Users/user/StudioProjects/mlkit/android/genai/app/src/main/java/com/google/mlkit/genai/demo`. This reference is particularly useful when implementing advanced features or ensuring adherence to best practices.
+
 ### a. Model Initialization and Configuration
 
 The GenAI models can be configured with specific options. For example, when using the `Summarizer`, you can specify the `InputType`, `OutputType`, and `Language`.
@@ -208,42 +210,5 @@ Practical tips for Memoiz
 - If Clipboard contains an image, run a quick on-device feature check; if available, produce a short caption and show it to the user for acceptance before saving.
 - Keep generated captions short (one or two sentences / a short phrase) to avoid cluttering the memo list.
 - For multilingual support, construct `ImageDescriptionOptions` according to the user's UI locale (English and Japanese supported by ML Kit GenAI samples). If a localized model is not available, fall back to English and display this fallback clearly to the user.
-- Log model availability and errors to help telemetry and to pre-warm downloads during idle periods with the user's permission.
-
-## 4. API Versioning
-
-The GenAI libraries we are using (`alpha`, `beta`) are not yet stable. Be prepared for breaking changes in future library updates. When updating dependencies, thoroughly test all AI-related functionality.
-
-## 5. Code Examples
-
-### Checking for User Consent
-
-Before making any potentially remote API call, check for user consent.
-
-```text
-// In your settings/preferences management
-suspend fun canUseCloudAi(): Boolean {
-    // This should read from a DataStore or SharedPreferences value
-    // that is controlled by the user in the Settings screen.
-    return userPreferences.isCloudAiEnabled()
-}
-
-// In your service (e.g., AiCategorizationService)
-// Note: replace the placeholder '...' with actual parameters in real code.
-suspend fun categorizeContent(content: String, params: Any) {
-    if (canUseCloudAi()) {
-        // Proceed with API call
-        val result = mlKitCategorizer.categorizeLocalized(content, sourceApp)
-        // ...
-    } else {
-        // Return a default or "Failure" state
-        return CategorizationResult(finalCategoryName = "FAILURE")
-    }
-}
+- Log model availability
 ```
-
-## 6. Passive Clipboard Capture Responsibilities
-
-- Memoiz no longer runs a foreground clipboard-monitoring service. Agents must respect this power-saving design and rely on user-triggered entry points only (Process Text action, share intents, clipboard button).
-- When adding new clipboard-related functionality, always confirm it is initiated by explicit user action and flows through `ContentProcessingLauncher` so WorkManager can handle heavy work off the main thread.
-- Documentation updates are mandatory whenever a new trigger or entry point is introduced so that privacy expectations remain transparent.
