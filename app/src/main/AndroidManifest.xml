@@ -51,6 +51,14 @@
             </intent-filter>
         </activity>
 
+        <activity
+            android:name=".ui.ProcessingDialogActivity"
+            android:exported="false"
+            android:theme="@style/Theme.Memoiz.Dialog"
+            android:taskAffinity=""
+            android:excludeFromRecents="true"
+            android:finishOnTaskLaunch="true" />
+
     </application>
 
 </manifest>

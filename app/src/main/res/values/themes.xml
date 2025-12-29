@@ -14,4 +14,13 @@
         <item name="windowSplashScreenAnimatedIcon">@mipmap/ic_launcher</item>
         <item name="postSplashScreenTheme">@style/Theme.Memoiz</item>
     </style>
+
+    <!-- Transparent dialog theme for quick status overlay -->
+    <style name="Theme.Memoiz.Dialog" parent="Theme.MaterialComponents.Dialog">
+        <item name="android:windowIsTranslucent">true</item>
+        <item name="android:windowIsFloating">true</item>
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:backgroundDimEnabled">false</item>
+        <item name="android:windowCloseOnTouchOutside">true</item>
+    </style>
 </resources>
