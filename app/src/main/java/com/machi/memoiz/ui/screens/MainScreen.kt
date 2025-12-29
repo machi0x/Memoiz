@@ -16,12 +16,16 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.work.Data
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
@@ -112,14 +116,32 @@ fun MainScreen(
                 .fillMaxSize()
                 .padding(padding)
         ) {
-            Image(
-                painter = painterResource(id = R.drawable.top_banner),
-                contentDescription = null,
+            // Top banner with app name overlay
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(56.dp),
-                contentScale = ContentScale.FillBounds
-            )
+                    .height(56.dp)
+            ) {
+                Image(
+                    painter = painterResource(id = R.drawable.top_banner),
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.FillBounds
+                )
+                
+                // App name text positioned to the right of cat character
+                Text(
+                    text = stringResource(id = R.string.app_name),
+                    modifier = Modifier
+                        .align(Alignment.CenterEnd)
+                        .padding(end = 16.dp),
+                    style = MaterialTheme.typography.headlineMedium.copy(
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 24.sp
+                    ),
+                    color = Color.White
+                )
+            }
 
             // Category filter chips
             CategoryFilterRow(
