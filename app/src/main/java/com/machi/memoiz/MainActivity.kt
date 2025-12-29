@@ -1,5 +1,3 @@
-@file:OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
-
 package com.machi.memoiz
 
 import android.os.Bundle
@@ -16,7 +14,6 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.machi.memoiz.data.MemoizDatabase
-import com.machi.memoiz.data.repository.CategoryRepository
 import com.machi.memoiz.data.repository.MemoRepository
 import com.machi.memoiz.ui.ViewModelFactory
 import com.machi.memoiz.ui.screens.MainScreen
@@ -28,7 +25,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
-    
+
     private lateinit var viewModelFactory: ViewModelFactory
     private var keepSplash = true
 
@@ -42,11 +39,10 @@ class MainActivity : ComponentActivity() {
 
         // Initialize database and repositories
         val database = MemoizDatabase.getDatabase(applicationContext)
-        val categoryRepository = CategoryRepository(database.categoryDao())
         val memoRepository = MemoRepository(database.memoDao())
 
         // Create ViewModelFactory
-        viewModelFactory = ViewModelFactory(categoryRepository, memoRepository)
+        viewModelFactory = ViewModelFactory(memoRepository)
 
         // Hide splash screen after 1.5 seconds
         lifecycleScope.launch {
@@ -67,7 +63,6 @@ class MainActivity : ComponentActivity() {
                         startDestination = "main"
                     ) {
                         composable("main") {
-                            // Specify the ViewModel type explicitly to avoid type inference errors
                             val viewModel: MainViewModel = viewModel(factory = viewModelFactory)
                             MainScreen(
                                 viewModel = viewModel,

@@ -2,9 +2,8 @@ package com.machi.memoiz.ui.screens
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.machi.memoiz.data.Memo
-import com.machi.memoiz.data.repository.CategoryRepository
 import com.machi.memoiz.data.repository.MemoRepository
+import com.machi.memoiz.domain.model.Memo
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
@@ -14,8 +13,7 @@ import kotlinx.coroutines.launch
 data class MemoGroup(val category: String, val memos: List<Memo>)
 
 class MainViewModel(
-    private val memoRepository: MemoRepository,
-    private val categoryRepository: CategoryRepository
+    private val memoRepository: MemoRepository
 ) : ViewModel() {
 
     val memoGroups: StateFlow<List<MemoGroup>> = memoRepository.getAllMemos()

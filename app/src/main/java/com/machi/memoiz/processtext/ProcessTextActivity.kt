@@ -12,7 +12,7 @@ import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.lifecycle.lifecycleScope
 import com.machi.memoiz.R
-import com.machi.memoiz.data.Memo
+import com.machi.memoiz.data.entity.MemoEntity
 import com.machi.memoiz.data.MemoizDatabase
 import com.machi.memoiz.service.MlKitCategorizer
 import com.machi.memoiz.service.determineSourceApp
@@ -51,12 +51,13 @@ class ProcessTextActivity : ComponentActivity() {
         if (text.isNullOrBlank()) return false
 
         val sourceApp = determineSourceApp(this)
-        val (category, subCategory) = categorizer.categorize(text, sourceApp) ?: return false
+        val (category, subCategory, summary) = categorizer.categorize(text, sourceApp) ?: return false
 
-        val memo = Memo(
+        val memo = MemoEntity(
             content = text,
             category = category ?: "Uncategorized",
             subCategory = subCategory,
+            summary = summary,
             sourceApp = sourceApp
         )
         db.memoDao().insert(memo)
@@ -70,22 +71,24 @@ class ProcessTextActivity : ComponentActivity() {
 
         return if (streamUri != null && sendIntent.type?.startsWith("image/") == true) {
             val bitmap = getBitmapFromUri(streamUri) ?: return false
-            val (category, subCategory) = categorizer.categorizeImage(bitmap, sourceApp) ?: return false
-            val memo = Memo(
+            val (category, subCategory, summary) = categorizer.categorizeImage(bitmap, sourceApp) ?: return false
+            val memo = MemoEntity(
                 content = text ?: "",
                 imageUri = streamUri.toString(),
                 category = category ?: "Image",
                 subCategory = subCategory,
+                summary = summary,
                 sourceApp = sourceApp
             )
             db.memoDao().insert(memo)
             true
         } else if (!text.isNullOrBlank()) {
-            val (category, subCategory) = categorizer.categorize(text, sourceApp) ?: return false
-            val memo = Memo(
+            val (category, subCategory, summary) = categorizer.categorize(text, sourceApp) ?: return false
+            val memo = MemoEntity(
                 content = text,
                 category = category ?: "Uncategorized",
                 subCategory = subCategory,
+                summary = summary,
                 sourceApp = sourceApp
             )
             db.memoDao().insert(memo)
