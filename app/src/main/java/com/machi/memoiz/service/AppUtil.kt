@@ -11,21 +11,20 @@ fun determineSourceApp(context: Context): String? {
     if (stats.isNullOrEmpty()) {
         return null
     }
-    var recentApp: String? = null
-    var lastTime = 0L
-    for (usageStats in stats) {
-        if (usageStats.lastTimeUsed > lastTime) {
-            recentApp = usageStats.packageName
-            lastTime = usageStats.lastTimeUsed
-        }
-    }
+    val sorted = stats.sortedByDescending { it.lastTimeUsed }
+    val memoizPackage = context.packageName
+    val firstNonMemoiz = sorted.firstOrNull { it.packageName != memoizPackage }
+    val candidate = firstNonMemoiz ?: sorted.first()
+    return resolveAppLabel(context, candidate.packageName)
+}
+
+private fun resolveAppLabel(context: Context, packageName: String?): String? {
+    packageName ?: return null
     return try {
         val pm = context.packageManager
-        val appInfo = pm.getApplicationInfo(recentApp!!, 0)
+        val appInfo = pm.getApplicationInfo(packageName, 0)
         pm.getApplicationLabel(appInfo).toString()
-    } catch (e: PackageManager.NameNotFoundException) {
-        null
-    } catch (e: Exception){
+    } catch (_: Exception) {
         null
     }
 }

@@ -21,6 +21,7 @@ class ClipboardProcessingWorker(
     companion object {
         const val KEY_CLIPBOARD_CONTENT = "clipboard_content"
         const val KEY_IMAGE_URI = "image_uri"
+        const val KEY_SOURCE_APP = "source_app"
     }
 
     override suspend fun doWork(): Result {
@@ -28,6 +29,7 @@ class ClipboardProcessingWorker(
         try {
             val content = inputData.getString(KEY_CLIPBOARD_CONTENT)
             val imageUri = inputData.getString(KEY_IMAGE_URI)
+            val providedSourceApp = inputData.getString(KEY_SOURCE_APP)
 
             if (content.isNullOrBlank() && imageUri.isNullOrBlank()) {
                 return Result.failure()
@@ -38,7 +40,7 @@ class ClipboardProcessingWorker(
             val memoRepository = MemoRepository(database.memoDao())
 
             // Try to get source app (UsageStats permission is checked inside UsageStatsHelper)
-            val sourceApp = try {
+            val sourceApp = providedSourceApp ?: try {
                 UsageStatsHelper(applicationContext).getLastForegroundApp()
             } catch (e: Exception) {
                 e.printStackTrace()

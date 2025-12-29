@@ -32,7 +32,7 @@ object ContentProcessingLauncher {
     /**
      * Enqueues a single categorization work request using provided text or image Uri.
      */
-    fun enqueueWork(context: Context, text: String?, imageUri: Uri?): Boolean {
+    fun enqueueWork(context: Context, text: String?, imageUri: Uri?, sourceApp: String? = null): Boolean {
         if (text.isNullOrBlank() && imageUri == null) {
             return false
         }
@@ -40,6 +40,7 @@ object ContentProcessingLauncher {
         val workData = Data.Builder().apply {
             text?.let { putString(ClipboardProcessingWorker.KEY_CLIPBOARD_CONTENT, it) }
             imageUri?.let { putString(ClipboardProcessingWorker.KEY_IMAGE_URI, it.toString()) }
+            sourceApp?.let { putString(ClipboardProcessingWorker.KEY_SOURCE_APP, it) }
         }.build()
 
         val workRequest = OneTimeWorkRequestBuilder<ClipboardProcessingWorker>()
