@@ -26,5 +26,6 @@
     <string name="error_category_name_empty">名前は空にできません</string>
     <string name="error_category_name_too_long">名前が長すぎます（最大50文字）</string>
     <string name="error_category_already_exists">このカテゴリは既に存在します</string>
+    <string name="no_matching_memos_found">一致するメモが見つかりません</string>
 </resources>
 
