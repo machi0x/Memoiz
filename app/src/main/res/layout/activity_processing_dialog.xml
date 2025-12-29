@@ -18,7 +18,7 @@
             android:id="@+id/dialog_icon"
             android:layout_width="40dp"
             android:layout_height="40dp"
-            android:src="@mipmap/ic_launcher"
+            android:src="@drawable/analyzing"
             android:contentDescription="@string/app_name" />
 
         <TextView
@@ -33,4 +33,3 @@
     </LinearLayout>
 
 </FrameLayout>
-
