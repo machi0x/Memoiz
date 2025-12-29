@@ -16,6 +16,7 @@ fun getGitCommitCount(): Int {
         process.waitFor(5, TimeUnit.SECONDS)
         process.inputStream.bufferedReader().readText().trim().toInt()
     } catch (e: Exception) {
+        // Gitが利用できない環境やエラー発生時のデフォルト値
         1
     }
 }
@@ -63,6 +64,7 @@ android {
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
+            excludes += "/META-INF/INDEX.LIST"
         }
     }
 }
@@ -107,6 +109,7 @@ dependencies {
 
     // Coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-guava:1.10.2")
 
     // ViewModel Compose
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.10.0")
@@ -115,20 +118,17 @@ dependencies {
     // DataStore for preferences
     implementation("androidx.datastore:datastore-preferences:1.2.0")
 
-    // ML Kit
-    implementation("com.google.mlkit:vision-common:17.3.0")
-    implementation("com.google.mlkit:genai-prompt:1.0.0-beta1")
+    // ML Kit GenAI (The correct on-device dependencies)
+    implementation("com.google.mlkit:genai-prompt:1.0.0-alpha1")
     implementation("com.google.mlkit:genai-image-description:1.0.0-beta1")
     implementation("com.google.mlkit:genai-summarization:1.0.0-beta1")
-    implementation("com.google.mlkit:genai-rewriting:1.0.0-beta1")
-    implementation("com.google.mlkit:genai-proofreading:1.0.0-beta1")
 
     // Coroutines helpers to await Tasks
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.10.2")
 
     // HTTP and HTML parsing
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
-    implementation("org.jsoup:jsoup:1.21.2")
+    implementation("org.jsoup:jsoup:1.17.2")
 
     // Firebase
     implementation(platform("com.google.firebase:firebase-bom:34.7.0"))

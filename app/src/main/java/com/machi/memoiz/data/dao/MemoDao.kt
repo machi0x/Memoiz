@@ -17,6 +17,9 @@ interface MemoDao {
     @Query("SELECT * FROM memos WHERE id = :memoId")
     suspend fun getMemoById(memoId: Long): MemoEntity?
     
+    @Query("SELECT * FROM memos WHERE category = :categoryName")
+    fun getMemosByCategoryName(categoryName: String): Flow<List<MemoEntity>>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(memo: MemoEntity): Long
     

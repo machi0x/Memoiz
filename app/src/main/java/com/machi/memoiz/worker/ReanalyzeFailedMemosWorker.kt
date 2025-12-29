@@ -4,9 +4,7 @@ import android.content.Context
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import com.machi.memoiz.data.MemoizDatabase
-import com.machi.memoiz.data.repository.CategoryRepository
 import com.machi.memoiz.data.repository.MemoRepository
-import com.machi.memoiz.domain.model.Memo
 import com.machi.memoiz.service.AiCategorizationService
 import kotlinx.coroutines.flow.first
 
@@ -23,41 +21,30 @@ class ReanalyzeFailedMemosWorker(
         val aiService = AiCategorizationService(applicationContext)
         try {
             val database = MemoizDatabase.getDatabase(applicationContext)
-            val categoryRepository = CategoryRepository(database.categoryDao())
             val memoRepository = MemoRepository(database.memoDao())
 
-            // Ensure Failure category exists (localized)
-            val failureCategoryId = categoryRepository.getOrCreateFailureCategory(applicationContext)
-
-            // Get memos currently assigned to Failure category
-            val failedMemos: List<Memo> = memoRepository.getMemosByCategory(failureCategoryId).first()
+            val failureLabel = "FAILURE"
+            val failedMemos = memoRepository.getMemosByCategoryName(failureLabel).first()
 
             if (failedMemos.isEmpty()) return Result.success()
 
             for (memo in failedMemos) {
                 try {
-                    val contentForCategorization = aiService.prepareContentForCategorization(memo.content, memo.imageUri)
+                    val updatedEntity = if (!memo.imageUri.isNullOrBlank()) {
+                        val bitmap = aiService.loadBitmapFromUri(memo.imageUri)
+                        bitmap?.let { aiService.processImage(it, memo.sourceApp, memo.imageUri) }
+                    } else {
+                        aiService.processText(memo.content, memo.sourceApp)
+                    }
 
-                    val result = aiService.categorizeWithUserCategories(
-                        contentForCategorization,
-                        categoryRepository,
-                        memo.sourceApp
-                    )
-
-                    if (result.finalCategoryName != "FAILURE") {
-                        // Find or create the category and update memo
-                        val categoryId = categoryRepository.findOrCreateCategory(
-                            result.finalCategoryName,
-                            isCustom = false,
-                            nameEn = result.finalCategoryNameEn,
-                            nameJa = result.finalCategoryNameJa
-                        )
-                        val updated = memo.copy(
-                            categoryId = categoryId,
-                            originalCategory = result.originalCategory,
-                            subCategory = result.subCategory
-                        )
-                        memoRepository.updateMemo(updated)
+                    if (updatedEntity != null && updatedEntity.category != failureLabel) {
+                        memoRepository.updateMemo(memo.copy(
+                            content = updatedEntity.content,
+                            imageUri = updatedEntity.imageUri,
+                            category = updatedEntity.category,
+                            subCategory = updatedEntity.subCategory,
+                            summary = updatedEntity.summary
+                        ))
                     }
 
                 } catch (e: Exception) {
