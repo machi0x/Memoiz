@@ -3,7 +3,9 @@ package com.machi.memoiz.ui
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
+import android.view.Gravity
 import android.view.MotionEvent
+import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.lifecycle.lifecycleScope
 import com.machi.memoiz.R
@@ -14,6 +16,14 @@ class ProcessingDialogActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_processing_dialog)
+
+        window?.apply {
+            setGravity(Gravity.BOTTOM)
+            setLayout(
+                WindowManager.LayoutParams.MATCH_PARENT,
+                WindowManager.LayoutParams.WRAP_CONTENT
+            )
+        }
 
         lifecycleScope.launch {
             delay(DISPLAY_DURATION_MS)
