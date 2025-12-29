@@ -1,20 +1,32 @@
 package com.machi.memoiz.service
 
 import android.content.Context
+import android.graphics.Bitmap
+import android.net.Uri
 import com.google.mlkit.common.MlKitException
+import com.google.mlkit.genai.imagedescription.ImageDescription
+import com.google.mlkit.genai.imagedescription.ImageDescriptionOptions
+import com.google.mlkit.genai.prompt.PromptRequest
+import com.google.mlkit.genai.prompt.Prompting
 import com.google.mlkit.genai.rewriting.Rewriting
 import com.google.mlkit.genai.rewriting.RewritingRequest
 import com.google.mlkit.genai.rewriting.RewritingResult
 import com.google.mlkit.genai.rewriting.RewriterOptions
+import com.google.mlkit.genai.summarization.Summarization
+import com.google.mlkit.genai.summarization.SummarizerOptions
+import com.google.mlkit.vision.common.InputImage
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import org.jsoup.Jsoup
 
 /**
  * Wrapper that calls ML Kit GenAI APIs to generate a short category
  * and optional sub-category from clipboard content.
  */
 class MlKitCategorizer(private val context: Context) {
-
     // Options for English (default) and Japanese outputs.
     private val rewriterOptionsEn by lazy {
         RewriterOptions.builder(context)
@@ -38,8 +50,26 @@ class MlKitCategorizer(private val context: Context) {
     }
 
     // Use ML Kit GenAI client for text generation.
-    // Accept RewriterOptions so callers can request English or Japanese output as needed.
-    private suspend fun generateText(promptText: String, options: RewriterOptions = rewriterOptionsEn): String? {
+    private suspend fun generateText(promptText: String): String? {
+        val client = Prompting.getClient(context)
+        return try {
+            val request = PromptRequest.builder()
+                .setPrompt(promptText)
+                .build()
+            val result = client.generate(request).await()
+            result.candidates.firstOrNull()?.text?.trim()
+        } catch (e: MlKitException) {
+            e.printStackTrace()
+            null
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        } finally {
+            client.close()
+        }
+    }
+
+    private suspend fun generateTextLegacy(promptText: String, options: RewriterOptions = rewriterOptionsEn): String? {
         var client: com.google.mlkit.genai.rewriting.Rewriter? = null
         return try {
             val request = RewritingRequest.builder(promptText).build()
@@ -60,17 +90,55 @@ class MlKitCategorizer(private val context: Context) {
         }
     }
 
-    suspend fun categorize(content: String, sourceApp: String?): String? {
-        try {
+    suspend fun categorize(content: String, sourceApp: String?): Pair<String?, String?>? {
+        return try {
+            // 1-1: URL
+            if (content.startsWith("http")) {
+                val webContent = fetchUrlContent(content) ?: return Pair("ウェブサイト", null)
+                val subCategory = generateText(buildCategorizationPrompt(webContent, sourceApp))
+                val summary = summarize(webContent)
+                return Pair("ウェブサイト", subCategory)
+            }
+
+            // 1-4: Garbage text
+            if (content.length < 4) {
+                return Pair("分類不能", null)
+            }
+
+            // 1-2 & 1-3: Long and short text
             val shortened = if (content.length > 800) {
                 summarize(content) ?: content
             } else content
 
-            val promptText = buildCategorizationPrompt(shortened, sourceApp)
-            return generateText(promptText)?.lines()?.firstOrNull()?.trim()
+            val category = generateText(buildCategorizationPrompt(shortened, sourceApp))
+            val subCategory = generateSubCategory(content, category ?: "", sourceApp)
+            Pair(category, subCategory)
         } catch (e: Exception) {
             e.printStackTrace()
-            return null
+            null
+        }
+    }
+
+    suspend fun categorizeImage(bitmap: Bitmap, sourceApp: String?): Pair<String?, String?>? {
+        return try {
+            val description = describeImage(bitmap)
+            Pair("画像", description)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
+    }
+
+    private suspend fun fetchUrlContent(url: String): String? = withContext(Dispatchers.IO) {
+        try {
+            val client = OkHttpClient()
+            val request = Request.Builder().url(url).build()
+            val response = client.newCall(request).execute()
+            val html = response.body?.string() ?: return@withContext null
+            Jsoup.parse(html).body().text()
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
         }
     }
 
@@ -100,7 +168,7 @@ class MlKitCategorizer(private val context: Context) {
             sb.append("\n\nAI suggested category:\n")
             sb.append(suggestion)
             sb.append("\n\nCandidates:\n")
-            candidates.forEachIndexed { idx, c -> sb.append("${idx+1}. $c\n") }
+            candidates.forEachIndexed { idx, c -> sb.append("${idx + 1}. $c\n") }
             sb.append("\nReply with EXACT candidate name or NONE.")
             val promptText = sb.toString()
 
@@ -151,8 +219,8 @@ class MlKitCategorizer(private val context: Context) {
             promptJaSb.append("\n\n回答は日本語で短いカテゴリ名のみを返してください。説明は不要です。")
             val promptJa = promptJaSb.toString()
 
-            val enGenerated = generateText(promptEn, rewriterOptionsEn)?.trim()
-            val jaGenerated = generateText(promptJa, rewriterOptionsJa)?.trim()
+            val enGenerated = generateTextLegacy(promptEn, rewriterOptionsEn)?.trim()
+            val jaGenerated = generateTextLegacy(promptJa, rewriterOptionsJa)?.trim()
 
             val en = enGenerated?.lines()?.firstOrNull()?.trim()?.ifEmpty { null }
             val ja = jaGenerated?.lines()?.firstOrNull()?.trim()?.ifEmpty { null }
@@ -184,7 +252,7 @@ class MlKitCategorizer(private val context: Context) {
             sb.append("\nAI suggested label (ja):\n")
             sb.append(suggestionJa ?: "")
             sb.append("\n\nCandidates:\n")
-            candidates.forEachIndexed { idx, c -> sb.append("${idx+1}. $c\n") }
+            candidates.forEachIndexed { idx, c -> sb.append("${idx + 1}. $c\n") }
             sb.append("\nReply with EXACT candidate name or NONE.")
             val promptText = sb.toString()
 
@@ -220,26 +288,32 @@ class MlKitCategorizer(private val context: Context) {
      * Returns null on failure.
      */
     suspend fun summarize(text: String): String? {
-        try {
-            val promptText = "Summarize the following text in one short sentence:\n" + text.take(2000)
-            return generateText(promptText)?.trim()
-        } catch (e: Exception) {
+        val summarizer = Summarization.getClient(
+            SummarizerOptions.builder()
+                .setOutputType(SummarizerOptions.OutputType.ONE_SENTENCE)
+                .build(context)
+        )
+        return try {
+            summarizer.summarize(text).await()
+        } catch (e: MlKitException) {
             e.printStackTrace()
-            return null
+            null
+        } finally {
+            summarizer.close()
         }
     }
 
-    /**
-     * Best-effort image description using ML Kit Image Description API if available.
-     * Accepts a content URI string and returns a textual description or null.
-     */
-    suspend fun describeImageUri(imageUriString: String): String {
-        try {
-            val promptText = "Provide a brief description for an image located at: $imageUriString. If you cannot access the image, reply with 'Image'."
-            return generateText(promptText)?.trim() ?: "Image"
-        } catch (e: Exception) {
+    private suspend fun describeImage(bitmap: Bitmap): String? {
+        val imageDescriber = ImageDescription.getClient(ImageDescriptionOptions.builder().build(context))
+        val inputImage = InputImage.fromBitmap(bitmap, 0)
+        return try {
+            val descriptions = imageDescriber.describe(inputImage).await()
+            descriptions.firstOrNull()?.text
+        } catch (e: MlKitException) {
             e.printStackTrace()
-            return "Image"
+            null
+        } finally {
+            imageDescriber.close()
         }
     }
 

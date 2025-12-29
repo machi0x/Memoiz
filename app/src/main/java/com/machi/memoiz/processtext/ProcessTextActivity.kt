@@ -2,23 +2,31 @@ package com.machi.memoiz.processtext
 
 import android.app.Activity
 import android.content.Intent
+import android.graphics.Bitmap
+import android.graphics.ImageDecoder
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
+import android.provider.MediaStore
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.lifecycle.lifecycleScope
 import com.machi.memoiz.R
-import com.machi.memoiz.service.ContentProcessingLauncher
+import com.machi.memoiz.data.Memo
+import com.machi.memoiz.data.MemoizDatabase
+import com.machi.memoiz.service.MlKitCategorizer
+import com.machi.memoiz.service.determineSourceApp
 import kotlinx.coroutines.launch
 
-/**
- * Handles ACTION_PROCESS_TEXT and ACTION_SEND intents to forward selected text or shared content
- * into Memoiz's background categorization pipeline.
- */
 class ProcessTextActivity : ComponentActivity() {
+
+    private lateinit var categorizer: MlKitCategorizer
+    private lateinit var db: MemoizDatabase
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        categorizer = MlKitCategorizer(this)
+        db = MemoizDatabase.getDatabase(this)
 
         lifecycleScope.launch {
             val handled = when (intent?.action) {
@@ -38,14 +46,71 @@ class ProcessTextActivity : ComponentActivity() {
         }
     }
 
-    private fun handleProcessText(): Boolean {
+    private suspend fun handleProcessText(): Boolean {
         val text = intent?.getCharSequenceExtra(Intent.EXTRA_PROCESS_TEXT)?.toString()
-        return ContentProcessingLauncher.enqueueWork(this, text, null)
+        if (text.isNullOrBlank()) return false
+
+        val sourceApp = determineSourceApp(this)
+        val (category, subCategory) = categorizer.categorize(text, sourceApp) ?: return false
+
+        val memo = Memo(
+            content = text,
+            category = category ?: "Uncategorized",
+            subCategory = subCategory,
+            sourceApp = sourceApp
+        )
+        db.memoDao().insert(memo)
+        return true
     }
 
-    private fun handleSend(sendIntent: Intent): Boolean {
+    private suspend fun handleSend(sendIntent: Intent): Boolean {
         val text = sendIntent.getStringExtra(Intent.EXTRA_TEXT)
         val streamUri = sendIntent.getParcelableExtra<Uri>(Intent.EXTRA_STREAM)
-        return ContentProcessingLauncher.enqueueWork(this, text, streamUri)
+        val sourceApp = determineSourceApp(this)
+
+        return if (streamUri != null && sendIntent.type?.startsWith("image/") == true) {
+            val bitmap = getBitmapFromUri(streamUri) ?: return false
+            val (category, subCategory) = categorizer.categorizeImage(bitmap, sourceApp) ?: return false
+            val memo = Memo(
+                content = text ?: "",
+                imageUri = streamUri.toString(),
+                category = category ?: "Image",
+                subCategory = subCategory,
+                sourceApp = sourceApp
+            )
+            db.memoDao().insert(memo)
+            true
+        } else if (!text.isNullOrBlank()) {
+            val (category, subCategory) = categorizer.categorize(text, sourceApp) ?: return false
+            val memo = Memo(
+                content = text,
+                category = category ?: "Uncategorized",
+                subCategory = subCategory,
+                sourceApp = sourceApp
+            )
+            db.memoDao().insert(memo)
+            true
+        } else {
+            false
+        }
+    }
+
+    private fun getBitmapFromUri(uri: Uri): Bitmap? {
+        return try {
+            if (Build.VERSION.SDK_INT < 28) {
+                MediaStore.Images.Media.getBitmap(this.contentResolver, uri)
+            } else {
+                val source = ImageDecoder.createSource(this.contentResolver, uri)
+                ImageDecoder.decodeBitmap(source)
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        categorizer.close()
     }
 }
