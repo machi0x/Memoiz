@@ -35,4 +35,5 @@ Tap the clipboard button or share content to start.</string>
     <string name="error_category_name_empty">Name cannot be empty</string>
     <string name="error_category_name_too_long">Name too long (max 50 characters)</string>
     <string name="error_category_already_exists">This category already exists</string>
+    <string name="no_matching_memos_found">No matching memos found</string>
 </resources>

@@ -146,7 +146,7 @@ fun MainScreen(
                 ) {
                     Text(
                         text = if (searchQuery.isNotEmpty() || categoryFilter != null) {
-                            "No matching memos found"
+                            stringResource(R.string.no_matching_memos_found)
                         } else {
                             context.getString(R.string.empty_state_message)
                         },
