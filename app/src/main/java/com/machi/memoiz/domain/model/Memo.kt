@@ -8,10 +8,9 @@ data class Memo(
     val id: Long = 0,
     val content: String,
     val imageUri: String? = null,
-    val categoryId: Long,
-    val categoryName: String? = null,
-    val originalCategory: String? = null,
+    val category: String,
     val subCategory: String? = null,
+    val summary: String? = null,
     val sourceApp: String? = null,
     val createdAt: Long = System.currentTimeMillis()
 )

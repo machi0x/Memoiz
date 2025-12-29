@@ -90,39 +90,39 @@ class MlKitCategorizer(private val context: Context) {
         }
     }
 
-    suspend fun categorize(content: String, sourceApp: String?): Pair<String?, String?>? {
+    suspend fun categorize(content: String, sourceApp: String?): Triple<String?, String?, String?>? {
         return try {
             // 1-1: URL
             if (content.startsWith("http")) {
-                val webContent = fetchUrlContent(content) ?: return Pair("ウェブサイト", null)
+                val webContent = fetchUrlContent(content) ?: return Triple("Web site", null, null)
                 val subCategory = generateText(buildCategorizationPrompt(webContent, sourceApp))
                 val summary = summarize(webContent)
-                return Pair("ウェブサイト", subCategory)
+                return Triple("Web site", subCategory, summary)
             }
 
             // 1-4: Garbage text
             if (content.length < 4) {
-                return Pair("分類不能", null)
+                return Triple("Uncategorizable", null, null)
             }
 
             // 1-2 & 1-3: Long and short text
-            val shortened = if (content.length > 800) {
-                summarize(content) ?: content
-            } else content
+            val summary = if (content.length > 800) {
+                summarize(content)
+            } else null
 
-            val category = generateText(buildCategorizationPrompt(shortened, sourceApp))
+            val category = generateText(buildCategorizationPrompt(content, sourceApp))
             val subCategory = generateSubCategory(content, category ?: "", sourceApp)
-            Pair(category, subCategory)
+            Triple(category, subCategory, summary)
         } catch (e: Exception) {
             e.printStackTrace()
             null
         }
     }
 
-    suspend fun categorizeImage(bitmap: Bitmap, sourceApp: String?): Pair<String?, String?>? {
+    suspend fun categorizeImage(bitmap: Bitmap, sourceApp: String?): Triple<String?, String?, String?>? {
         return try {
             val description = describeImage(bitmap)
-            Pair("画像", description)
+            Triple("Image", description, description)
         } catch (e: Exception) {
             e.printStackTrace()
             null
