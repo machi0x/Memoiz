@@ -13,8 +13,8 @@ fun determineSourceApp(context: Context): String? {
     }
     val sorted = stats.sortedByDescending { it.lastTimeUsed }
     val memoizPackage = context.packageName
-    val firstNonMemoiz = sorted.firstOrNull { it.packageName != memoizPackage }
-    val candidate = firstNonMemoiz ?: sorted.first()
+    val excludedPackages = setOf(memoizPackage, INTENT_RESOLVER_PACKAGE)
+    val candidate = sorted.firstOrNull { it.packageName !in excludedPackages } ?: sorted.first()
     return resolveAppLabel(context, candidate.packageName)
 }
 
@@ -28,3 +28,5 @@ private fun resolveAppLabel(context: Context, packageName: String?): String? {
         null
     }
 }
+
+private const val INTENT_RESOLVER_PACKAGE = "com.android.intentresolver"
