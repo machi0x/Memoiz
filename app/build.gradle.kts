@@ -68,6 +68,19 @@ android {
     }
 }
 
+// Gradle tasks to print version information for CI/CD
+tasks.register("printVersionName") {
+    doLast {
+        println(android.defaultConfig.versionName)
+    }
+}
+
+tasks.register("printVersionCode") {
+    doLast {
+        println(android.defaultConfig.versionCode)
+    }
+}
+
 dependencies {
     // Core Android
     implementation("androidx.core:core-ktx:1.17.0")
