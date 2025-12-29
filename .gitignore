@@ -34,7 +34,7 @@ app/google-services.json
 *.hprof
 
 # Release artifacts and baseline profiles
-app/release/baselineProfile/
+app/release/**
 
 # AI
 genai_sample/
