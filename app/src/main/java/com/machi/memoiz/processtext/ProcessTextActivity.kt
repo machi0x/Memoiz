@@ -4,7 +4,6 @@ import android.app.Activity
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
-import android.widget.Toast
 import androidx.activity.ComponentActivity
 import com.machi.memoiz.R
 import com.machi.memoiz.service.ContentProcessingLauncher
@@ -24,7 +23,6 @@ class ProcessTextActivity : ComponentActivity() {
             Toast.makeText(this, R.string.nothing_to_categorize, Toast.LENGTH_SHORT).show()
             setResult(Activity.RESULT_CANCELED)
         } else {
-            Toast.makeText(this, R.string.categorization_started, Toast.LENGTH_SHORT).show()
             setResult(Activity.RESULT_OK)
         }
 
