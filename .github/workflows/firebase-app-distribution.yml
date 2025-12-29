@@ -48,13 +48,30 @@ jobs:
         run: |
           echo "$GOOGLE_SERVICES_JSON" > app/google-services.json
       
+      # Decode keystore for release signing
+      - name: Decode Keystore
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+        run: |
+          echo "$KEYSTORE_BASE64" | base64 -d > app/release.keystore
+      
       # Build debug APK
       - name: Build Debug APK
         run: ./gradlew assembleDebug --stacktrace
       
-      # Build release APK
-      - name: Build Release APK
-        run: ./gradlew assembleRelease --stacktrace
+      # Build signed release APK
+      - name: Build Signed Release APK
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          ./gradlew assembleRelease \
+            -Pandroid.injected.signing.store.file=app/release.keystore \
+            -Pandroid.injected.signing.store.password=$KEYSTORE_PASSWORD \
+            -Pandroid.injected.signing.key.alias=$KEY_ALIAS \
+            -Pandroid.injected.signing.key.password=$KEY_PASSWORD \
+            --stacktrace
       
       # Get version name and code for artifacts
       - name: Get version information
