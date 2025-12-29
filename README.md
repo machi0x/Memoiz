@@ -1,26 +1,25 @@
 # Memoiz
 
-Android app that automatically categorizes clipboard content (text, images) using AI and saves them as organized memos.
+An intelligent Android app that automatically categorizes text, links, and images using on-device AI and saves them as organized memos.
 
 ## Features
 
 ### Core Functionality
-- **AI-Powered Categorization**: Uses on-device AI (Gemini Nano / AICore placeholder) for privacy-focused, zero-cost categorization
-- **2-Stage Categorization Process**:
-  1. First stage: AI performs free categorization based on content analysis
-  2. Second stage: AI merges with user's custom categories or favorite categories when possible
-- **Passive Clipboard Capture**: Respects Android 10+ clipboard restrictions by using:
-  - System "Process Text" action (long-press selected text → "Categorize with Memoiz")
-  - Android share sheet (`ACTION_SEND` / `ACTION_SEND_MULTIPLE`) entry for any shareable text or image
-  - In-app "Paste from clipboard" button that reads clipboard only on tap
-- **Background Processing**: Heavy AI processing handled by WorkManager to avoid blocking UI
+- **Multi-Modal AI Processing**: Uses a sophisticated pipeline of on-device ML Kit GenAI APIs to understand and categorize different types of content.
+- **Intelligent Text Analysis**:
+  - **URLs**: Fetches the content of web pages to generate a relevant sub-category and a concise summary.
+  - **Long Articles**: Automatically creates a one-sentence summary for long blocks of text.
+  - **Short Text**: Identifies meaningful short text and assigns a relevant category.
+- **Image Recognition**: Analyzes images to generate a descriptive sub-category, making them searchable and organized.
+- **Content-Specific Categorization**: Assigns special categories for "Web site", "Image", and "Uncategorizable" content, providing a clear and organized structure.
+- **Privacy-First**: All AI processing happens on-device, ensuring your data never leaves your device.
+- **Seamless Integration**: Captures content via the system's "Process Text" action, the Android share sheet (`ACTION_SEND`), and an in-app paste button.
 
 ### User Features
-- **Custom Categories**: Users can create up to 20 custom "My Categories" that AI prioritizes
-- **Favorite Categories**: Any category can be marked as favorite, and AI respects these in the merge stage
-- **Category Management**: Full CRUD operations on categories
-- **Memo Organization**: View memos filtered by category
-- **Clean Material 3 UI**: Modern Jetpack Compose interface
+- **Grouped Memos**: Memos are automatically grouped by their AI-generated category.
+- **Detailed Memo Cards**: Each memo displays its content, sub-category, summary (if available), source app, and timestamp.
+- **Category and Memo Management**: Full CRUD operations for both memos and entire category groups.
+- **Modern UI**: A clean and intuitive interface built with Jetpack Compose and Material 3.
 
 ## Architecture
 
@@ -28,98 +27,48 @@ Android app that automatically categorizes clipboard content (text, images) usin
 - **Language**: Kotlin
 - **UI**: Jetpack Compose with Material 3
 - **Database**: Room for persistent storage
-- **Background Work**: WorkManager for async processing
-- **AI**: Placeholder for Gemini Nano / AICore integration (on-device LLM)
+- **Asynchronous Operations**: Kotlin Coroutines for background tasks.
+- **AI**: A multi-API pipeline using ML Kit's on-device GenAI capabilities:
+    - `genai-prompt`: For open-ended categorization and sub-category generation.
+    - `genai-summarization`: For creating concise summaries of long text.
+    - `genai-image-description`: For generating descriptive captions for images.
+- **Networking**: OkHttp and Jsoup for fetching and parsing web content from URLs.
 - **Navigation**: Compose Navigation
-- **Minimum SDK**: 29 (Android 10) - to properly handle clipboard restrictions
+- **Minimum SDK**: 29 (Android 10)
 
-### Project Structure
-```
-app/src/main/java/com/machika/memoiz/
-├── data/
-│   ├── entity/          # Room entities (CategoryEntity, MemoEntity)
-│   ├── dao/             # Data Access Objects
-│   ├── repository/      # Repository pattern implementation
-│   └── MemoizDatabase.kt
-├── domain/
-│   ├── model/           # Domain models
-│   └── repository/      # Repository interfaces
-├── service/
-│   ├── AiCategorizationService.kt      # 2-stage AI categorization
-│   ├── ClipboardMonitorService.kt      # Notification-based clipboard access
-│   └── ClipboardTileService.kt         # Quick Settings Tile
-├── worker/
-│   └── ClipboardProcessingWorker.kt    # Background processing
-└── ui/
-    ├── screens/         # Compose screens (Main, Settings)
-    ├── components/      # Reusable UI components
-    └── theme/           # Material 3 theme
-```
-
-## Database Schema
-
-### Category Table
-- `id`: Primary key
-- `name`: Category name
-- `isFavorite`: User marked as favorite
-- `isCustom`: User's custom category (max 20)
-- `createdAt`: Timestamp
-
-### Memo Table
-- `id`: Primary key
-- `content`: Text content from clipboard
-- `imageUri`: Optional image URI
-- `categoryId`: Foreign key to Category
-- `originalCategory`: AI's first-stage categorization result
-- `createdAt`: Timestamp
-
-## AI Categorization Process
-
-### Stage 1: Free Categorization
-AI analyzes clipboard content and assigns a category based on content analysis:
-- URLs → "Links"
-- Tasks/TODOs → "Tasks"
-- Code snippets → "Code"
-- Shopping items → "Shopping"
-- etc.
-
-### Stage 2: Smart Merge
-AI checks if the first-stage category can be merged with:
-1. User's custom categories (priority)
-2. User's favorite categories (secondary)
-3. Uses semantic similarity to match categories
-
-If no match is found, the first-stage category is used as-is.
+### Data Processing Flow
+1.  **Input**: The app receives data (text, URL, or image) from the user.
+2.  **Triage**: It identifies the content type.
+3.  **Processing**:
+    - **URL**: Fetches web content, then passes it to the Prompt and Summarization APIs.
+    - **Image**: Uses the Image Description API to generate a caption.
+    - **Text**: Passes the text to the Prompt and (if necessary) Summarization APIs.
+4.  **Storage**: The structured result (category, sub-category, summary, etc.) is saved to the Room database.
+5.  **Display**: The main screen displays the memos, grouped by category, in a `LazyColumn`.
 
 ## How to Use
 
-1. **Install the app** on an Android device (API 29+)
-2. **Grant permissions** for notifications and clipboard access
-3. **Add custom categories** (optional) in Settings - up to 20
-4. **Mark favorites** (optional) to help AI prioritize certain categories
-5. **Copy or select content** to categorize
-6. **Trigger save** via:
-   - Select text → tap "Categorize with Memoiz" in Process Text menu
-   - Share any text/image → choose Memoiz from share sheet
-   - Open Memoiz → tap "Paste from clipboard"
-7. **View organized memos** by category in the main screen
+1. **Install the app** on an Android device (API 29+).
+2. **Grant permissions** as requested.
+3. **Share content** to be categorized:
+   - Select text → tap "Categorize with Memoiz" in the context menu.
+   - Share any text, URL, or image → choose Memoiz from the share sheet.
+   - Open Memoiz → tap the "Paste from clipboard" button.
+4. **View your organized memos**, grouped by category, in the main screen.
 
 ## Privacy
 
-- **On-device processing**: All AI categorization happens on-device (when Gemini Nano is integrated)
-- **No cloud uploads**: Your data never leaves your device
-- **Explicit consent**: Clipboard is only accessed when you explicitly share/select/paste
-- **Respects Android restrictions**: Fully compliant with Android 10+ clipboard access restrictions
+- **On-Device Processing**: All AI analysis happens on your device. Your content is never sent to the cloud.
+- **Explicit Action Required**: The app only processes content when you explicitly share or paste it.
+- **Compliant**: Fully respects Android 10+ clipboard and data access restrictions.
 
 ## Future Enhancements
 
-- [ ] Full Gemini Nano / AICore integration (currently placeholder)
-- [ ] Image content analysis and categorization
-- [ ] Export memos to various formats
-- [ ] Search functionality across memos
-- [ ] Memo editing capabilities
-- [ ] Category color coding
-- [ ] Backup and restore functionality
+- [ ] Implement `ACTION_SEND_MULTIPLE` to handle sharing multiple items at once.
+- [ ] Allow user to create and manage their own custom categories.
+- [ ] Allow user to edit memos and their categories.
+- [ ] Full search functionality across all memos.
+- [ ] Export and backup functionality.
 
 ## Requirements
 
@@ -129,15 +78,8 @@ If no match is found, the first-stage category is used as-is.
 
 ## CI/CD
 
-This project includes a GitHub Actions workflow for automated builds and Firebase App Distribution:
-
-- **Automated APK builds**: Builds both debug and release APKs on every push to `main` or `develop` branches
-- **Firebase App Distribution**: Automatically distributes debug builds to testers
-- **Manual dispatch**: Trigger builds manually with custom release notes
-- **Version tagging**: Supports semantic versioning with git tags (e.g., `v1.0.0`)
-
-For setup instructions and required secrets, see [.github/workflows/README.md](.github/workflows/README.md)
+This project includes a GitHub Actions workflow for automated builds and Firebase App Distribution. For more details, see [.github/workflows/README.md](.github/workflows/README.md)
 
 ## License
 
-See LICENSE file for details.
+See the LICENSE file for details.

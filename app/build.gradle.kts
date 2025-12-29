@@ -121,9 +121,14 @@ dependencies {
     implementation("com.google.mlkit:genai-proofreading:1.0.0-beta1")
     implementation("com.google.mlkit:genai-rewriting:1.0.0-beta1")
     implementation("com.google.mlkit:genai-summarization:1.0.0-beta1")
+    implementation("com.google.mlkit:genai-image-description:1.0.0-beta1")
 
     // Coroutines helpers to await Tasks
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.10.2")
+
+    // HTTP and HTML parsing
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
+    implementation("org.jsoup:jsoup:1.17.2")
 
     // Firebase
     implementation(platform("com.google.firebase:firebase-bom:34.7.0"))
