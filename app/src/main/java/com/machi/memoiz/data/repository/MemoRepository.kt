@@ -5,6 +5,7 @@ import com.machi.memoiz.data.entity.MemoEntity
 import com.machi.memoiz.domain.model.Memo
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.mapNotNull
 
 class MemoRepository(private val memoDao: MemoDao) {
 
@@ -32,6 +33,12 @@ class MemoRepository(private val memoDao: MemoDao) {
 
     suspend fun deleteMemosByCategoryName(categoryName: String) {
         memoDao.deleteMemosByCategoryName(categoryName)
+    }
+
+    fun getMemosByCategoryName(categoryName: String): Flow<List<Memo>> {
+        return memoDao.getMemosByCategoryName(categoryName).map { entities ->
+            entities.map { it.toDomain() }
+        }
     }
 
     private fun MemoEntity.toDomain(): Memo {

@@ -36,11 +36,7 @@ fun SettingsScreen(
     
     val context = LocalContext.current
     val hasUsageStatsPermission = remember {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            UsageStatsHelper(context).hasUsageStatsPermission()
-        } else {
-            false
-        }
+        UsageStatsHelper(context).hasUsageStatsPermission()
     }
     
     var showAddDialog by remember { mutableStateOf(false) }

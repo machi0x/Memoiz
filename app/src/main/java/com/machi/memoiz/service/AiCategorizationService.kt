@@ -1,6 +1,9 @@
 package com.machi.memoiz.service
 
 import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.ImageDecoder
+import android.net.Uri
 import com.machi.memoiz.data.entity.MemoEntity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -42,17 +45,34 @@ class AiCategorizationService(private val context: Context) {
     /**
      * Processes an image, gets a description from the AI, and builds a MemoEntity.
      */
-    suspend fun processImage(bitmap: android.graphics.Bitmap, sourceApp: String?): MemoEntity? = withContext(Dispatchers.Default) {
+    suspend fun processImage(bitmap: Bitmap, sourceApp: String?, originalImageUri: String? = null): MemoEntity? = withContext(Dispatchers.Default) {
         try {
             val (category, subCategory, summary) = mlKitCategorizer.categorizeImage(bitmap, sourceApp) ?: return@withContext null
             MemoEntity(
                 content = "", // No text content for images
-                imageUri = "", // URI will be set in ProcessTextActivity
+                imageUri = originalImageUri,
                 category = category ?: "Image",
                 subCategory = subCategory,
                 summary = summary,
                 sourceApp = sourceApp
             )
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
+    }
+
+    suspend fun processImageUri(imageUri: String, sourceApp: String?): MemoEntity? {
+        val bitmap = loadBitmapFromUri(imageUri) ?: return null
+        return processImage(bitmap, sourceApp, imageUri)
+    }
+
+    fun loadBitmapFromUri(imageUri: String?): Bitmap? {
+        if (imageUri.isNullOrBlank()) return null
+        return try {
+            val uri = Uri.parse(imageUri)
+            val source = ImageDecoder.createSource(context.contentResolver, uri)
+            ImageDecoder.decodeBitmap(source)
         } catch (e: Exception) {
             e.printStackTrace()
             null

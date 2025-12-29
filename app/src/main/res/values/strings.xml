@@ -2,6 +2,9 @@
 <resources>
     <string name="app_name">Memoiz</string>
     <string name="failure_category">Analysis failure</string>
+    <string name="category_web_site">Web site</string>
+    <string name="category_image">Image</string>
+    <string name="category_uncategorizable">Uncategorizable</string>
     <string name="fab_paste_clipboard">Paste from clipboard</string>
     <string name="share_to_memoiz">Share to Memoiz</string>
     <string name="tile_label">Save clipboard</string>

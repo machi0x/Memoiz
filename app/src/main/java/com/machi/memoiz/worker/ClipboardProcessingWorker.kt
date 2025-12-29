@@ -4,7 +4,6 @@ import android.content.Context
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import com.machi.memoiz.data.MemoizDatabase
-import com.machi.memoiz.data.repository.CategoryRepository
 import com.machi.memoiz.data.repository.MemoRepository
 import com.machi.memoiz.service.AiCategorizationService
 import com.machi.memoiz.domain.model.Memo
@@ -36,7 +35,6 @@ class ClipboardProcessingWorker(
 
             // Initialize database and repositories
             val database = MemoizDatabase.getDatabase(applicationContext)
-            val categoryRepository = CategoryRepository(database.categoryDao())
             val memoRepository = MemoRepository(database.memoDao())
 
             // Try to get source app (UsageStats permission is checked inside UsageStatsHelper)
@@ -47,42 +45,23 @@ class ClipboardProcessingWorker(
                 null
             }
 
-            // Prepare content for categorization (uses image description when needed)
-            val contentForCategorization = aiService.prepareContentForCategorization(content, imageUri)
-
-            // Perform AI categorization with user's categories
-            val categorizationResult = aiService.categorizeWithUserCategories(
-                contentForCategorization,
-                categoryRepository,
-                sourceApp
-            )
-
-            // If categorization failed (finalCategory == FAILURE), mark as Failure
-            val finalCategoryName = categorizationResult.finalCategoryName
-
-            // Find or create the category, passing localized labels when available
-            val categoryId = if (finalCategoryName == "FAILURE") {
-                categoryRepository.getOrCreateFailureCategory(applicationContext)
+            val memoEntity = if (imageUri != null) {
+                aiService.processImageUri(imageUri, sourceApp)
             } else {
-                categoryRepository.findOrCreateCategory(
-                    finalCategoryName,
-                    isCustom = false,
-                    nameEn = categorizationResult.finalCategoryNameEn,
-                    nameJa = categorizationResult.finalCategoryNameJa
+                aiService.processText(content.orEmpty(), sourceApp)
+            } ?: return Result.failure()
+
+            memoRepository.insertMemo(
+                Memo(
+                    content = memoEntity.content,
+                    imageUri = memoEntity.imageUri,
+                    category = memoEntity.category,
+                    subCategory = memoEntity.subCategory,
+                    summary = memoEntity.summary,
+                    sourceApp = memoEntity.sourceApp,
+                    createdAt = memoEntity.createdAt
                 )
-            }
-
-            // Create and save the memo with sub-category and source app
-            val memo = Memo(
-                content = content ?: "",
-                imageUri = imageUri,
-                categoryId = categoryId,
-                originalCategory = categorizationResult.originalCategory,
-                subCategory = categorizationResult.subCategory,
-                sourceApp = sourceApp
             )
-
-            memoRepository.insertMemo(memo)
 
             return Result.success()
 

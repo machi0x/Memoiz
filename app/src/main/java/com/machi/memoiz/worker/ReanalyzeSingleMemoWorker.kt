@@ -4,7 +4,6 @@ import android.content.Context
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import com.machi.memoiz.data.MemoizDatabase
-import com.machi.memoiz.data.repository.CategoryRepository
 import com.machi.memoiz.data.repository.MemoRepository
 import com.machi.memoiz.service.AiCategorizationService
 
@@ -28,33 +27,26 @@ class ReanalyzeSingleMemoWorker(
             if (memoId <= 0L) return Result.failure()
 
             val database = MemoizDatabase.getDatabase(applicationContext)
-            val categoryRepository = CategoryRepository(database.categoryDao())
             val memoRepository = MemoRepository(database.memoDao())
 
             val memo = memoRepository.getMemoById(memoId) ?: return Result.success()
 
-            // Prepare content for categorization
-            val contentForCategorization = aiService.prepareContentForCategorization(memo.content, memo.imageUri)
+            val updatedEntity = if (!memo.imageUri.isNullOrBlank()) {
+                val bitmap = aiService.loadBitmapFromUri(memo.imageUri)
+                bitmap?.let { aiService.processImage(it, memo.sourceApp) }
+            } else {
+                aiService.processText(memo.content, memo.sourceApp)
+            }
 
-            val result = aiService.categorizeWithUserCategories(
-                contentForCategorization,
-                categoryRepository,
-                memo.sourceApp
-            )
-
-            if (result.finalCategoryName != "FAILURE") {
-                val categoryId = categoryRepository.findOrCreateCategory(
-                    result.finalCategoryName,
-                    isCustom = false,
-                    nameEn = result.finalCategoryNameEn,
-                    nameJa = result.finalCategoryNameJa
-                )
-                val updated = memo.copy(
-                    categoryId = categoryId,
-                    originalCategory = result.originalCategory,
-                    subCategory = result.subCategory
-                )
-                memoRepository.updateMemo(updated)
+            if (updatedEntity != null) {
+                memoRepository.updateMemo(memo.copy(
+                    content = updatedEntity.content,
+                    imageUri = updatedEntity.imageUri,
+                    category = updatedEntity.category,
+                    subCategory = updatedEntity.subCategory,
+                    summary = updatedEntity.summary,
+                    sourceApp = memo.sourceApp
+                ))
             }
 
             return Result.success()

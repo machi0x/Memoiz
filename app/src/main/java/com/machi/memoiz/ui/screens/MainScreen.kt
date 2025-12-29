@@ -24,7 +24,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.machi.memoiz.R
-import com.machi.memoiz.data.Memo
+import com.machi.memoiz.domain.model.Memo
 import com.machi.memoiz.service.ContentProcessingLauncher
 import com.machi.memoiz.ui.theme.MemoizTheme
 import java.text.SimpleDateFormat

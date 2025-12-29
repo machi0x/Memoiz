@@ -1,12 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">メモイズ</string>
-    <string name="tile_label">クリップボードを保存</string>
-    <string name="failure_category">解析失敗</string>
-    <string name="fab_paste_clipboard">クリップボードから貼り付け</string>
-    <string name="share_to_memoiz">Memoiz で共有</string>
-    <string name="empty_state_message">メモはまだありません。
-クリップボードボタンをタップするか、共有して開始してください。</string>
-    <string name="nothing_to_categorize">分類するテキストや画像がありません。</string>
-    <string name="categorization_started">分類をバックグラウンドで開始しました。</string>
+    <string name="category_web_site">ウェブサイト</string>
+    <string name="category_image">画像</string>
+    <string name="category_uncategorizable">分類不能</string>
 </resources>
+
