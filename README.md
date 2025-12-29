@@ -127,6 +127,17 @@ If no match is found, the first-stage category is used as-is.
 - Kotlin 1.9+
 - Gradle 8.2+
 
+## CI/CD
+
+This project includes a GitHub Actions workflow for automated builds and Firebase App Distribution:
+
+- **Automated APK builds**: Builds both debug and release APKs on every push to `main` or `develop` branches
+- **Firebase App Distribution**: Automatically distributes debug builds to testers
+- **Manual dispatch**: Trigger builds manually with custom release notes
+- **Version tagging**: Supports semantic versioning with git tags (e.g., `v1.0.0`)
+
+For setup instructions and required secrets, see [.github/workflows/README.md](.github/workflows/README.md)
+
 ## License
 
 See LICENSE file for details.
