@@ -23,9 +23,12 @@ fun getGitCommitCount(): Int {
 
 // Get keystore file path from gradle properties or environment variables
 fun getKeystoreFile(): String {
-    return findProperty("android.injected.signing.store.file") as String?
+    val path = findProperty("android.injected.signing.store.file") as String?
         ?: System.getenv("KEYSTORE_FILE")
         ?: "release.keystore"
+    
+    // If path starts with "app/", remove it since we're already in the app/ directory context
+    return path.removePrefix("app/")
 }
 
 android {
