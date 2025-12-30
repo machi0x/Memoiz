@@ -70,4 +70,8 @@ Tap the clipboard button or share content to start.</string>
     <string name="label_source_app">From: %1$s</string>
     <string name="cd_clear_search">Clear search</string>
     <string name="cd_no_memo_image">Illustration showing an empty memo list</string>
+    <string name="dialog_delete_category_title">Delete Category</string>
+    <string name="dialog_delete_category_message">Deleting this category will also delete all associated memos. Are you sure?</string>
+    <string name="dialog_delete_memo_title">Delete Memo</string>
+    <string name="dialog_delete_memo_message">Are you sure you want to delete this memo?</string>
 </resources>
