@@ -13,7 +13,7 @@
     <string name="tile_label">Save clipboard</string>
     <string name="empty_state_message">No memos yet.
 Tap the clipboard button or share content to start.</string>
-    <string name="nothing_to_categorize">No text or image to categorize.</string>
+    <string name="nothing_to_categorize">No text or image in clipboard to categorize.</string>
     <string name="categorization_started">Categorization started in background.</string>
     
     <!-- Main UI strings -->
