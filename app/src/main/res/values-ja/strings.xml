@@ -20,6 +20,7 @@
     <string name="dialog_delete_message">このメモを削除してもよろしいですか？</string>
     <string name="dialog_delete_confirm">削除</string>
     <string name="label_source_app">出典: %1$s</string>
+    <string name="cd_no_memo_image">メモがまだ無いことを示すイラスト</string>
     <string name="drawer_all_categories">すべて</string>
     <string name="drawer_settings">設定</string>
     <string name="drawer_add_category">カスタムカテゴリを追加</string>
