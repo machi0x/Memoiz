@@ -203,7 +203,10 @@ fun MainScreen(
                                 deleteTarget = group.category
                                 showDeleteConfirmationDialog = true
                             },
-                            onDeleteMemo = { memo -> viewModel.deleteMemo(memo) },
+                            onDeleteMemo = { memo ->
+                                deleteTarget = memo
+                                showDeleteConfirmationDialog = true
+                            },
                             onReanalyzeMemo = { memo ->
                                 viewModel.reanalyzeMemo(context, memo.id)
                             },
@@ -240,11 +243,19 @@ fun MainScreen(
     }
 
     if (showDeleteConfirmationDialog) {
+        val isCategory = deleteTarget is String
         AlertDialog(
             onDismissRequest = { showDeleteConfirmationDialog = false },
+            icon = {
+                Icon(
+                    imageVector = if (isCategory) Icons.Default.Warning else Icons.Default.Delete,
+                    contentDescription = null,
+                    tint = if (isCategory) MaterialTheme.colorScheme.error else LocalContentColor.current
+                )
+            },
             title = {
                 Text(
-                    text = if (deleteTarget is String) {
+                    text = if (isCategory) {
                         stringResource(R.string.dialog_delete_category_title)
                     } else {
                         stringResource(R.string.dialog_delete_memo_title)
@@ -252,21 +263,29 @@ fun MainScreen(
                 )
             },
             text = {
-                Text(
-                    text = if (deleteTarget is String) {
-                        stringResource(R.string.dialog_delete_category_message)
-                    } else {
-                        stringResource(R.string.dialog_delete_memo_message)
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        text = if (isCategory) {
+                            stringResource(R.string.dialog_delete_category_message)
+                        } else {
+                            stringResource(R.string.dialog_delete_memo_message)
+                        }
+                    )
+                    if (isCategory) {
+                        Text(
+                            text = stringResource(R.string.dialog_delete_category_warning),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.error
+                        )
                     }
-                )
+                }
             },
             confirmButton = {
                 TextButton(
                     onClick = {
-                        if (deleteTarget is String) {
-                            viewModel.deleteCategory(deleteTarget as String)
-                        } else if (deleteTarget is Memo) {
-                            viewModel.deleteMemo(deleteTarget as Memo)
+                        when (val target = deleteTarget) {
+                            is String -> viewModel.deleteCategory(target)
+                            is Memo -> viewModel.deleteMemo(target)
                         }
                         showDeleteConfirmationDialog = false
                     }
@@ -486,7 +505,6 @@ private fun MemoCard(
     onDelete: () -> Unit,
     onReanalyze: () -> Unit
 ) {
-    var showDeleteDialog by remember { mutableStateOf(false) }
     val context = LocalContext.current
 
     // Hoist string resources to the composable context
@@ -573,7 +591,7 @@ private fun MemoCard(
                     }
                 }
 
-                IconButton(onClick = { showDeleteDialog = true }) {
+                IconButton(onClick = { onDelete() }) {
                     Icon(Icons.Default.Delete, deleteString)
                 }
             }
@@ -621,29 +639,6 @@ private fun MemoCard(
         }
 
         HorizontalDivider(modifier = Modifier.padding(top = 16.dp))
-    }
-
-    if (showDeleteDialog) {
-        AlertDialog(
-            onDismissRequest = { showDeleteDialog = false },
-            title = { Text("Delete Memo") },
-            text = { Text("Are you sure you want to delete this memo?") },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        onDelete()
-                        showDeleteDialog = false
-                    }
-                ) {
-                    Text("Delete")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showDeleteDialog = false }) {
-                    Text("Cancel")
-                }
-            }
-        )
     }
 }
 

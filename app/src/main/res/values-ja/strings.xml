@@ -4,7 +4,7 @@
     <string name="failure_category">分類失敗</string>
     <string name="failure_category_canonical">分類失敗</string>
     <string name="settings_about_title">このアプリについて</string>
-    <string name="settings_about_description">Memoizは家族と作ったクリップボードノートです。心を込めて描いてくれた家族に感謝します。</string>
+    <string name="settings_about_description">Memoizはクリップボードの内容を素早くまとめて再利用できるノートです。</string>
     <string name="settings_about_button">このアプリについて</string>
     <string name="dialog_close">閉じる</string>
     <string name="settings_title">設定</string>
@@ -17,8 +17,11 @@
     <string name="cd_sort">並び順を変更</string>
     <string name="cd_delete_category">カテゴリを削除</string>
     <string name="cd_delete_memo">メモを削除</string>
-    <string name="dialog_delete_title">メモを削除</string>
-    <string name="dialog_delete_message">このメモを削除してもよろしいですか？</string>
+    <string name="dialog_delete_category_title">カテゴリを削除</string>
+    <string name="dialog_delete_category_message">このカテゴリを削除すると関連するメモもすべて削除されます。本当によろしいですか？</string>
+    <string name="dialog_delete_category_warning">このカテゴリ内のメモは元に戻せません。</string>
+    <string name="dialog_delete_memo_title">メモを削除</string>
+    <string name="dialog_delete_memo_message">このメモを削除してもよろしいですか？</string>
     <string name="dialog_delete_confirm">削除</string>
     <string name="label_source_app">出典: %1$s</string>
     <string name="cd_no_memo_image">メモがまだ無いことを示すイラスト</string>
