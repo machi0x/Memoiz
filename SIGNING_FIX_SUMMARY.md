@@ -32,9 +32,16 @@ Added a comprehensive signing configuration to `app/build.gradle.kts` that:
    ```kotlin
    // Helper function to get keystore file path
    fun getKeystoreFile(): String {
-       return findProperty("android.injected.signing.store.file") as String?
+       val path = findProperty("android.injected.signing.store.file") as String?
            ?: System.getenv("KEYSTORE_FILE")
            ?: "release.keystore"
+       
+       // If path starts with "app/", remove it since we're already in the app/ directory context
+       return if (path.startsWith("app/")) {
+           path.substring(4)
+       } else {
+           path
+       }
    }
 
    signingConfigs {
@@ -104,6 +111,36 @@ The fix should resolve the workflow build failures. To verify:
 2. Push to `main` or `develop` branch
 3. Workflow should complete successfully
 4. Both debug and release APKs should be built and uploaded as artifacts
+
+## Additional Fix (December 2024)
+
+### Path Duplication Issue
+
+**Problem**: The workflow was still failing with the error:
+```
+property 'signingConfigData$gradle_core.signingConfigData.storeFile' specifies file 
+'/home/runner/work/Memoiz/Memoiz/app/app/***.keystore' which doesn't exist.
+```
+
+**Root Cause**: When the workflow passes `-Pandroid.injected.signing.store.file=app/release.keystore`, and the build script (which is in the `app/` directory) calls `file(getKeystoreFile())`, the path becomes relative to the `app/` directory, resulting in `app/app/release.keystore`.
+
+**Solution**: Updated `getKeystoreFile()` function to strip the `app/` prefix when present:
+```kotlin
+fun getKeystoreFile(): String {
+    val path = findProperty("android.injected.signing.store.file") as String?
+        ?: System.getenv("KEYSTORE_FILE")
+        ?: "release.keystore"
+    
+    // If path starts with "app/", remove it since we're already in the app/ directory context
+    return if (path.startsWith("app/")) {
+        path.substring(4)
+    } else {
+        path
+    }
+}
+```
+
+This ensures that the keystore file is correctly resolved to `release.keystore` relative to the `app/` directory.
 
 ## Benefits
 
