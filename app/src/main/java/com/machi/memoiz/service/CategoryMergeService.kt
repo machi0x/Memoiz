@@ -5,7 +5,7 @@ import com.google.mlkit.genai.prompt.Generation
 import com.google.mlkit.genai.prompt.GenerationConfig
 import com.google.mlkit.genai.prompt.TextPart
 import com.google.mlkit.genai.prompt.generateContentRequest
-import com.machi.memoiz.domain.model.CategoryConstants
+import com.machi.memoiz.util.FailureCategoryHelper
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -21,6 +21,8 @@ class CategoryMergeService(private val context: Context) {
         Generation.getClient(GenerationConfig.Builder().build())
     }
 
+    private fun isFailureLabel(value: String?): Boolean = FailureCategoryHelper.isFailureLabel(context, value)
+
     data class MergeInput(
         val aiCategory: String,
         val aiSubCategory: String? = null,
@@ -35,9 +37,9 @@ class CategoryMergeService(private val context: Context) {
     )
 
     suspend fun merge(input: MergeInput): MergeResult = withContext(Dispatchers.IO) {
-        if (CategoryConstants.matchesFailure(input.aiCategory)) {
-            val failureLabel = CategoryConstants.getFailureLabel()
-            return@withContext MergeResult(failureLabel, mergedIntoCustom = false, description = failureLabel)
+        if (isFailureLabel(input.aiCategory)) {
+            val canonical = FailureCategoryHelper.currentLabel(context)
+            return@withContext MergeResult(canonical, mergedIntoCustom = false, description = canonical)
         }
         val prompt = buildPrompt(input)
         val request = generateContentRequest(TextPart(prompt)) { }
@@ -48,7 +50,7 @@ class CategoryMergeService(private val context: Context) {
         val raw = text?.takeIf { it.isNotBlank() }
         val sanitized = when {
             raw == null -> input.aiCategory
-            CategoryConstants.matchesFailure(raw) -> input.aiCategory
+            isFailureLabel(raw) -> input.aiCategory
             else -> raw
         }
         val finalCategory = sanitized
@@ -77,7 +79,7 @@ class CategoryMergeService(private val context: Context) {
             input.aiSubCategory?.let { appendLine("Context: $it") }
             if (fixed.isNotBlank()) appendLine(fixed)
             if (poolText.isNotBlank()) appendLine(poolText)
-            appendLine("Do not map anything into the special failure labels \"FAILURE\" or \"分類失敗\" unless the suggestion already equals one of them, and never merge those labels into other names.")
+            appendLine("Do not map anything into the special failure label \"" + FailureCategoryHelper.currentLabel(context) + "\" unless the suggestion already equals it, and never merge that label into other names.")
             appendLine("If the suggestion matches or is a subset/synonym of an existing label, return that exact existing label. Otherwise return the suggestion itself.")
             appendLine("Never invent explanations. Respond with only a single category label.")
         }

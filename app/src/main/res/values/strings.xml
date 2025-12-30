@@ -2,6 +2,9 @@
 <resources>
     <string name="app_name">Memoiz</string>
     <string name="failure_category">Analysis failure</string>
+    <string name="failure_category_en">FAILURE</string>
+    <string name="failure_category_ja">分類失敗</string>
+    <string name="failure_category_canonical">Analysis failure</string>
     <string name="category_web_site">Web site</string>
     <string name="category_image">Image</string>
     <string name="category_uncategorizable">Uncategorizable</string>

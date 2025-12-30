@@ -37,4 +37,7 @@ interface MemoDao {
 
     @Query("SELECT DISTINCT category FROM memos")
     suspend fun getDistinctCategories(): List<String>
+
+    @Query("SELECT * FROM memos WHERE category IN (:categoryNames)")
+    suspend fun getMemosByCategories(categoryNames: List<String>): List<MemoEntity>
 }
