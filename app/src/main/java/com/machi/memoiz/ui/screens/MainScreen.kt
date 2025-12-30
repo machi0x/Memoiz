@@ -30,6 +30,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.machi.memoiz.R
 import com.machi.memoiz.domain.model.Memo
+import com.machi.memoiz.domain.model.CategoryConstants
 import com.machi.memoiz.service.ContentProcessingLauncher
 import com.machi.memoiz.ui.theme.MemoizTheme
 import kotlinx.coroutines.launch
@@ -50,10 +51,21 @@ fun MainScreen(
     val customCategories by viewModel.customCategories.collectAsState()
     val expandedCategories by viewModel.expandedCategories.collectAsState()
     val context = LocalContext.current
-    
-    val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
-    
+
+    var toastMessage by remember { mutableStateOf<String?>(null) }
+    toastMessage?.let {
+        LaunchedEffect(it) {
+            Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
+            toastMessage = null
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        viewModel.scheduleDailyFailureReanalyze(context)
+    }
+
+    val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     var showSortDialog by remember { mutableStateOf(false) }
     var showAddCategoryDialog by remember { mutableStateOf(false) }
 
@@ -169,7 +181,15 @@ fun MainScreen(
                             isExpanded = group.category in expandedCategories,
                             onHeaderClick = { viewModel.toggleCategoryExpanded(group.category) },
                             onDeleteCategory = { viewModel.deleteCategory(group.category) },
-                            onDeleteMemo = { memo -> viewModel.deleteMemo(memo) }
+                            onDeleteMemo = { memo -> viewModel.deleteMemo(memo) },
+                            onReanalyzeMemo = { memo ->
+                                viewModel.reanalyzeMemo(context, memo.id)
+                                toastMessage = context.getString(R.string.toast_reanalyze_enqueued)
+                            },
+                            onReanalyzeCategory = {
+                                viewModel.reanalyzeFailureBatch(context)
+                                toastMessage = context.getString(R.string.toast_reanalyze_enqueued)
+                            }
                         )
                     }
                 }
@@ -315,7 +335,9 @@ private fun CategoryAccordion(
     isExpanded: Boolean,
     onHeaderClick: () -> Unit,
     onDeleteCategory: () -> Unit,
-    onDeleteMemo: (Memo) -> Unit
+    onDeleteMemo: (Memo) -> Unit,
+    onReanalyzeMemo: (Memo) -> Unit,
+    onReanalyzeCategory: () -> Unit
 ) {
     Card(
         modifier = Modifier.fillMaxWidth()
@@ -350,8 +372,15 @@ private fun CategoryAccordion(
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
-                IconButton(onClick = onDeleteCategory) {
-                    Icon(Icons.Default.Delete, "Delete Category")
+                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    if (group.category == CategoryConstants.FAILURE_CATEGORY) {
+                        IconButton(onClick = onReanalyzeCategory) {
+                            Icon(Icons.Default.Refresh, stringResource(R.string.action_reanalyze_failures))
+                        }
+                    }
+                    IconButton(onClick = onDeleteCategory) {
+                        Icon(Icons.Default.Delete, "Delete Category")
+                    }
                 }
             }
 
@@ -364,7 +393,11 @@ private fun CategoryAccordion(
                 Column {
                     HorizontalDivider()
                     group.memos.forEach { memo ->
-                        MemoCard(memo = memo, onDelete = { onDeleteMemo(memo) })
+                        MemoCard(
+                            memo = memo,
+                            onDelete = { onDeleteMemo(memo) },
+                            onReanalyze = { onReanalyzeMemo(memo) }
+                        )
                     }
                 }
             }
@@ -375,7 +408,8 @@ private fun CategoryAccordion(
 @Composable
 private fun MemoCard(
     memo: Memo,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    onReanalyze: () -> Unit
 ) {
     var showDeleteDialog by remember { mutableStateOf(false) }
     val context = LocalContext.current
@@ -409,6 +443,9 @@ private fun MemoCard(
             Row(
                 horizontalArrangement = Arrangement.spacedBy(4.dp)
             ) {
+                IconButton(onClick = onReanalyze) {
+                    Icon(Icons.Default.Refresh, stringResource(R.string.action_reanalyze))
+                }
                 // Action buttons based on content type
                 when {
                     // Image memo - open image

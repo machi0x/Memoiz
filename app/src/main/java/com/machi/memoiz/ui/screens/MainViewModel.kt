@@ -1,12 +1,21 @@
 package com.machi.memoiz.ui.screens
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.machi.memoiz.data.datastore.PreferencesDataStoreManager
 import com.machi.memoiz.data.repository.MemoRepository
 import com.machi.memoiz.domain.model.Memo
+import com.machi.memoiz.worker.ReanalyzeFailedMemosWorker
+import com.machi.memoiz.worker.ReanalyzeSingleMemoWorker
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import androidx.work.Data
+import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.PeriodicWorkRequestBuilder
+import androidx.work.WorkManager
+import java.util.concurrent.TimeUnit
 
 data class MemoGroup(val category: String, val memos: List<Memo>)
 
@@ -142,5 +151,29 @@ class MainViewModel(
         viewModelScope.launch {
             memoRepository.deleteMemosByCategoryName(categoryName)
         }
+    }
+
+    fun reanalyzeMemo(context: Context, memoId: Long) {
+        val data = Data.Builder().putLong(ReanalyzeSingleMemoWorker.KEY_MEMO_ID, memoId).build()
+        val request = OneTimeWorkRequestBuilder<ReanalyzeSingleMemoWorker>()
+            .setInputData(data)
+            .build()
+        WorkManager.getInstance(context.applicationContext).enqueue(request)
+    }
+
+    fun reanalyzeFailureBatch(context: Context) {
+        val request = OneTimeWorkRequestBuilder<ReanalyzeFailedMemosWorker>().build()
+        WorkManager.getInstance(context.applicationContext).enqueue(request)
+    }
+
+    fun scheduleDailyFailureReanalyze(context: Context) {
+        val request = PeriodicWorkRequestBuilder<ReanalyzeFailedMemosWorker>(1, TimeUnit.DAYS)
+            .build()
+        WorkManager.getInstance(context.applicationContext)
+            .enqueueUniquePeriodicWork(
+                "daily_failure_reanalyze",
+                ExistingPeriodicWorkPolicy.UPDATE,
+                request
+            )
     }
 }

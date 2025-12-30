@@ -4,8 +4,11 @@ import android.content.Context
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import com.machi.memoiz.data.MemoizDatabase
+import com.machi.memoiz.data.datastore.PreferencesDataStoreManager
 import com.machi.memoiz.data.repository.MemoRepository
+import com.machi.memoiz.domain.model.CategoryConstants
 import com.machi.memoiz.service.AiCategorizationService
+import com.machi.memoiz.service.CategoryMergeService
 import kotlinx.coroutines.flow.first
 
 /**
@@ -18,12 +21,18 @@ class ReanalyzeFailedMemosWorker(
 ) : CoroutineWorker(context, params) {
 
     override suspend fun doWork(): Result {
-        val aiService = AiCategorizationService(applicationContext)
+        val database = MemoizDatabase.getDatabase(applicationContext)
+        val memoRepository = MemoRepository(database.memoDao())
+        val existingCategories = memoRepository.getDistinctCategories()
+        val preferences = PreferencesDataStoreManager(applicationContext).userPreferencesFlow.first()
+        val aiService = AiCategorizationService(
+            applicationContext,
+            CategoryMergeService(applicationContext),
+            existingCategories,
+            preferences.customCategories
+        )
+        val failureLabel = CategoryConstants.getFailureLabel()
         try {
-            val database = MemoizDatabase.getDatabase(applicationContext)
-            val memoRepository = MemoRepository(database.memoDao())
-
-            val failureLabel = "FAILURE"
             val failedMemos = memoRepository.getMemosByCategoryName(failureLabel).first()
 
             if (failedMemos.isEmpty()) return Result.success()
@@ -37,7 +46,7 @@ class ReanalyzeFailedMemosWorker(
                         aiService.processText(memo.content, memo.sourceApp)
                     }
 
-                    if (updatedEntity != null && updatedEntity.category != failureLabel) {
+                    if (updatedEntity != null && !CategoryConstants.matchesFailure(updatedEntity.category)) {
                         memoRepository.updateMemo(memo.copy(
                             content = updatedEntity.content,
                             imageUri = updatedEntity.imageUri,

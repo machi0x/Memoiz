@@ -34,4 +34,7 @@ interface MemoDao {
     
     @Query("DELETE FROM memos WHERE category = :categoryName")
     suspend fun deleteMemosByCategoryName(categoryName: String)
+
+    @Query("SELECT DISTINCT category FROM memos")
+    suspend fun getDistinctCategories(): List<String>
 }
