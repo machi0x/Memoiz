@@ -39,6 +39,9 @@ class MainViewModel(
     private val _categoryFilter = MutableStateFlow<String?>(null)
     val categoryFilter: StateFlow<String?> = _categoryFilter.asStateFlow()
 
+    private val _memoTypeFilter = MutableStateFlow<String?>(null)
+    val memoTypeFilter: StateFlow<String?> = _memoTypeFilter.asStateFlow()
+
     // Expand/collapse state for accordion
     private val _expandedCategories = MutableStateFlow<Set<String>>(emptySet())
     val expandedCategories: StateFlow<Set<String>> = _expandedCategories.asStateFlow()
@@ -61,13 +64,21 @@ class MainViewModel(
         memoRepository.getAllMemos(),
         _searchQuery,
         _sortMode,
-        _categoryFilter
-    ) { memos, query, mode, filter ->
-        // Filter by category
-        var filtered = if (filter != null) {
-            memos.filter { it.category == filter }
+        _categoryFilter,
+        _memoTypeFilter
+    ) { memos, query, mode, filter, typeFilter ->
+        // Filter by memo type
+        var filtered = if (typeFilter != null) {
+            memos.filter { it.memoType == typeFilter }
         } else {
             memos
+        }
+
+        // Filter by category
+        filtered = if (filter != null) {
+            filtered.filter { it.category == filter }
+        } else {
+            filtered
         }
 
         // Filter by search query
@@ -113,6 +124,10 @@ class MainViewModel(
 
     fun setCategoryFilter(category: String?) {
         _categoryFilter.value = category
+    }
+
+    fun setMemoTypeFilter(memoType: String?) {
+        _memoTypeFilter.value = memoType
     }
 
     fun toggleCategoryExpanded(category: String) {

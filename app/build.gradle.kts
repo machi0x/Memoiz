@@ -166,6 +166,9 @@ dependencies {
     // HTTP and HTML parsing
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
     implementation("org.jsoup:jsoup:1.17.2")
+    
+    // Image loading
+    implementation("io.coil-kt:coil-compose:2.5.0")
 
     // Firebase
     implementation(platform("com.google.firebase:firebase-bom:34.7.0"))

@@ -57,6 +57,7 @@ class ClipboardProcessingWorker(
                 Memo(
                     content = memoEntity.content,
                     imageUri = memoEntity.imageUri,
+                    memoType = memoEntity.memoType,
                     category = memoEntity.category,
                     subCategory = memoEntity.subCategory,
                     summary = memoEntity.summary,
