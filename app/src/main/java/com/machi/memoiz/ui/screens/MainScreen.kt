@@ -31,7 +31,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.machi.memoiz.R
 import com.machi.memoiz.domain.model.Memo
 import com.machi.memoiz.service.ContentProcessingLauncher
@@ -61,7 +60,6 @@ fun MainScreen(
     toastMessage?.let {
         LaunchedEffect(it) {
             Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
-            toastMessage = null
         }
     }
 
