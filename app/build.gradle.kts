@@ -21,6 +21,13 @@ fun getGitCommitCount(): Int {
     }
 }
 
+// Get keystore file path from gradle properties or environment variables
+fun getKeystoreFile(): String {
+    return findProperty("android.injected.signing.store.file") as String?
+        ?: System.getenv("KEYSTORE_FILE")
+        ?: "release.keystore"
+}
+
 android {
     namespace = "com.machi.memoiz"
     compileSdk = 36
@@ -44,9 +51,6 @@ android {
             // Get signing configuration from gradle properties or environment variables
             // This supports both CI/CD (via -Pandroid.injected.signing.* parameters)
             // and local builds (if a keystore file is available)
-            val keystoreFile = findProperty("android.injected.signing.store.file") as String?
-                ?: System.getenv("KEYSTORE_FILE")
-                ?: "release.keystore"
             val keystorePassword = findProperty("android.injected.signing.store.password") as String?
                 ?: System.getenv("KEYSTORE_PASSWORD")
                 ?: ""
@@ -57,7 +61,7 @@ android {
                 ?: System.getenv("KEY_PASSWORD")
                 ?: ""
 
-            storeFile = file(keystoreFile)
+            storeFile = file(getKeystoreFile())
             storePassword = keystorePassword
             keyAlias = keyAliasName
             keyPassword = keyAliasPassword
@@ -72,10 +76,7 @@ android {
                 "proguard-rules.pro"
             )
             // Apply signing config only if keystore file exists
-            val keystoreFile = findProperty("android.injected.signing.store.file") as String?
-                ?: System.getenv("KEYSTORE_FILE")
-                ?: "release.keystore"
-            if (file(keystoreFile).exists()) {
+            if (file(getKeystoreFile()).exists()) {
                 signingConfig = signingConfigs.getByName("release")
             }
         }
