@@ -31,6 +31,12 @@ Tap the clipboard button or share content to start.</string>
     <string name="action_reanalyze">Re-analyze</string>
     <string name="action_reanalyze_failures">Re-analyze failures</string>
 
+    <!-- General actions -->
+    <string name="action_delete">Delete</string>
+
+    <!-- Category actions -->
+    <string name="action_delete_category">Delete category</string>
+
     <!-- Custom category dialog -->
     <string name="dialog_add_category_title">Add Custom Category</string>
     <string name="dialog_add_category_message">Enter a name for your custom category:</string>
@@ -63,4 +69,5 @@ Tap the clipboard button or share content to start.</string>
     <string name="dialog_delete_confirm">Delete</string>
     <string name="label_source_app">From: %1$s</string>
     <string name="cd_clear_search">Clear search</string>
+    <string name="cd_no_memo_image">Illustration showing an empty memo list</string>
 </resources>

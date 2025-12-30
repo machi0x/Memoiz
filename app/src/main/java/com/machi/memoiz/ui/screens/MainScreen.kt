@@ -27,6 +27,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -142,7 +143,7 @@ fun MainScreen(
             },
             floatingActionButton = {
                 ExtendedFloatingActionButton(
-                    text = { Text(text = context.getString(R.string.fab_paste_clipboard)) },
+                    text = { Text(text = stringResource(R.string.fab_paste_clipboard)) },
                     icon = { Icon(Icons.Default.ContentPaste, contentDescription = null) },
                     onClick = {
                         val enqueued = ContentProcessingLauncher.enqueueFromClipboard(context)
@@ -176,7 +177,7 @@ fun MainScreen(
                             text = if (searchQuery.isNotEmpty() || categoryFilter != null) {
                                 stringResource(R.string.no_matching_memos_found)
                             } else {
-                                context.getString(R.string.empty_state_message)
+                                stringResource(R.string.empty_state_message)
                             },
                             style = MaterialTheme.typography.bodyLarge,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -202,11 +203,9 @@ fun MainScreen(
                             onDeleteMemo = { memo -> viewModel.deleteMemo(memo) },
                             onReanalyzeMemo = { memo ->
                                 viewModel.reanalyzeMemo(context, memo.id)
-                                toastMessage = context.getString(R.string.toast_reanalyze_enqueued)
                             },
                             onReanalyzeCategory = {
                                 viewModel.reanalyzeFailureBatch(context)
-                                toastMessage = context.getString(R.string.toast_reanalyze_enqueued)
                             }
                         )
                     }
@@ -367,6 +366,8 @@ private fun CategoryAccordion(
     onReanalyzeMemo: (Memo) -> Unit,
     onReanalyzeCategory: () -> Unit
 ) {
+    val reanalyzeFailuresString = stringResource(R.string.action_reanalyze_failures)
+    val deleteCategoryString = stringResource(R.string.action_delete_category)
     Card(
         modifier = Modifier.fillMaxWidth()
     ) {
@@ -403,11 +404,11 @@ private fun CategoryAccordion(
                 Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                     if (FailureCategoryHelper.isFailureLabel(context, group.category)) {
                         IconButton(onClick = onReanalyzeCategory) {
-                            Icon(Icons.Default.Refresh, stringResource(R.string.action_reanalyze_failures))
+                            Icon(Icons.Default.Refresh, reanalyzeFailuresString)
                         }
                     }
                     IconButton(onClick = onDeleteCategory) {
-                        Icon(Icons.Default.Delete, "Delete Category")
+                        Icon(Icons.Default.Delete, deleteCategoryString)
                     }
                 }
             }
@@ -442,6 +443,12 @@ private fun MemoCard(
     var showDeleteDialog by remember { mutableStateOf(false) }
     val context = LocalContext.current
 
+    // Hoist string resources to the composable context
+    val reanalyzeString = stringResource(R.string.action_reanalyze)
+    val openString = stringResource(R.string.action_open)
+    val shareString = stringResource(R.string.action_share)
+    val deleteString = stringResource(R.string.action_delete)
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -472,7 +479,7 @@ private fun MemoCard(
                 horizontalArrangement = Arrangement.spacedBy(4.dp)
             ) {
                 IconButton(onClick = onReanalyze) {
-                    Icon(Icons.Default.Refresh, stringResource(R.string.action_reanalyze))
+                    Icon(Icons.Default.Refresh, reanalyzeString)
                 }
                 // Action buttons based on content type
                 when {
@@ -489,7 +496,7 @@ private fun MemoCard(
                                 Toast.makeText(context, "Cannot open image", Toast.LENGTH_SHORT).show()
                             }
                         }) {
-                            Icon(Icons.Default.OpenInNew, stringResource(R.string.action_open))
+                            Icon(Icons.Default.OpenInNew, openString)
                         }
                     }
                     // URL memo - open URL
@@ -503,7 +510,7 @@ private fun MemoCard(
                                 Toast.makeText(context, "Cannot open URL", Toast.LENGTH_SHORT).show()
                             }
                         }) {
-                            Icon(Icons.Default.OpenInNew, stringResource(R.string.action_open))
+                            Icon(Icons.Default.OpenInNew, openString)
                         }
                     }
                     // Text memo - share
@@ -513,15 +520,15 @@ private fun MemoCard(
                                 type = "text/plain"
                                 putExtra(Intent.EXTRA_TEXT, memo.content)
                             }
-                            context.startActivity(Intent.createChooser(shareIntent, context.getString(R.string.action_share)))
+                            context.startActivity(Intent.createChooser(shareIntent, shareString))
                         }) {
-                            Icon(Icons.Default.Share, stringResource(R.string.action_share))
+                            Icon(Icons.Default.Share, shareString)
                         }
                     }
                 }
 
                 IconButton(onClick = { showDeleteDialog = true }) {
-                    Icon(Icons.Default.Delete, "Delete")
+                    Icon(Icons.Default.Delete, deleteString)
                 }
             }
         }
@@ -644,8 +651,10 @@ private fun AddCustomCategoryDialog(
 ) {
     var categoryName by remember { mutableStateOf("") }
     var error by remember { mutableStateOf<String?>(null) }
-    val context = LocalContext.current
-
+    val errorEmpty = stringResource(R.string.error_category_name_empty)
+    val errorTooLong = stringResource(R.string.error_category_name_too_long)
+    val errorExists = stringResource(R.string.error_category_already_exists)
+    
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.dialog_add_category_title)) },
@@ -668,14 +677,16 @@ private fun AddCustomCategoryDialog(
         confirmButton = {
             TextButton(
                 onClick = {
-                    when {
-                        categoryName.isBlank() -> 
-                            error = context.getString(R.string.error_category_name_empty)
-                        categoryName.length > 50 -> 
-                            error = context.getString(R.string.error_category_name_too_long)
-                        categoryName.trim() in existingCategories ->
-                            error = context.getString(R.string.error_category_already_exists)
-                        else -> onConfirm(categoryName.trim())
+                    val validationError = when {
+                        categoryName.isBlank() -> errorEmpty
+                        categoryName.length > 50 -> errorTooLong
+                        categoryName.trim().lowercase() in existingCategories.map { it.lowercase() } -> errorExists
+                        else -> null
+                    }
+                    if (validationError != null) {
+                        error = validationError
+                    } else {
+                        onConfirm(categoryName.trim())
                     }
                 }
             ) {
