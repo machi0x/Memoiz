@@ -30,11 +30,15 @@ Added a comprehensive signing configuration to `app/build.gradle.kts` that:
 
 3. **Configuration Details**:
    ```kotlin
+   // Helper function to get keystore file path
+   fun getKeystoreFile(): String {
+       return findProperty("android.injected.signing.store.file") as String?
+           ?: System.getenv("KEYSTORE_FILE")
+           ?: "release.keystore"
+   }
+
    signingConfigs {
        create("release") {
-           val keystoreFile = findProperty("android.injected.signing.store.file") as String?
-               ?: System.getenv("KEYSTORE_FILE")
-               ?: "release.keystore"
            val keystorePassword = findProperty("android.injected.signing.store.password") as String?
                ?: System.getenv("KEYSTORE_PASSWORD")
                ?: ""
@@ -45,7 +49,7 @@ Added a comprehensive signing configuration to `app/build.gradle.kts` that:
                ?: System.getenv("KEY_PASSWORD")
                ?: ""
 
-           storeFile = file(keystoreFile)
+           storeFile = file(getKeystoreFile())
            storePassword = keystorePassword
            keyAlias = keyAliasName
            keyPassword = keyAliasPassword
@@ -55,10 +59,7 @@ Added a comprehensive signing configuration to `app/build.gradle.kts` that:
    buildTypes {
        release {
            // Only apply signing if keystore exists
-           val keystoreFile = findProperty("android.injected.signing.store.file") as String?
-               ?: System.getenv("KEYSTORE_FILE")
-               ?: "release.keystore"
-           if (file(keystoreFile).exists()) {
+           if (file(getKeystoreFile()).exists()) {
                signingConfig = signingConfigs.getByName("release")
            }
        }
