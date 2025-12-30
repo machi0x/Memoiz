@@ -9,6 +9,7 @@ import com.machi.memoiz.data.repository.MemoRepository
 import com.machi.memoiz.service.AiCategorizationService
 import com.machi.memoiz.service.CategoryMergeService
 import com.machi.memoiz.util.FailureCategoryHelper
+import kotlinx.coroutines.flow.first
 
 /**
  * Worker that finds memos in the special "Failure" category and re-analyzes them using AI.
