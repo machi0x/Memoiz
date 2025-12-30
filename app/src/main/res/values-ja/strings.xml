@@ -45,6 +45,8 @@
     <string name="error_category_name_too_long">50文字以内にしてください</string>
     <string name="error_category_already_exists">このカテゴリは既に存在します</string>
     <string name="no_matching_memos_found">該当するメモはありません</string>
+    <string name="fab_paste_clipboard">クリップボードから貼り付け</string>
+    <string name="nothing_to_categorize">クリップボードに分類するテキストや画像がありません</string>
     <string name="empty_state_message">メモがまだありません。
-クリップボードボタンや共有から始めましょう。</string>
+テキストや画像を他のアプリから共有したり、クリップボードから貼り付けて始めましょう。</string>
 </resources>
