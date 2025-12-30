@@ -1,5 +1,6 @@
 package com.machi.memoiz.ui.screens
 
+import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.widget.Toast
@@ -179,6 +180,7 @@ fun MainScreen(
                         CategoryAccordion(
                             group = group,
                             isExpanded = group.category in expandedCategories,
+                            context = context,
                             onHeaderClick = { viewModel.toggleCategoryExpanded(group.category) },
                             onDeleteCategory = { viewModel.deleteCategory(group.category) },
                             onDeleteMemo = { memo -> viewModel.deleteMemo(memo) },
@@ -333,6 +335,7 @@ private fun NavigationDrawerContent(
 private fun CategoryAccordion(
     group: MemoGroup,
     isExpanded: Boolean,
+    context: Context,
     onHeaderClick: () -> Unit,
     onDeleteCategory: () -> Unit,
     onDeleteMemo: (Memo) -> Unit,
@@ -692,7 +695,11 @@ fun MainScreenPreview() {
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     group.memos.forEach { memo ->
-                        MemoCard(memo = memo, onDelete = { })
+                        MemoCard(
+                            memo = memo,
+                            onDelete = { },
+                            onReanalyze = { }
+                        )
                         Spacer(modifier = Modifier.height(8.dp))
                     }
                 }
