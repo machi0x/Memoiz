@@ -47,10 +47,10 @@ fun SettingsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Settings") },
+                title = { Text(stringResource(R.string.settings_title)) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Default.ArrowBack, "Back")
+                        Icon(Icons.Default.ArrowBack, stringResource(R.string.cd_back))
                     }
                 }
             )
@@ -86,15 +86,15 @@ fun SettingsScreen(
                         )
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = "Source App Detection",
+                                text = stringResource(R.string.settings_usage_title),
                                 style = MaterialTheme.typography.titleMedium
                             )
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(
                                 text = if (hasUsageStatsPermission)
-                                    "Enabled - AI can see which app you copied from"
+                                    stringResource(R.string.settings_usage_enabled)
                                 else
-                                    "Enable to detect source app for better categorization",
+                                    stringResource(R.string.settings_usage_disabled),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -110,7 +110,7 @@ fun SettingsScreen(
                             },
                             modifier = Modifier.fillMaxWidth()
                         ) {
-                            Text("Open Usage Access Settings")
+                            Text(stringResource(R.string.settings_usage_button))
                         }
                     }
                 }
