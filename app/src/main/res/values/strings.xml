@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools" tools:locale="en">
     <string name="app_name">Memoiz</string>
     <string name="failure_category">Analysis failure</string>
     <string name="failure_category_en" translatable="false">FAILURE</string>
@@ -53,6 +53,7 @@ Tap the clipboard button or share content to start.</string>
     <string name="settings_about_title">About this app</string>
     <string name="settings_about_description">Memoiz keeps your clipboard snippets handy so you can reuse them anytime.</string>
     <string name="settings_about_button">About this app</string>
+    <string name="settings_about_version">Version %1$s</string>
     <string name="dialog_close">Close</string>
     <string name="settings_title">Settings</string>
     <string name="settings_usage_title">Source App Detection</string>

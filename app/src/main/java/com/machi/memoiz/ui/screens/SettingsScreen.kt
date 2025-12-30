@@ -2,25 +2,25 @@
 
 package com.machi.memoiz.ui.screens
 
+import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.provider.Settings
-import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.machi.memoiz.BuildConfig
@@ -50,143 +50,148 @@ fun SettingsScreen(
                 title = { Text(stringResource(R.string.settings_title)) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Default.ArrowBack, stringResource(R.string.cd_back))
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.cd_back))
                     }
                 }
             )
         }
     ) { padding ->
-        Column(
+        Surface(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Usage Stats Permission Section
-            Card(
-                modifier = Modifier.fillMaxWidth()
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(vertical = 8.dp)
             ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp)
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        Icon(
-                            if (hasUsageStatsPermission) Icons.Default.CheckCircle else Icons.Default.Info,
-                            contentDescription = null,
-                            tint = if (hasUsageStatsPermission)
-                                MaterialTheme.colorScheme.primary
-                            else
-                                MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = stringResource(R.string.settings_usage_title),
-                                style = MaterialTheme.typography.titleMedium
+                item {
+                    PreferenceItem(
+                        title = stringResource(R.string.settings_usage_title),
+                        subtitle = if (hasUsageStatsPermission) {
+                            stringResource(R.string.settings_usage_enabled)
+                        } else {
+                            stringResource(R.string.settings_usage_disabled)
+                        },
+                        leadingIcon = {
+                            Icon(
+                                imageVector = if (hasUsageStatsPermission) Icons.Default.CheckCircle else Icons.Default.Info,
+                                contentDescription = null,
+                                tint = if (hasUsageStatsPermission) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
                             )
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text(
-                                text = if (hasUsageStatsPermission)
-                                    stringResource(R.string.settings_usage_enabled)
-                                else
-                                    stringResource(R.string.settings_usage_disabled),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    }
-
-                    if (!hasUsageStatsPermission && Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                        Spacer(modifier = Modifier.height(12.dp))
-                        Button(
-                            onClick = {
-                                val intent = Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS)
-                                context.startActivity(intent)
-                            },
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Text(stringResource(R.string.settings_usage_button))
-                        }
-                    }
+                        },
+                        trailingContent = {
+                            if (!hasUsageStatsPermission) {
+                                AssistChip(
+                                    onClick = { openUsageAccessSettings(context) },
+                                    label = { Text(stringResource(R.string.settings_usage_button)) }
+                                )
+                            }
+                        },
+                        onClick = { openUsageAccessSettings(context) }
+                    )
                 }
-            }
 
-            // About Section
-            Card(
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp)
-                ) {
-                    Text(
-                        text = stringResource(R.string.settings_about_title),
-                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+                item {
+                    Divider(modifier = Modifier.padding(start = 72.dp))
+                }
+
+                item {
+                    PreferenceItem(
+                        title = stringResource(R.string.settings_about_button),
+                        subtitle = stringResource(R.string.settings_about_version, appVersion),
+                        leadingIcon = {
+                            Icon(Icons.Default.Info, contentDescription = null)
+                        },
+                        onClick = { showAboutDialog = true }
                     )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = stringResource(R.string.settings_about_description),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Spacer(modifier = Modifier.height(12.dp))
-                    Button(
-                        onClick = { showAboutDialog = true },
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text(stringResource(R.string.settings_about_button))
-                    }
                 }
             }
         }
     }
 
     if (showAboutDialog) {
-        AlertDialog(
-            onDismissRequest = { showAboutDialog = false },
-            confirmButton = {
-                TextButton(onClick = { showAboutDialog = false }) {
-                    Text(stringResource(R.string.dialog_close))
-                }
-            },
-            title = { Text(text = stringResource(R.string.settings_about_title)) },
-            text = {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    Image(
-                        painter = painterResource(id = R.drawable.thanks),
-                        contentDescription = null,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .aspectRatio(1f)
-                            .clip(RoundedCornerShape(12.dp))
-                    )
-                    Text(
-                        text = stringResource(id = R.string.app_name),
-                        style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
-                    )
-                    Text(
-                        text = "v$appVersion",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Text(
-                        text = stringResource(R.string.settings_about_description),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
+        AboutDialog(
+            appVersion = appVersion,
+            onDismiss = { showAboutDialog = false }
         )
     }
+}
+
+@Composable
+private fun PreferenceItem(
+    title: String,
+    subtitle: String? = null,
+    leadingIcon: (@Composable () -> Unit)? = null,
+    trailingContent: (@Composable () -> Unit)? = null,
+    onClick: (() -> Unit)? = null
+) {
+    ListItem(
+        modifier = Modifier
+            .fillMaxWidth()
+            .then(
+                if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier
+            ),
+        headlineContent = { Text(title, style = MaterialTheme.typography.titleMedium) },
+        supportingContent = subtitle?.let {
+            {
+                Text(
+                    text = it,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        },
+        leadingContent = leadingIcon?.let { { it() } },
+        trailingContent = trailingContent?.let { { it() } } ?: onClick?.let {
+            {
+                Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null)
+            }
+        }
+    )
+}
+
+private fun openUsageAccessSettings(context: Context) {
+    val intent = Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS).apply {
+        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+    }
+    context.startActivity(intent)
+}
+
+@Composable
+private fun AboutDialog(
+    appVersion: String,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.dialog_close))
+            }
+        },
+        icon = {
+            Icon(Icons.Default.Info, contentDescription = null)
+        },
+        title = { Text(text = stringResource(R.string.settings_about_title)) },
+        text = {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Text(
+                    text = stringResource(R.string.settings_about_description),
+                    style = MaterialTheme.typography.bodyMedium,
+                    textAlign = TextAlign.Center
+                )
+                Text(
+                    text = stringResource(R.string.settings_about_version, appVersion),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+    )
 }
 
 // Preview for Settings screen
@@ -194,18 +199,31 @@ fun SettingsScreen(
 @Composable
 fun SettingsScreenPreview() {
     MemoizTheme {
-        Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-            // Usage stats card preview
-            Card(modifier = Modifier.fillMaxWidth()) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        Icon(Icons.Default.CheckCircle, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                        Column {
-                            Text(text = "Source App Detection", style = MaterialTheme.typography.titleMedium)
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text(text = "Enabled - AI can see which app you copied from", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Surface {
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(vertical = 8.dp)
+            ) {
+                item {
+                    PreferenceItem(
+                        title = "Source App Detection",
+                        subtitle = "Enabled - AI can see which app you copied from",
+                        leadingIcon = {
+                            Icon(Icons.Default.CheckCircle, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                         }
-                    }
+                    )
+                }
+                item {
+                    Divider(modifier = Modifier.padding(start = 72.dp))
+                }
+                item {
+                    PreferenceItem(
+                        title = "About this app",
+                        subtitle = "Version 1.0.0",
+                        leadingIcon = {
+                            Icon(Icons.Default.Info, contentDescription = null)
+                        }
+                    )
                 }
             }
         }
