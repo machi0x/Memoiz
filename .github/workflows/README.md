@@ -94,6 +94,32 @@ Service account JSON for Firebase App Distribution API access.
 5. Value: Paste the entire JSON content
 6. Click "Add secret"
 
+### 4. Code Signing Secrets (Required for Release APK)
+
+The workflow signs release APKs using these secrets:
+
+**KEYSTORE_BASE64**: Base64-encoded keystore file
+**How to create and add:**
+```bash
+# Create keystore (first time only)
+keytool -genkey -v -keystore release.keystore -alias memoiz \
+  -keyalg RSA -keysize 2048 -validity 10000
+
+# Encode to base64
+base64 -i release.keystore | pbcopy  # macOS
+base64 -i release.keystore           # Linux
+# On Windows, use certutil:
+certutil -encode release.keystore release.keystore.b64
+
+# Add to GitHub Secrets as KEYSTORE_BASE64
+```
+
+**KEYSTORE_PASSWORD**: The password for the keystore
+**KEY_ALIAS**: The alias name (e.g., "memoiz")
+**KEY_PASSWORD**: The password for the key (often same as keystore password)
+
+Add all three as GitHub Secrets in Settings → Secrets and variables → Actions.
+
 ## Firebase App Distribution Setup
 
 ### Enable Firebase App Distribution
@@ -174,6 +200,11 @@ This is calculated automatically by the `getGitCommitCount()` function in `app/b
 - Verify tester email addresses are correct
 - Check spam/junk folders
 
+### Build fails with signing errors
+- Verify all four signing secrets are set: KEYSTORE_BASE64, KEYSTORE_PASSWORD, KEY_ALIAS, KEY_PASSWORD
+- Check that KEYSTORE_BASE64 is valid base64 (no newlines or spaces)
+- Ensure the keystore password and key password match what was used when creating the keystore
+
 ## Customization
 
 ### Change distribution group
@@ -188,33 +219,7 @@ Edit the workflow file and change the `file` parameter:
 file: app/build/outputs/apk/release/app-release.apk
 ```
 
-### Add code signing for release builds
-You'll need to:
-1. Create a keystore file
-2. Add keystore as GitHub secret (base64 encoded)
-3. Add keystore password, alias, and key password as secrets
-4. Update the workflow to decode and use the keystore
-
-Example additional steps:
-```yaml
-- name: Decode Keystore
-  env:
-    KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
-  run: |
-    echo "$KEYSTORE_BASE64" | base64 -d > app/release.keystore
-
-- name: Build Signed Release APK
-  env:
-    KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-    KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-    KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-  run: |
-    ./gradlew assembleRelease \
-      -Pandroid.injected.signing.store.file=release.keystore \
-      -Pandroid.injected.signing.store.password=$KEYSTORE_PASSWORD \
-      -Pandroid.injected.signing.key.alias=$KEY_ALIAS \
-      -Pandroid.injected.signing.key.password=$KEY_PASSWORD
-```
+Note: The workflow already builds and signs release APKs. They are uploaded as GitHub artifacts even if debug APKs are deployed to Firebase.
 
 ## Security Best Practices
 

@@ -158,12 +158,29 @@ Edit workflow file:
 file: app/build/outputs/apk/release/app-release.apk
 ```
 
-### Add Code Signing
-For signed release builds:
-1. Create keystore
-2. Add as GitHub Secret (base64 encoded)
-3. Add signing configuration to workflow
-4. Update build command with signing parameters
+### Code Signing Setup
+The project is configured for code signing in both local and CI/CD environments:
+
+**Build Configuration:**
+- `app/build.gradle.kts` includes a `signingConfigs` block that accepts signing parameters
+- Supports `-Pandroid.injected.signing.*` properties from command line
+- Falls back to environment variables (KEYSTORE_FILE, KEYSTORE_PASSWORD, KEY_ALIAS, KEY_PASSWORD)
+- Only applies signing if keystore file exists (allows unsigned local builds)
+
+**Required GitHub Secrets:**
+1. **KEYSTORE_BASE64**: Base64-encoded keystore file
+   ```bash
+   base64 -i your-keystore.jks | pbcopy  # macOS
+   base64 -i your-keystore.jks           # Linux
+   ```
+2. **KEYSTORE_PASSWORD**: Keystore password
+3. **KEY_ALIAS**: Key alias name
+4. **KEY_PASSWORD**: Key password
+
+**Workflow Process:**
+1. Decodes KEYSTORE_BASE64 and saves to `app/release.keystore`
+2. Passes signing parameters via `-Pandroid.injected.signing.*` properties
+3. Gradle picks up these properties and signs the APK
 
 ### Additional Build Variants
 Add build variants in `app/build.gradle.kts`:
