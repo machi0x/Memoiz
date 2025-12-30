@@ -30,9 +30,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.machi.memoiz.R
 import com.machi.memoiz.domain.model.Memo
-import com.machi.memoiz.domain.model.CategoryConstants
 import com.machi.memoiz.service.ContentProcessingLauncher
 import com.machi.memoiz.ui.theme.MemoizTheme
+import com.machi.memoiz.util.FailureCategoryHelper
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
@@ -373,7 +373,7 @@ private fun CategoryAccordion(
                     )
                 }
                 Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                    if (group.category == CategoryConstants.FAILURE_CATEGORY) {
+                    if (FailureCategoryHelper.isFailureLabel(context, group.category)) {
                         IconButton(onClick = onReanalyzeCategory) {
                             Icon(Icons.Default.Refresh, stringResource(R.string.action_reanalyze_failures))
                         }

@@ -8,7 +8,7 @@ import com.machi.memoiz.data.repository.MemoRepository
 import com.machi.memoiz.service.AiCategorizationService
 import com.machi.memoiz.service.CategoryMergeService
 import com.machi.memoiz.data.datastore.PreferencesDataStoreManager
-import com.machi.memoiz.domain.model.CategoryConstants
+import com.machi.memoiz.util.FailureCategoryHelper
 import kotlinx.coroutines.flow.first
 
 /**

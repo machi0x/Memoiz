@@ -6,10 +6,9 @@ import androidx.work.WorkerParameters
 import com.machi.memoiz.data.MemoizDatabase
 import com.machi.memoiz.data.datastore.PreferencesDataStoreManager
 import com.machi.memoiz.data.repository.MemoRepository
-import com.machi.memoiz.domain.model.CategoryConstants
 import com.machi.memoiz.service.AiCategorizationService
 import com.machi.memoiz.service.CategoryMergeService
-import kotlinx.coroutines.flow.first
+import com.machi.memoiz.util.FailureCategoryHelper
 
 /**
  * Worker that finds memos in the special "Failure" category and re-analyzes them using AI.
@@ -31,9 +30,9 @@ class ReanalyzeFailedMemosWorker(
             existingCategories,
             preferences.customCategories
         )
-        val failureLabel = CategoryConstants.getFailureLabel()
+        val failureAliases = FailureCategoryHelper.aliases(applicationContext)
         try {
-            val failedMemos = memoRepository.getMemosByCategoryName(failureLabel).first()
+            val failedMemos = memoRepository.getMemosByCategories(failureAliases)
 
             if (failedMemos.isEmpty()) return Result.success()
 
@@ -46,7 +45,7 @@ class ReanalyzeFailedMemosWorker(
                         aiService.processText(memo.content, memo.sourceApp)
                     }
 
-                    if (updatedEntity != null && !CategoryConstants.matchesFailure(updatedEntity.category)) {
+                    if (updatedEntity != null && !FailureCategoryHelper.isFailureLabel(applicationContext, updatedEntity.category)) {
                         memoRepository.updateMemo(memo.copy(
                             content = updatedEntity.content,
                             imageUri = updatedEntity.imageUri,

@@ -41,6 +41,10 @@ class MemoRepository(private val memoDao: MemoDao) {
         }
     }
 
+    suspend fun getMemosByCategories(categories: List<String>): List<Memo> {
+        return memoDao.getMemosByCategories(categories).map { it.toDomain() }
+    }
+
     private fun MemoEntity.toDomain(): Memo {
         return Memo(
             id = id,
