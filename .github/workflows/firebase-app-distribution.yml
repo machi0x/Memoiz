@@ -57,7 +57,23 @@ jobs:
       
       # Build debug APK
       - name: Build Debug APK
-        run: ./gradlew assembleDebug --stacktrace
+        run: |
+          # Retry up to 3 times with exponential backoff if the build fails due to network issues
+          for i in {1..3}; do
+            echo "Build attempt $i of 3"
+            if ./gradlew assembleDebug --stacktrace --no-daemon; then
+              echo "Build successful"
+              break
+            else
+              if [ $i -lt 3 ]; then
+                echo "Build failed, waiting before retry..."
+                sleep $((i * 30))
+              else
+                echo "Build failed after 3 attempts"
+                exit 1
+              fi
+            fi
+          done
       
       # Build signed release APK
       - name: Build Signed Release APK
@@ -66,12 +82,27 @@ jobs:
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: |
-          ./gradlew assembleRelease \
-            -Pandroid.injected.signing.store.file=app/release.keystore \
-            -Pandroid.injected.signing.store.password=$KEYSTORE_PASSWORD \
-            -Pandroid.injected.signing.key.alias=$KEY_ALIAS \
-            -Pandroid.injected.signing.key.password=$KEY_PASSWORD \
-            --stacktrace
+          # Retry up to 3 times with exponential backoff if the build fails due to network issues
+          for i in {1..3}; do
+            echo "Build attempt $i of 3"
+            if ./gradlew assembleRelease \
+              -Pandroid.injected.signing.store.file=app/release.keystore \
+              -Pandroid.injected.signing.store.password=$KEYSTORE_PASSWORD \
+              -Pandroid.injected.signing.key.alias=$KEY_ALIAS \
+              -Pandroid.injected.signing.key.password=$KEY_PASSWORD \
+              --stacktrace --no-daemon; then
+              echo "Build successful"
+              break
+            else
+              if [ $i -lt 3 ]; then
+                echo "Build failed, waiting before retry..."
+                sleep $((i * 30))
+              else
+                echo "Build failed after 3 attempts"
+                exit 1
+              fi
+            fi
+          done
       
       # Get version name and code for artifacts
       - name: Get version information
