@@ -2,7 +2,7 @@
 <resources>
     <string name="app_name">Memoiz</string>
     <string name="failure_category">Analysis failure</string>
-    <string name="failure_category_en">FAILURE</string>
+    <string name="failure_category_en" translatable="false">FAILURE</string>
     <string name="failure_category_ja">分類失敗</string>
     <string name="failure_category_canonical">Analysis failure</string>
     <string name="category_web_site">Web site</string>
@@ -51,7 +51,7 @@ Tap the clipboard button or share content to start.</string>
     <!-- Toast messages -->
     <string name="toast_reanalyze_enqueued">Re-analysis scheduled in background.</string>
     <string name="settings_about_title">About this app</string>
-    <string name="settings_about_description">Memoiz is a family-crafted clipboard notebook. Special thanks to my family for the artwork.</string>
+    <string name="settings_about_description">Memoiz keeps your clipboard snippets handy so you can reuse them anytime.</string>
     <string name="settings_about_button">About this app</string>
     <string name="dialog_close">Close</string>
     <string name="settings_title">Settings</string>
@@ -72,6 +72,7 @@ Tap the clipboard button or share content to start.</string>
     <string name="cd_no_memo_image">Illustration showing an empty memo list</string>
     <string name="dialog_delete_category_title">Delete Category</string>
     <string name="dialog_delete_category_message">Deleting this category will also delete all associated memos. Are you sure?</string>
+    <string name="dialog_delete_category_warning">All memos inside this category will be removed permanently.</string>
     <string name="dialog_delete_memo_title">Delete Memo</string>
     <string name="dialog_delete_memo_message">Are you sure you want to delete this memo?</string>
 </resources>
