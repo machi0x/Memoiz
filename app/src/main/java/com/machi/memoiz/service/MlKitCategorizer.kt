@@ -89,8 +89,18 @@ class MlKitCategorizer(private val context: Context) {
 
     suspend fun categorizeImage(bitmap: Bitmap, sourceApp: String?): Triple<String?, String?, String?>? {
         return try {
+            // Get image description first
             val description = describeImage(bitmap)
-            Triple(imageCategoryLabel(), description, description)
+            
+            // If we have a description, categorize based on it like text
+            if (!description.isNullOrBlank()) {
+                val category = generateText(buildCategorizationPrompt(description, sourceApp))
+                val subCategory = generateText(buildSubCategoryPrompt(description, category ?: "", sourceApp))
+                Triple(category, subCategory, description)
+            } else {
+                // Fallback to image category if description fails
+                Triple(imageCategoryLabel(), null, null)
+            }
         } catch (e: Exception) {
             e.printStackTrace()
             null
