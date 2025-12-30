@@ -14,6 +14,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -110,7 +111,7 @@ fun MainScreen(
                                 unfocusedBorderColor = MaterialTheme.colorScheme.outline
                             ),
                             leadingIcon = {
-                                Icon(Icons.Default.Search, contentDescription = null)
+                                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
                             },
                             trailingIcon = {
                                 if (searchQuery.isNotEmpty()) {
@@ -159,15 +160,29 @@ fun MainScreen(
                         .padding(padding),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(
-                        text = if (searchQuery.isNotEmpty() || categoryFilter != null) {
-                            stringResource(R.string.no_matching_memos_found)
-                        } else {
-                            context.getString(R.string.empty_state_message)
-                        },
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        Image(
+                            painter = painterResource(id = R.drawable.no_memo),
+                            contentDescription = stringResource(R.string.cd_no_memo_image),
+                            modifier = Modifier
+                                .size(180.dp)
+                                .clip(RoundedCornerShape(16.dp)),
+                            contentScale = ContentScale.Crop
+                        )
+                        Text(
+                            text = if (searchQuery.isNotEmpty() || categoryFilter != null) {
+                                stringResource(R.string.no_matching_memos_found)
+                            } else {
+                                context.getString(R.string.empty_state_message)
+                            },
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            textAlign = TextAlign.Center
+                        )
+                    }
                 }
             } else {
                 LazyColumn(
