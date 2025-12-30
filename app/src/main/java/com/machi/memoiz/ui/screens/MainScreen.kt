@@ -48,6 +48,7 @@ fun MainScreen(
     val categoryFilter by viewModel.categoryFilter.collectAsState()
     val availableCategories by viewModel.availableCategories.collectAsState()
     val customCategories by viewModel.customCategories.collectAsState()
+    val expandedCategories by viewModel.expandedCategories.collectAsState()
     val context = LocalContext.current
     
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
@@ -165,7 +166,7 @@ fun MainScreen(
                     items(memoGroups) { group ->
                         CategoryAccordion(
                             group = group,
-                            isExpanded = viewModel.isCategoryExpanded(group.category),
+                            isExpanded = group.category in expandedCategories,
                             onHeaderClick = { viewModel.toggleCategoryExpanded(group.category) },
                             onDeleteCategory = { viewModel.deleteCategory(group.category) },
                             onDeleteMemo = { memo -> viewModel.deleteMemo(memo) }
