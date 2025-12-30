@@ -14,6 +14,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.machi.memoiz.data.MemoizDatabase
+import com.machi.memoiz.data.datastore.PreferencesDataStoreManager
 import com.machi.memoiz.data.repository.MemoRepository
 import com.machi.memoiz.ui.ViewModelFactory
 import com.machi.memoiz.ui.screens.MainScreen
@@ -40,9 +41,10 @@ class MainActivity : ComponentActivity() {
         // Initialize database and repositories
         val database = MemoizDatabase.getDatabase(applicationContext)
         val memoRepository = MemoRepository(database.memoDao())
+        val preferencesManager = PreferencesDataStoreManager(applicationContext)
 
         // Create ViewModelFactory
-        viewModelFactory = ViewModelFactory(memoRepository)
+        viewModelFactory = ViewModelFactory(memoRepository, preferencesManager)
 
         // Hide splash screen after 1.5 seconds
         lifecycleScope.launch {

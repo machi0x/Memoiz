@@ -3,5 +3,29 @@
     <string name="category_web_site">ウェブサイト</string>
     <string name="category_image">画像</string>
     <string name="category_uncategorizable">分類不能</string>
+    
+    <!-- Main UI strings -->
+    <string name="search_hint">memoizで検索</string>
+    <string name="drawer_all_categories">すべて</string>
+    <string name="drawer_settings">設定</string>
+    <string name="drawer_add_category">カスタムカテゴリを追加</string>
+    <string name="sort_by_created">日付順</string>
+    <string name="sort_by_category_name">カテゴリ名順</string>
+    <string name="sort_mode_label">並び順</string>
+    
+    <!-- Memo actions -->
+    <string name="action_share">共有</string>
+    <string name="action_open">開く</string>
+    
+    <!-- Custom category dialog -->
+    <string name="dialog_add_category_title">カスタムカテゴリを追加</string>
+    <string name="dialog_add_category_message">カスタムカテゴリの名前を入力してください:</string>
+    <string name="dialog_category_name_label">カテゴリ名</string>
+    <string name="dialog_add">追加</string>
+    <string name="dialog_cancel">キャンセル</string>
+    <string name="error_category_name_empty">名前は空にできません</string>
+    <string name="error_category_name_too_long">名前が長すぎます（最大50文字）</string>
+    <string name="error_category_already_exists">このカテゴリは既に存在します</string>
+    <string name="no_matching_memos_found">一致するメモが見つかりません</string>
 </resources>
 
