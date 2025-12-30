@@ -36,17 +36,6 @@ jobs:
           distribution: 'temurin'
           cache: gradle
       
-      # Cache Gradle dependencies to reduce downloads and avoid rate limiting
-      - name: Cache Gradle packages
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
-          restore-keys: |
-            ${{ runner.os }}-gradle-
-      
       # Grant execute permission for gradlew
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
