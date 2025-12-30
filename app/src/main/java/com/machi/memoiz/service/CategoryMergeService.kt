@@ -8,6 +8,7 @@ import com.google.mlkit.genai.prompt.generateContentRequest
 import com.machi.memoiz.util.FailureCategoryHelper
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import java.util.Locale
 
 /**
  * Second stage category merging service.
@@ -22,6 +23,19 @@ class CategoryMergeService(private val context: Context) {
     }
 
     private fun isFailureLabel(value: String?): Boolean = FailureCategoryHelper.isFailureLabel(context, value)
+    
+    private fun getSystemLanguageName(): String {
+        return when (Locale.getDefault().language) {
+            "ja" -> "Japanese"
+            "en" -> "English"
+            "ko" -> "Korean"
+            "zh" -> "Chinese"
+            "es" -> "Spanish"
+            "fr" -> "French"
+            "de" -> "German"
+            else -> "English" // fallback
+        }
+    }
 
     data class MergeInput(
         val aiCategory: String,
@@ -75,6 +89,7 @@ class CategoryMergeService(private val context: Context) {
 
         return buildString {
             appendLine("You are a categorization assistant.")
+            appendLine("Reply in ${getSystemLanguageName()} language.")
             appendLine("Original AI suggestion: \"${input.aiCategory}\"")
             input.aiSubCategory?.let { appendLine("Context: $it") }
             if (fixed.isNotBlank()) appendLine(fixed)
