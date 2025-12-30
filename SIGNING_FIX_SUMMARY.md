@@ -37,11 +37,7 @@ Added a comprehensive signing configuration to `app/build.gradle.kts` that:
            ?: "release.keystore"
        
        // If path starts with "app/", remove it since we're already in the app/ directory context
-       return if (path.startsWith("app/")) {
-           path.substring(4)
-       } else {
-           path
-       }
+       return path.removePrefix("app/")
    }
 
    signingConfigs {
@@ -132,11 +128,7 @@ fun getKeystoreFile(): String {
         ?: "release.keystore"
     
     // If path starts with "app/", remove it since we're already in the app/ directory context
-    return if (path.startsWith("app/")) {
-        path.substring(4)
-    } else {
-        path
-    }
+    return path.removePrefix("app/")
 }
 ```
 
