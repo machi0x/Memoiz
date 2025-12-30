@@ -309,8 +309,8 @@ private fun NavigationDrawerContent(
             item {
                 NavigationDrawerItem(
                     label = { Text(stringResource(R.string.memo_type_text)) },
-                    selected = memoTypeFilter == com.machi.memoiz.data.entity.MemoType.TEXT,
-                    onClick = { onMemoTypeFilterSelected(com.machi.memoiz.data.entity.MemoType.TEXT) },
+                    selected = memoTypeFilter == MemoType.TEXT,
+                    onClick = { onMemoTypeFilterSelected(MemoType.TEXT) },
                     icon = { Icon(Icons.Default.Notes, contentDescription = null) },
                     modifier = Modifier.padding(horizontal = 12.dp)
                 )
@@ -319,8 +319,8 @@ private fun NavigationDrawerContent(
             item {
                 NavigationDrawerItem(
                     label = { Text(stringResource(R.string.memo_type_web_site)) },
-                    selected = memoTypeFilter == com.machi.memoiz.data.entity.MemoType.WEB_SITE,
-                    onClick = { onMemoTypeFilterSelected(com.machi.memoiz.data.entity.MemoType.WEB_SITE) },
+                    selected = memoTypeFilter == MemoType.WEB_SITE,
+                    onClick = { onMemoTypeFilterSelected(MemoType.WEB_SITE) },
                     icon = { Icon(Icons.Default.Language, contentDescription = null) },
                     modifier = Modifier.padding(horizontal = 12.dp)
                 )
@@ -329,8 +329,8 @@ private fun NavigationDrawerContent(
             item {
                 NavigationDrawerItem(
                     label = { Text(stringResource(R.string.memo_type_image)) },
-                    selected = memoTypeFilter == com.machi.memoiz.data.entity.MemoType.IMAGE,
-                    onClick = { onMemoTypeFilterSelected(com.machi.memoiz.data.entity.MemoType.IMAGE) },
+                    selected = memoTypeFilter == MemoType.IMAGE,
+                    onClick = { onMemoTypeFilterSelected(MemoType.IMAGE) },
                     icon = { Icon(Icons.Default.Image, contentDescription = null) },
                     modifier = Modifier.padding(horizontal = 12.dp)
                 )
@@ -651,7 +651,7 @@ private fun MemoCard(
                     )
                 }
 
-                if (memo.summary != null && memo.summary != memo.content) {
+                if (memo.summary != null && (memo.memoType != MemoType.IMAGE || memo.summary != memo.content)) {
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
                         text = memo.summary,
