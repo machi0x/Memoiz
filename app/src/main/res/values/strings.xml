@@ -25,7 +25,9 @@ Tap the clipboard button or share content to start.</string>
     <!-- Memo actions -->
     <string name="action_share">Share</string>
     <string name="action_open">Open</string>
-    
+    <string name="action_reanalyze">Re-analyze</string>
+    <string name="action_reanalyze_failures">Re-analyze failures</string>
+
     <!-- Custom category dialog -->
     <string name="dialog_add_category_title">Add Custom Category</string>
     <string name="dialog_add_category_message">Enter a name for your custom category:</string>
@@ -36,4 +38,7 @@ Tap the clipboard button or share content to start.</string>
     <string name="error_category_name_too_long">Name too long (max 50 characters)</string>
     <string name="error_category_already_exists">This category already exists</string>
     <string name="no_matching_memos_found">No matching memos found</string>
+
+    <!-- Toast messages -->
+    <string name="toast_reanalyze_enqueued">Re-analysis scheduled in background.</string>
 </resources>

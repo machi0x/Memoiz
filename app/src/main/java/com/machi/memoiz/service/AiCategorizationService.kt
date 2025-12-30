@@ -12,15 +12,26 @@ import kotlinx.coroutines.withContext
  * AI Categorization Service.
  * A wrapper around MlKitCategorizer to process content and return a MemoEntity.
  */
-class AiCategorizationService(private val context: Context) {
+class AiCategorizationService(
+    private val context: Context,
+    private val mergeService: CategoryMergeService = CategoryMergeService(context),
+    private val existingCategories: List<String> = emptyList(),
+    private val customCategories: Set<String> = emptySet()
+) {
 
     private val mlKitCategorizer = MlKitCategorizer(context)
 
-    /**
-     * Call this when the service is no longer needed to release ML Kit resources.
-     */
-    fun close() {
-        mlKitCategorizer.close()
+    private suspend fun mergeCategory(category: String, subCategory: String?): String {
+        if (existingCategories.isEmpty() && customCategories.isEmpty()) return category
+        val result = mergeService.merge(
+            CategoryMergeService.MergeInput(
+                aiCategory = category,
+                aiSubCategory = subCategory,
+                existingCategories = existingCategories,
+                customCategories = customCategories
+            )
+        )
+        return result.finalCategory
     }
 
     /**
@@ -29,9 +40,10 @@ class AiCategorizationService(private val context: Context) {
     suspend fun processText(content: String, sourceApp: String?): MemoEntity? = withContext(Dispatchers.Default) {
         try {
             val (category, subCategory, summary) = mlKitCategorizer.categorize(content, sourceApp) ?: return@withContext null
+            val finalCategory = mergeCategory(category ?: "Uncategorized", subCategory)
             MemoEntity(
                 content = content,
-                category = category ?: "Uncategorized",
+                category = finalCategory,
                 subCategory = subCategory,
                 summary = summary,
                 sourceApp = sourceApp
@@ -48,10 +60,11 @@ class AiCategorizationService(private val context: Context) {
     suspend fun processImage(bitmap: Bitmap, sourceApp: String?, originalImageUri: String? = null): MemoEntity? = withContext(Dispatchers.Default) {
         try {
             val (category, subCategory, summary) = mlKitCategorizer.categorizeImage(bitmap, sourceApp) ?: return@withContext null
+            val finalCategory = mergeCategory(category ?: "Image", subCategory)
             MemoEntity(
                 content = "", // No text content for images
                 imageUri = originalImageUri,
-                category = category ?: "Image",
+                category = finalCategory,
                 subCategory = subCategory,
                 summary = summary,
                 sourceApp = sourceApp
@@ -77,5 +90,13 @@ class AiCategorizationService(private val context: Context) {
             e.printStackTrace()
             null
         }
+    }
+
+    /**
+     * Call this when the service is no longer needed to release ML Kit resources.
+     */
+    fun close() {
+        mlKitCategorizer.close()
+        mergeService.close()
     }
 }
