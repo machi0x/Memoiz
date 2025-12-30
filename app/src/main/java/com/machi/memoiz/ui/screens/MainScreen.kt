@@ -72,6 +72,8 @@ fun MainScreen(
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     var showSortDialog by remember { mutableStateOf(false) }
     var showAddCategoryDialog by remember { mutableStateOf(false) }
+    var showDeleteConfirmationDialog by remember { mutableStateOf(false) }
+    var deleteTarget by remember { mutableStateOf<Any?>(null) }
 
     ModalNavigationDrawer(
         drawerState = drawerState,
@@ -199,7 +201,10 @@ fun MainScreen(
                             isExpanded = group.category in expandedCategories,
                             context = context,
                             onHeaderClick = { viewModel.toggleCategoryExpanded(group.category) },
-                            onDeleteCategory = { viewModel.deleteCategory(group.category) },
+                            onDeleteCategory = {
+                                deleteTarget = group.category
+                                showDeleteConfirmationDialog = true
+                            },
                             onDeleteMemo = { memo -> viewModel.deleteMemo(memo) },
                             onReanalyzeMemo = { memo ->
                                 viewModel.reanalyzeMemo(context, memo.id)
@@ -233,6 +238,49 @@ fun MainScreen(
                 showAddCategoryDialog = false
             },
             onDismiss = { showAddCategoryDialog = false }
+        )
+    }
+
+    if (showDeleteConfirmationDialog) {
+        AlertDialog(
+            onDismissRequest = { showDeleteConfirmationDialog = false },
+            title = {
+                Text(
+                    text = if (deleteTarget is String) {
+                        stringResource(R.string.dialog_delete_category_title)
+                    } else {
+                        stringResource(R.string.dialog_delete_memo_title)
+                    }
+                )
+            },
+            text = {
+                Text(
+                    text = if (deleteTarget is String) {
+                        stringResource(R.string.dialog_delete_category_message)
+                    } else {
+                        stringResource(R.string.dialog_delete_memo_message)
+                    }
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        if (deleteTarget is String) {
+                            viewModel.deleteCategory(deleteTarget as String)
+                        } else if (deleteTarget is Memo) {
+                            viewModel.deleteMemo(deleteTarget as Memo)
+                        }
+                        showDeleteConfirmationDialog = false
+                    }
+                ) {
+                    Text(stringResource(R.string.dialog_delete_confirm))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteConfirmationDialog = false }) {
+                    Text(stringResource(R.string.dialog_cancel))
+                }
+            }
         )
     }
 }
