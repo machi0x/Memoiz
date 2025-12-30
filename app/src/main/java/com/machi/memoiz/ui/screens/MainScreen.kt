@@ -250,13 +250,21 @@ private fun NavigationDrawerContent(
         }
 
         // Banner image
+        val bannerPainter = painterResource(id = R.drawable.top_banner)
+        val bannerAspectRatio = bannerPainter.intrinsicSize.let { size ->
+            val width = size.width
+            val height = size.height
+            if (width > 0 && height > 0) width / height else 3.5f
+        }
         Image(
-            painter = painterResource(id = R.drawable.top_banner),
+            painter = bannerPainter,
             contentDescription = null,
             modifier = Modifier
                 .fillMaxWidth()
-                .height(80.dp),
-            contentScale = ContentScale.Crop
+                .aspectRatio(bannerAspectRatio)
+                .padding(horizontal = 16.dp)
+                .clip(RoundedCornerShape(12.dp)),
+            contentScale = ContentScale.Fit
         )
 
         HorizontalDivider()
