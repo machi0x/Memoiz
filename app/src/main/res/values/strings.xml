@@ -44,4 +44,8 @@ Tap the clipboard button or share content to start.</string>
 
     <!-- Toast messages -->
     <string name="toast_reanalyze_enqueued">Re-analysis scheduled in background.</string>
+    <string name="settings_about_title">About this app</string>
+    <string name="settings_about_description">Memoiz is a family-crafted clipboard notebook. Special thanks to my family for the artwork.</string>
+    <string name="settings_about_button">About this app</string>
+    <string name="dialog_close">Close</string>
 </resources>

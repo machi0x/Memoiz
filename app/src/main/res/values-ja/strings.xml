@@ -2,5 +2,8 @@
 <resources>
     <string name="failure_category">分類失敗</string>
     <string name="failure_category_canonical">分類失敗</string>
+    <string name="settings_about_title">このアプリについて</string>
+    <string name="settings_about_description">Memoizは家族と作ったクリップボードノートです。心を込めて描いてくれた家族に感謝します。</string>
+    <string name="settings_about_button">このアプリについて</string>
+    <string name="dialog_close">閉じる</string>
 </resources>
-
