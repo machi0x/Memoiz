@@ -28,7 +28,8 @@
     <string name="cd_no_memo_image">メモがまだ無いことを示すイラスト</string>
     <string name="drawer_all_categories">すべて</string>
     <string name="drawer_settings">設定</string>
-    <string name="drawer_add_category">カスタムカテゴリを追加</string>
+    <string name="drawer_add_category">マイカテゴリを追加</string>
+    <string name="drawer_category_hint">表示するカテゴリ</string>
     <string name="search_hint">メモを検索</string>
     <string name="sort_by_created">日時順に並べる</string>
     <string name="sort_by_category_name">カテゴリ名で並べる</string>
@@ -37,8 +38,8 @@
     <string name="action_open">開く</string>
     <string name="action_reanalyze">再解析</string>
     <string name="action_reanalyze_failures">失敗を再解析</string>
-    <string name="dialog_add_category_title">カスタムカテゴリを追加</string>
-    <string name="dialog_add_category_message">カテゴリ名を入力してください</string>
+    <string name="dialog_add_category_title">マイカテゴリを追加</string>
+    <string name="dialog_add_category_message">分類に使用したいカテゴリ名を入力してください。AIがメモをカテゴリ分けする時に参考にします。</string>
     <string name="dialog_category_name_label">カテゴリ名</string>
     <string name="dialog_add">追加</string>
     <string name="dialog_cancel">キャンセル</string>

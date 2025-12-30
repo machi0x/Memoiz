@@ -91,6 +91,10 @@ fun MainScreen(
                     onSettingsClick = {
                         onNavigateToSettings()
                         scope.launch { drawerState.close() }
+                    },
+                    onRemoveCustomCategory = { category ->
+                        deleteTarget = category
+                        showDeleteConfirmationDialog = true
                     }
                 )
             }
@@ -309,33 +313,15 @@ private fun NavigationDrawerContent(
     customCategories: Set<String>,
     onFilterSelected: (String?) -> Unit,
     onAddCategoryClick: () -> Unit,
-    onSettingsClick: () -> Unit
+    onSettingsClick: () -> Unit,
+    onRemoveCustomCategory: (String) -> Unit
 ) {
     Column(
         modifier = Modifier
             .fillMaxHeight()
             .width(300.dp)
     ) {
-        // App name
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp)
-        ) {
-            Text(
-                text = stringResource(R.string.app_name),
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold
-            )
-        }
-
-        // Banner image
         val bannerPainter = painterResource(id = R.drawable.top_banner)
-        val bannerAspectRatio = bannerPainter.intrinsicSize.let { size ->
-            val width = size.width
-            val height = size.height
-            if (width > 0 && height > 0) width / height else 3.5f
-        }
         val bannerHeight = 120.dp
         Image(
             painter = bannerPainter,
@@ -354,7 +340,15 @@ private fun NavigationDrawerContent(
             modifier = Modifier.weight(1f),
             contentPadding = PaddingValues(vertical = 8.dp)
         ) {
-            // All categories option
+            item {
+                Text(
+                    text = stringResource(R.string.drawer_category_hint),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                )
+            }
+
             item {
                 NavigationDrawerItem(
                     label = { Text(stringResource(R.string.drawer_all_categories)) },
@@ -365,28 +359,41 @@ private fun NavigationDrawerContent(
                 )
             }
 
-            // Categories
-            items(availableCategories) { category ->
+            items(availableCategories, key = { it }) { category ->
+                val isCustom = category in customCategories
                 NavigationDrawerItem(
-                    label = { 
+                    label = {
                         Row(
+                            modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween,
-                            modifier = Modifier.fillMaxWidth()
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text(category)
-                            if (category in customCategories) {
-                                Icon(
-                                    Icons.Default.Star,
-                                    contentDescription = "Custom",
-                                    modifier = Modifier.size(16.dp),
-                                    tint = MaterialTheme.colorScheme.primary
-                                )
+                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                if (isCustom) {
+                                    Icon(
+                                        Icons.Default.Star,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(18.dp),
+                                        tint = MaterialTheme.colorScheme.primary
+                                    )
+                                }
+                                Text(category, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            }
+                            if (isCustom) {
+                                IconButton(onClick = {
+                                    onRemoveCustomCategory(category)
+                                }) {
+                                    Icon(
+                                        Icons.Default.RemoveCircleOutline,
+                                        contentDescription = stringResource(R.string.cd_remove_custom_category)
+                                    )
+                                }
                             }
                         }
                     },
                     selected = currentFilter == category,
                     onClick = { onFilterSelected(category) },
-                    icon = { Icon(Icons.Default.Category, contentDescription = null) },
+                    icon = { Icon(Icons.Default.Label, contentDescription = null) },
                     modifier = Modifier.padding(horizontal = 12.dp)
                 )
             }
@@ -395,7 +402,6 @@ private fun NavigationDrawerContent(
                 Spacer(modifier = Modifier.height(8.dp))
             }
 
-            // Add custom category button
             item {
                 NavigationDrawerItem(
                     label = { Text(stringResource(R.string.drawer_add_category)) },
@@ -409,7 +415,6 @@ private fun NavigationDrawerContent(
 
         HorizontalDivider()
 
-        // Settings at bottom
         NavigationDrawerItem(
             label = { Text(stringResource(R.string.drawer_settings)) },
             selected = false,
