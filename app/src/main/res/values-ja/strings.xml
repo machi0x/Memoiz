@@ -6,6 +6,7 @@
     <string name="settings_about_title">このアプリについて</string>
     <string name="settings_about_description">Memoizはクリップボードの内容を素早くまとめて再利用できるノートです。</string>
     <string name="settings_about_button">このアプリについて</string>
+    <string name="settings_about_version">バージョン %1$s</string>
     <string name="dialog_close">閉じる</string>
     <string name="settings_title">設定</string>
     <string name="settings_usage_title">コピー元アプリの検出</string>
