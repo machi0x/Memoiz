@@ -136,6 +136,14 @@ jobs:
           path: app/build/outputs/apk/release/*.apk
           retention-days: 90
       
+      # List APK files for debugging
+      - name: List APK files
+        run: |
+          echo "Debug APKs:"
+          ls -la app/build/outputs/apk/debug/
+          echo "Release APKs:"
+          ls -la app/build/outputs/apk/release/
+      
       # Deploy to Firebase App Distribution
       - name: Deploy to Firebase App Distribution
         uses: wzieba/Firebase-Distribution-Github-Action@v1
@@ -144,9 +152,4 @@ jobs:
           serviceCredentialsFileContent: ${{ secrets.FIREBASE_SERVICE_CREDENTIALS }}
           groups: testers
           file: app/build/outputs/apk/debug/app-debug.apk
-          releaseNotes: |
-            ${{ github.event.inputs.release_notes || format('Automated build from commit {0}', github.sha) }}
-            
-            Branch: ${{ github.ref_name }}
-            Commit: ${{ github.sha }}
-            Author: ${{ github.actor }}
+          releaseNotes: "Automated build from commit ${{ github.sha }} - Branch: ${{ github.ref_name }} - Author: ${{ github.actor }}"
