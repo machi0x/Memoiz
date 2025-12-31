@@ -460,6 +460,7 @@ private fun NavigationDrawerContent(
 
             items(availableCategories, key = { it }) { category ->
                 val isCustom = category in customCategories
+                val leadingIcon = if (isCustom) Icons.Default.LabelImportant else Icons.Default.Category
                 NavigationDrawerItem(
                     label = {
                         Row(
@@ -471,8 +472,8 @@ private fun NavigationDrawerContent(
                             if (isCustom) {
                                 IconButton(onClick = { onRemoveCustomCategory(category) }) {
                                     Icon(
-                                        Icons.Default.Remove,
-                                        contentDescription = stringResource(R.string.cd_remove_custom_category)
+                                        Icons.Default.Delete,
+                                        contentDescription = stringResource(R.string.dialog_delete_custom_category_message)
                                     )
                                 }
                             }
@@ -480,7 +481,7 @@ private fun NavigationDrawerContent(
                     },
                     selected = currentFilter == category,
                     onClick = { onFilterSelected(category) },
-                    icon = { Icon(Icons.Default.Label, contentDescription = null) },
+                    icon = { Icon(leadingIcon, contentDescription = null) },
                     modifier = Modifier.padding(horizontal = 12.dp)
                 )
             }
@@ -565,9 +566,9 @@ private fun CategoryAccordion(
                             Icon(Icons.Default.Refresh, reanalyzeFailuresString)
                         }
                     }
-                    val deleteIcon = if (isCustomCategory) Icons.Default.Remove else Icons.Default.Delete
+                    val deleteIcon = Icons.Default.Delete
                     val deleteContentDescription = if (isCustomCategory) {
-                        stringResource(R.string.cd_remove_custom_category)
+                        stringResource(R.string.dialog_delete_custom_category_message)
                     } else {
                         deleteCategoryString
                     }
