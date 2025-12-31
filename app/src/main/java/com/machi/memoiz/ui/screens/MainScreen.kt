@@ -151,26 +151,33 @@ fun MainScreen(
                                 trailingIcon = {
                                     if (searchQuery.isNotEmpty()) {
                                         IconButton(onClick = { viewModel.setSearchQuery("") }) {
-                                            Icon(Icons.Default.Clear, contentDescription = stringResource(R.string.cd_clear_search))
+                                            Icon(
+                                                Icons.Default.Clear,
+                                                contentDescription = stringResource(R.string.cd_clear_search)
+                                            )
                                         }
                                     }
                                 }
                             )
 
-                            val typeLabel = when (memoTypeFilter) {
+                            val appliedTypeLabel = when (memoTypeFilter) {
                                 MemoType.TEXT -> stringResource(R.string.memo_type_text)
                                 MemoType.WEB_SITE -> stringResource(R.string.memo_type_web_site)
                                 MemoType.IMAGE -> stringResource(R.string.memo_type_image)
                                 else -> null
                             }
+                            val appliedCategoryFilter = categoryFilter
                             val filterNote = when {
-                                typeLabel != null && categoryFilter != null -> stringResource(
+                                appliedTypeLabel != null && appliedCategoryFilter != null -> stringResource(
                                     R.string.filter_note_type_and_category,
-                                    typeLabel,
-                                    categoryFilter
+                                    appliedTypeLabel,
+                                    appliedCategoryFilter
                                 )
-                                typeLabel != null -> stringResource(R.string.filter_note_type_only, typeLabel)
-                                categoryFilter != null -> stringResource(R.string.filter_note_category_only, categoryFilter)
+                                appliedTypeLabel != null -> stringResource(R.string.filter_note_type_only, appliedTypeLabel)
+                                appliedCategoryFilter != null -> stringResource(
+                                    R.string.filter_note_category_only,
+                                    appliedCategoryFilter
+                                )
                                 else -> null
                             }
                             if (filterNote != null) {
