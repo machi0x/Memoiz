@@ -14,6 +14,8 @@
     <string name="settings_usage_status_enabled">権限は許可されています</string>
     <string name="settings_usage_status_disabled">権限が許可されていません</string>
     <string name="settings_usage_button">使用履歴アクセス設定を開く</string>
+    <string name="settings_oss_title">オープンソースライセンス</string>
+    <string name="settings_oss_description">Memoizで利用しているサードパーティライブラリのライセンスを表示します。</string>
     <string name="cd_back">戻る</string>
     <string name="cd_open_drawer">ナビゲーションドロワーを開く</string>
     <string name="cd_sort">並び順を変更</string>
