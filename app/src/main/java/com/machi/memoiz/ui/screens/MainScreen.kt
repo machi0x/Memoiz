@@ -86,7 +86,7 @@ fun MainScreen(
     var showDeleteConfirmationDialog by remember { mutableStateOf(false) }
     var deleteTarget by remember { mutableStateOf<Any?>(null) }
     var deleteTargetIsCustomCategory by remember { mutableStateOf(false) }
-    // val categoryOrder by viewModel.categoryOrder.collectAsState()
+    var pendingReanalyzeMemo by remember { mutableStateOf<Memo?>(null) }
 
     val lazyListState = rememberLazyListState()
     val reorderState = rememberReorderableLazyListState(
@@ -248,9 +248,10 @@ fun MainScreen(
                                     showDeleteConfirmationDialog = true
                                 },
                                 onReanalyzeMemo = { memo ->
-                                    viewModel.reanalyzeMemo(context, memo.id)
+                                    pendingReanalyzeMemo = memo
                                 },
                                 onReanalyzeCategory = {
+                                    pendingReanalyzeMemo = null
                                     viewModel.reanalyzeFailureBatch(context)
                                 },
                                 dragHandle = Modifier.detectReorder(reorderState)
@@ -361,6 +362,32 @@ fun MainScreen(
                     showDeleteConfirmationDialog = false
                     deleteTargetIsCustomCategory = false
                 }) {
+                    Text(stringResource(R.string.dialog_cancel))
+                }
+            }
+        )
+    }
+
+    if (pendingReanalyzeMemo != null) {
+        AlertDialog(
+            onDismissRequest = { pendingReanalyzeMemo = null },
+            icon = { Icon(Icons.Default.Refresh, contentDescription = null) },
+            title = { Text(stringResource(R.string.dialog_reanalyze_title)) },
+            text = {
+                Text(stringResource(R.string.dialog_reanalyze_message))
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    pendingReanalyzeMemo?.let { memo ->
+                        viewModel.reanalyzeMemo(context, memo.id)
+                    }
+                    pendingReanalyzeMemo = null
+                }) {
+                    Text(stringResource(R.string.dialog_reanalyze_confirm))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { pendingReanalyzeMemo = null }) {
                     Text(stringResource(R.string.dialog_cancel))
                 }
             }
