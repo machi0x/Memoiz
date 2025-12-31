@@ -1,10 +1,12 @@
 package com.machi.memoiz.util
 
+import android.app.AppOpsManager
 import android.app.usage.UsageEvents
 import android.app.usage.UsageStatsManager
 import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
+import android.os.Process
 import androidx.annotation.RequiresApi
 
 /**
@@ -18,19 +20,23 @@ class UsageStatsHelper(private val context: Context) {
      */
     @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
     fun hasUsageStatsPermission(): Boolean {
-        val usageStatsManager = context.getSystemService(Context.USAGE_STATS_SERVICE) as? UsageStatsManager
+        val appOps = context.getSystemService(Context.APP_OPS_SERVICE) as? AppOpsManager
             ?: return false
-        
-        val endTime = System.currentTimeMillis()
-        val startTime = endTime - 1000 * 10 // Last 10 seconds
-        
-        val usageStatsList = usageStatsManager.queryUsageStats(
-            UsageStatsManager.INTERVAL_DAILY,
-            startTime,
-            endTime
-        )
-        
-        return usageStatsList != null && usageStatsList.isNotEmpty()
+        val mode = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            appOps.unsafeCheckOpNoThrow(
+                AppOpsManager.OPSTR_GET_USAGE_STATS,
+                Process.myUid(),
+                context.packageName
+            )
+        } else {
+            @Suppress("DEPRECATION")
+            appOps.checkOpNoThrow(
+                AppOpsManager.OPSTR_GET_USAGE_STATS,
+                Process.myUid(),
+                context.packageName
+            )
+        }
+        return mode == AppOpsManager.MODE_ALLOWED
     }
     
     /**
