@@ -46,10 +46,9 @@ class MlKitCategorizer(private val context: Context) {
         }
     }
     
-    private fun getSummarizerLanguage(): SummarizerOptions.Language {
+    private fun getSummarizerLanguage(): Int {
         return when (Locale.getDefault().language) {
             "ja" -> SummarizerOptions.Language.JAPANESE
-            "ko" -> SummarizerOptions.Language.KOREAN
             else -> SummarizerOptions.Language.ENGLISH
         }
     }
