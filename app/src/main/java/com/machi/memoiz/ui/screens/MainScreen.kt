@@ -21,6 +21,7 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.filled.SwapVert
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -116,7 +117,7 @@ fun MainScreen(
         clearManualCategoryState()
     }
 
-    val displayedCategories = memoGroups.map { it.category }
+    val displayedCategories by rememberUpdatedState(newValue = memoGroups.map { it.category })
 
     val lazyListState = rememberLazyListState()
     val reorderState = rememberReorderableLazyListState(
@@ -218,9 +219,13 @@ fun MainScreen(
                     actions = {
                         IconButton(onClick = { showSortDialog = true }) {
                             Icon(
-                                when (sortMode) {
-                                    SortMode.CREATED_DESC -> Icons.Default.DateRange
-                                    SortMode.CATEGORY_NAME -> Icons.Default.SortByAlpha
+                                if (hasManualOrder) {
+                                    Icons.Default.SwapVert
+                                } else {
+                                    when (sortMode) {
+                                        SortMode.CREATED_DESC -> Icons.Default.DateRange
+                                        SortMode.CATEGORY_NAME -> Icons.Default.SortByAlpha
+                                    }
                                 },
                                 stringResource(R.string.cd_sort)
                             )

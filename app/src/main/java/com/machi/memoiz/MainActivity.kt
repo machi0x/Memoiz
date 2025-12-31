@@ -4,6 +4,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.SideEffect
@@ -58,11 +59,12 @@ class MainActivity : ComponentActivity() {
         setContent {
             MemoizTheme {
                 val colorScheme = MaterialTheme.colorScheme
+                val isDarkTheme = isSystemInDarkTheme()
                 val view = window
                 val windowInsetsController = WindowCompat.getInsetsController(view, view.decorView)
                 SideEffect {
                     view.statusBarColor = colorScheme.background.toArgb()
-                    windowInsetsController.isAppearanceLightStatusBars = !colorScheme.isDark
+                    windowInsetsController.isAppearanceLightStatusBars = !isDarkTheme
                 }
                 Surface(
                     modifier = Modifier.fillMaxSize(),
