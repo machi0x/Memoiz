@@ -1,85 +1,76 @@
 # Memoiz
 
-An intelligent Android app that automatically categorizes text, links, and images using on-device AI and saves them as organized memos.
+Memoiz is a privacy-first Android clipboard companion that captures text, links, and images, then categorizes and summarizes them on-device for quick recall.
 
-## Features
+## Highlights
+- **One-tap capture** from Process Text, the Android share sheet, or the in-app "Paste from clipboard" FAB.
+- **Two-stage AI categorization** that merges smart suggestions with your custom categories while keeping all processing on-device.
+- **Actionable memo cards** that surface summaries, sub-categories, memo type badges, and quick actions (open, share, delete, re-analyze).
+- **Category-centric organization** with expandable groups, drag-to-reorder headers, filtering chips, and manual reassignment via an edit dialog.
 
-### Core Functionality
-- **Multi-Modal AI Processing**: Uses a sophisticated pipeline of on-device ML Kit GenAI APIs to understand and categorize different types of content.
-- **Intelligent Text Analysis**:
-  - **URLs**: Fetches the content of web pages to generate a relevant sub-category and a concise summary.
-  - **Long Articles**: Automatically creates a one-sentence summary for long blocks of text.
-  - **Short Text**: Identifies meaningful short text and assigns a relevant category.
-- **Image Recognition**: Analyzes images to generate a descriptive sub-category, making them searchable and organized.
-- **Content-Specific Categorization**: Assigns special categories for "Web site", "Image", and "Uncategorizable" content, providing a clear and organized structure.
-- **Privacy-First**: All AI processing happens on-device, ensuring your data never leaves your device.
-- **Seamless Integration**: Captures content via the system's "Process Text" action, the Android share sheet (`ACTION_SEND`), and an in-app paste button.
+## Feature Details
+### Capture & Input
+- **Process Text**: highlight any text system-wide and choose *Categorize with Memoiz*.
+- **Share Sheet**: share text, URLs, or images to Memoiz from any app.
+- **Clipboard FAB**: tap the floating button to enqueue the most recent clipboard contents.
 
-### User Features
-- **Grouped Memos**: Memos are automatically grouped by their AI-generated category.
-- **Detailed Memo Cards**: Each memo displays its content, sub-category, summary (if available), source app, and timestamp.
-- **Category and Memo Management**: Full CRUD operations for both memos and entire category groups.
-- **Modern UI**: A clean and intuitive interface built with Jetpack Compose and Material 3.
+### Categorization & Analysis
+- **Stage 1**: `MlKitCategorizer` generates main/sub categories + summaries using ML Kit GenAI (Prompt, Summarization, Image Description APIs).
+- **Stage 2**: `CategoryMergeService` reconciles AI output with existing and custom categories to reduce duplication.
+- **Localization**: summaries and category hints adapt to the system language (English or Japanese). Image captions default to English, then are rewritten when the locale is Japanese.
+- **Memo Integrity**: re-analysis never changes memo type; failed analyses can be batch re-run or individually re-queued.
 
-## Architecture
+### Main Screen Experience
+- **Search + Filter Note**: top search box with a contextual banner (e.g., `カテゴリ「アイデア」でフィルタ中`).
+- **Category Accordion**: expandable cards showing memo counts, drag handles, delete/reanalyze icons, and a pencil icon per memo for manual reassignment.
+- **Memo Cards**: stacked type/sub-category chips, optional image thumbnail, raw content, summary, source app, timestamp, and quick actions (open/share/delete/reanalyze).
+- **Manual Category Dialog**: lets users type a new category (auto-saved as "My Category") or pick from existing ones via a dropdown.
 
-### Technology Stack
-- **Language**: Kotlin
-- **UI**: Jetpack Compose with Material 3
-- **Database**: Room for persistent storage
-- **Asynchronous Operations**: Kotlin Coroutines for background tasks.
-- **AI**: A multi-API pipeline using ML Kit's on-device GenAI capabilities:
-    - `genai-prompt`: For open-ended categorization and sub-category generation.
-    - `genai-summarization`: For creating concise summaries of long text.
-    - `genai-image-description`: For generating descriptive captions for images.
-- **Networking**: OkHttp and Jsoup for fetching and parsing web content from URLs.
-- **Navigation**: Compose Navigation
-- **Minimum SDK**: 29 (Android 10)
+### Management Utilities
+- **Re-analyze dialog** warns that categories/summaries may change while memo type remains fixed.
+- **Category order** persists after drag-and-drop via `toast_category_order_saved` feedback.
+- **Filters** for memo type (Text / Web / Image) and category, accessible from the navigation drawer.
 
-### Data Processing Flow
-1.  **Input**: The app receives data (text, URL, or image) from the user.
-2.  **Triage**: It identifies the content type.
-3.  **Processing**:
-    - **URL**: Fetches web content, then passes it to the Prompt and Summarization APIs.
-    - **Image**: Uses the Image Description API to generate a caption.
-    - **Text**: Passes the text to the Prompt and (if necessary) Summarization APIs.
-4.  **Storage**: The structured result (category, sub-category, summary, etc.) is saved to the Room database.
-5.  **Display**: The main screen displays the memos, grouped by category, in a `LazyColumn`.
+## Architecture Snapshot
+| Layer | Key Components |
+| --- | --- |
+| UI | Jetpack Compose screens (`MainScreen`, `SettingsScreen`), `MainViewModel`, `SettingsViewModel`, Material 3 theme |
+| Domain | `Memo`, `MemoGroup`, `CategorizationResult` |
+| Data | Room (`MemoEntity`, `CategoryEntity`, DAOs, `MemoizDatabase`), repositories |
+| Services | `ContentProcessingLauncher`, `AiCategorizationService`, `MlKitCategorizer`, `CategoryMergeService` |
+| Background | `ClipboardProcessingWorker`, WorkManager helpers |
+| Utilities | `UsageStatsHelper`, `ImageUriManager`, localization helpers |
 
-## How to Use
+## Building & Running
+```powershell
+cd C:\Users\user\StudioProjects\Memoiz
+.\gradlew.bat assembleDebug
+```
+Install the resulting APK (`app/build/outputs/apk/debug/`). Target devices must run Android 10 (API 29) or newer.
 
-1. **Install the app** on an Android device (API 29+).
-2. **Grant permissions** as requested.
-3. **Share content** to be categorized:
-   - Select text → tap "Categorize with Memoiz" in the context menu.
-   - Share any text, URL, or image → choose Memoiz from the share sheet.
-   - Open Memoiz → tap the "Paste from clipboard" button.
-4. **View your organized memos**, grouped by category, in the main screen.
+## How to Use the App
+1. **Launch Memoiz** and grant requested permissions (Usage Access for source-app detection is optional but recommended).
+2. **Capture content** using Process Text, the Share sheet, or the clipboard FAB.
+3. **Review memos** grouped by category; tap headers to expand/collapse.
+4. **Filter** by memo type or category from the navigation drawer; a banner below the search field indicates the active filters.
+5. **Reorder categories** via the drag handle icon in each header.
+6. **Edit categories manually** with the pencil icon → choose from existing categories or type a new one (auto-added as "My Category").
+7. **Re-analyze** a memo via the refresh icon; confirm in the dialog to keep memo type unchanged while allowing category/summary updates.
 
-## Privacy
+## Privacy & Permissions
+- All AI inference uses ML Kit’s on-device models; no memo content leaves the device unless future settings explicitly opt into cloud features.
+- Usage Stats permission is optional and only queried via `AppOpsManager` to avoid crashes when disabled.
 
-- **On-Device Processing**: All AI analysis happens on your device. Your content is never sent to the cloud.
-- **Explicit Action Required**: The app only processes content when you explicitly share or paste it.
-- **Compliant**: Fully respects Android 10+ clipboard and data access restrictions.
+## Tech Stack
+- Kotlin 1.9, Jetpack Compose, Material 3
+- Room, WorkManager, Kotlin Coroutines
+- ML Kit GenAI Prompt, Summarization, and Image Description APIs
+- OkHttp + Jsoup for URL fetching, Coil for image loading
 
-## Future Enhancements
-
-- [ ] Implement `ACTION_SEND_MULTIPLE` to handle sharing multiple items at once.
-- [ ] Allow user to create and manage their own custom categories.
-- [ ] Allow user to edit memos and their categories.
-- [ ] Full search functionality across all memos.
-- [ ] Export and backup functionality.
-
-## Requirements
-
-- Android 10 (API 29) or higher
-- Kotlin 1.9+
-- Gradle 8.2+
-
-## CI/CD
-
-This project includes a GitHub Actions workflow for automated builds and Firebase App Distribution. For more details, see [.github/workflows/README.md](.github/workflows/README.md)
+## Roadmap (Post-UI Cleanup)
+- Settings enhancements (cloud opt-in toggles, model download diagnostics)
+- Multi-select share (`ACTION_SEND_MULTIPLE`)
+- Backup/export tooling
 
 ## License
-
-See the LICENSE file for details.
+Apache License 2.0 — see `LICENSE` for details.
