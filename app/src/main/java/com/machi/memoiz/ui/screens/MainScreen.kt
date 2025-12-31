@@ -122,6 +122,24 @@ fun MainScreen(
     )
     var isFabExpanded by remember { mutableStateOf(false) }
 
+    val appliedTypeLabel = when (memoTypeFilter) {
+        MemoType.TEXT -> stringResource(R.string.memo_type_text)
+        MemoType.WEB_SITE -> stringResource(R.string.memo_type_web_site)
+        MemoType.IMAGE -> stringResource(R.string.memo_type_image)
+        else -> null
+    }
+    val selectedCategoryFilter = categoryFilter
+    val filterNote = when {
+        appliedTypeLabel != null && selectedCategoryFilter != null -> stringResource(
+            R.string.filter_note_type_and_category,
+            appliedTypeLabel,
+            selectedCategoryFilter
+        )
+        appliedTypeLabel != null -> stringResource(R.string.filter_note_type_only, appliedTypeLabel)
+        selectedCategoryFilter != null -> stringResource(R.string.filter_note_category_only, selectedCategoryFilter)
+        else -> null
+    }
+
     ModalNavigationDrawer(
         drawerState = drawerState,
         drawerContent = {
@@ -185,35 +203,6 @@ fun MainScreen(
                                     }
                                 }
                             )
-
-                            val appliedTypeLabel = when (memoTypeFilter) {
-                                MemoType.TEXT -> stringResource(R.string.memo_type_text)
-                                MemoType.WEB_SITE -> stringResource(R.string.memo_type_web_site)
-                                MemoType.IMAGE -> stringResource(R.string.memo_type_image)
-                                else -> null
-                            }
-                            val appliedCategoryFilter = categoryFilter
-                            val filterNote = when {
-                                appliedTypeLabel != null && appliedCategoryFilter != null -> stringResource(
-                                    R.string.filter_note_type_and_category,
-                                    appliedTypeLabel,
-                                    appliedCategoryFilter
-                                )
-                                appliedTypeLabel != null -> stringResource(R.string.filter_note_type_only, appliedTypeLabel)
-                                appliedCategoryFilter != null -> stringResource(
-                                    R.string.filter_note_category_only,
-                                    appliedCategoryFilter
-                                )
-                                else -> null
-                            }
-                            if (filterNote != null) {
-                                Text(
-                                    text = filterNote,
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.padding(top = 4.dp)
-                                )
-                            }
                         }
                     },
                     navigationIcon = {
@@ -256,83 +245,97 @@ fun MainScreen(
                 }
             }
         ) { padding ->
-            if (memoGroups.isEmpty()) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(padding),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
-                        Image(
-                            painter = painterResource(id = R.drawable.no_memo),
-                            contentDescription = stringResource(R.string.cd_no_memo_image),
-                            modifier = Modifier
-                                .size(180.dp)
-                                .clip(RoundedCornerShape(16.dp)),
-                            contentScale = ContentScale.Crop
-                        )
-                        Text(
-                            text = if (searchQuery.isNotEmpty() || categoryFilter != null) {
-                                stringResource(R.string.no_matching_memos_found)
-                            } else {
-                                stringResource(R.string.empty_state_message)
-                            },
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            textAlign = TextAlign.Center
-                        )
-                    }
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+            ) {
+                filterNote?.let {
+                    Text(
+                        text = it,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 4.dp)
+                    )
                 }
-            } else {
-                LazyColumn(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(padding)
-                        .reorderable(reorderState),
-                    state = lazyListState,
-                    contentPadding = PaddingValues(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    items(memoGroups, key = { it.category }) { group ->
-                        ReorderableItem(state = reorderState, key = group.category) { _ ->
-                            val isCustomCategory = customCategories.contains(group.category)
-                            CategoryAccordion(
-                                group = group,
-                                isExpanded = group.category in expandedCategories,
-                                context = context,
-                                isCustomCategory = isCustomCategory,
-                                onHeaderClick = { viewModel.toggleCategoryExpanded(group.category) },
-                                onDeleteCategory = {
-                                    deleteTarget = group.category
-                                    deleteTargetIsCustomCategory = isCustomCategory
-                                    showDeleteConfirmationDialog = true
-                                },
-                                onDeleteMemo = { memo ->
-                                    deleteTarget = memo
-                                    deleteTargetIsCustomCategory = false
-                                    showDeleteConfirmationDialog = true
-                                },
-                                onEditCategory = { memo ->
-                                    manualCategoryMemo = memo
-                                    manualCategoryInput = memo.category
-                                    manualCategoryError = null
-                                    isFabExpanded = false
-                                },
-                                onReanalyzeMemo = { memo ->
-                                    pendingReanalyzeMemo = memo
-                                    isFabExpanded = false
-                                },
-                                onReanalyzeCategory = {
-                                    pendingReanalyzeMemo = null
-                                    viewModel.reanalyzeFailureBatch(context)
-                                    isFabExpanded = false
-                                },
-                                dragHandle = Modifier.detectReorder(reorderState)
+
+                if (memoGroups.isEmpty()) {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(16.dp)
+                        ) {
+                            Image(
+                                painter = painterResource(id = R.drawable.no_memo),
+                                contentDescription = stringResource(R.string.cd_no_memo_image),
+                                modifier = Modifier
+                                    .size(180.dp)
+                                    .clip(RoundedCornerShape(16.dp)),
+                                contentScale = ContentScale.Crop
                             )
+                            Text(
+                                text = if (searchQuery.isNotEmpty() || categoryFilter != null) {
+                                    stringResource(R.string.no_matching_memos_found)
+                                } else {
+                                    stringResource(R.string.empty_state_message)
+                                },
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                textAlign = TextAlign.Center
+                            )
+                        }
+                    }
+                } else {
+                    LazyColumn(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .reorderable(reorderState),
+                        state = lazyListState,
+                        contentPadding = PaddingValues(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        items(memoGroups, key = { it.category }) { group ->
+                            ReorderableItem(state = reorderState, key = group.category) { _ ->
+                                val isCustomCategory = customCategories.contains(group.category)
+                                CategoryAccordion(
+                                    group = group,
+                                    isExpanded = group.category in expandedCategories,
+                                    context = context,
+                                    isCustomCategory = isCustomCategory,
+                                    onHeaderClick = { viewModel.toggleCategoryExpanded(group.category) },
+                                    onDeleteCategory = {
+                                        deleteTarget = group.category
+                                        deleteTargetIsCustomCategory = isCustomCategory
+                                        showDeleteConfirmationDialog = true
+                                    },
+                                    onDeleteMemo = { memo ->
+                                        deleteTarget = memo
+                                        deleteTargetIsCustomCategory = false
+                                        showDeleteConfirmationDialog = true
+                                    },
+                                    onEditCategory = { memo ->
+                                        manualCategoryMemo = memo
+                                        manualCategoryInput = memo.category
+                                        manualCategoryError = null
+                                        isFabExpanded = false
+                                    },
+                                    onReanalyzeMemo = { memo ->
+                                        pendingReanalyzeMemo = memo
+                                        isFabExpanded = false
+                                    },
+                                    onReanalyzeCategory = {
+                                        pendingReanalyzeMemo = null
+                                        viewModel.reanalyzeFailureBatch(context)
+                                        isFabExpanded = false
+                                    },
+                                    dragHandle = Modifier.detectReorder(reorderState)
+                                )
+                            }
                         }
                     }
                 }
