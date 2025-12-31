@@ -76,5 +76,6 @@
     <string name="dialog_edit_category_title">カテゴリを編集</string>
     <string name="dialog_edit_category_message">リストから選ぶか、新しいカテゴリ名を入力してください。</string>
     <string name="dialog_edit_category_auto_hint">新しい名前は自動的にマイカテゴリとして登録されます。</string>
+    <string name="dialog_choose_existing_category">既存のカテゴリから選択</string>
     <string name="dialog_save">保存</string>
 </resources>

@@ -105,5 +105,6 @@ Tap the clipboard button or share content to start.</string>
     <string name="dialog_edit_category_title">Edit Category</string>
     <string name="dialog_edit_category_message">Choose a category from the list or type a new name.</string>
     <string name="dialog_edit_category_auto_hint">New names are saved automatically as My Categories.</string>
+    <string name="dialog_choose_existing_category">Choose from existing categories</string>
     <string name="dialog_save">Save</string>
 </resources>

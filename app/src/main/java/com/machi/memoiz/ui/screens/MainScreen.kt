@@ -1050,56 +1050,45 @@ private fun ManualCategoryDialog(
     onDismiss: () -> Unit,
     onSave: (String) -> Unit
 ) {
-    var dropdownExpanded by remember { mutableStateOf(false) }
-    val suggestions = remember(categoryValue, availableCategories) {
-        if (categoryValue.isBlank()) availableCategories
-        else availableCategories.filter { it.contains(categoryValue, ignoreCase = true) }
-    }
+    var menuExpanded by remember { mutableStateOf(false) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.dialog_edit_category_title)) },
         text = {
-            Column {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(stringResource(R.string.dialog_edit_category_message))
-                Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = stringResource(R.string.dialog_edit_category_auto_hint),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                Spacer(modifier = Modifier.height(8.dp))
-                ExposedDropdownMenuBox(
-                    expanded = dropdownExpanded && suggestions.isNotEmpty(),
-                    onExpandedChange = { dropdownExpanded = it }
+                OutlinedTextField(
+                    value = categoryValue,
+                    onValueChange = {
+                        onCategoryChange(it)
+                        menuExpanded = false
+                    },
+                    label = { Text(stringResource(R.string.dialog_category_name_label)) },
+                    isError = errorMessage != null,
+                    supportingText = errorMessage?.let { { Text(it) } },
+                    modifier = Modifier.fillMaxWidth()
+                )
+                TextButton(onClick = { menuExpanded = true }) {
+                    Text(stringResource(R.string.dialog_choose_existing_category))
+                }
+                DropdownMenu(
+                    expanded = menuExpanded,
+                    onDismissRequest = { menuExpanded = false }
                 ) {
-                    OutlinedTextField(
-                        value = categoryValue,
-                        onValueChange = {
-                            onCategoryChange(it)
-                            dropdownExpanded = true
-                        },
-                        label = { Text(stringResource(R.string.dialog_category_name_label)) },
-                        isError = errorMessage != null,
-                        supportingText = errorMessage?.let { { Text(it) } },
-                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = dropdownExpanded && suggestions.isNotEmpty()) },
-                        modifier = Modifier
-                            .menuAnchor()
-                            .fillMaxWidth()
-                    )
-                    ExposedDropdownMenu(
-                        expanded = dropdownExpanded && suggestions.isNotEmpty(),
-                        onDismissRequest = { dropdownExpanded = false }
-                    ) {
-                        suggestions.forEach { option ->
-                            DropdownMenuItem(
-                                text = { Text(option) },
-                                onClick = {
-                                    onCategoryChange(option)
-                                    dropdownExpanded = false
-                                }
-                            )
-                        }
+                    availableCategories.forEach { option ->
+                        DropdownMenuItem(
+                            text = { Text(option) },
+                            onClick = {
+                                onCategoryChange(option)
+                                menuExpanded = false
+                            }
+                        )
                     }
                 }
             }
