@@ -80,10 +80,4 @@ class PreferencesDataStoreManager(private val context: Context) {
             preferences[SHOW_TUTORIAL_ON_NEXT_LAUNCH_KEY] = true
         }
     }
-
-    suspend fun clearQueuedTutorial() {
-        context.dataStore.edit { preferences ->
-            preferences[SHOW_TUTORIAL_ON_NEXT_LAUNCH_KEY] = false
-        }
-    }
 }
