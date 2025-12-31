@@ -5,19 +5,20 @@
     android:background="@android:color/transparent">
 
     <LinearLayout
+        android:id="@+id/dialog_root"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom"
-        android:layout_margin="16dp"
+        android:layout_margin="24dp"
         android:background="@drawable/bg_processing_dialog"
         android:orientation="horizontal"
         android:gravity="center_vertical"
-        android:padding="16dp">
+        android:padding="20dp">
 
         <ImageView
             android:id="@+id/dialog_icon"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
             android:src="@drawable/analyzing"
             android:contentDescription="@string/app_name" />
 
@@ -25,11 +26,17 @@
             android:id="@+id/dialog_message"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginStart="12dp"
+            android:layout_marginStart="16dp"
             android:layout_weight="1"
             android:text="@string/categorization_started"
-            android:textColor="@android:color/white"
-            android:textSize="16sp" />
+            android:textColor="@android:color/black"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:fontFamily="monospace"
+            android:shadowColor="#33000000"
+            android:shadowDx="0"
+            android:shadowDy="2"
+            android:shadowRadius="4" />
     </LinearLayout>
 
 </FrameLayout>

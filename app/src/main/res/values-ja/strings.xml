@@ -51,6 +51,7 @@
     <string name="nothing_to_categorize">クリップボードに分類するテキストや画像がありません</string>
     <string name="empty_state_message">メモがまだありません。
 テキストや画像を他のアプリから共有したり、クリップボードから貼り付けて始めましょう。</string>
+    <string name="categorization_started">メモイズに保存し、分類を開始しました。</string>
     <string name="drawer_filter_by_type">タイプで絞り込み</string>
     <string name="drawer_filter_by_category">カテゴリで絞り込み</string>
     <string name="memo_type_text">テキスト</string>
