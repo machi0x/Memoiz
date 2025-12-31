@@ -22,9 +22,9 @@
     <string name="dialog_delete_category_message">このカテゴリを削除すると関連するメモもすべて削除されます。本当によろしいですか？</string>
     <string name="dialog_delete_category_warning">このカテゴリ内のメモは元に戻せません。</string>
     <string name="dialog_delete_memo_title">メモを削除</string>
-    <string name="dialog_delete_memo_message">このメモを削除してもよろしいですか？</string>
+    <string name="dialog_delete_memo_message">このメモを削除してもよろしいですか？(元のファイルや画像は削除されません)</string>
     <string name="dialog_delete_confirm">削除</string>
-    <string name="label_source_app">出典: %1$s</string>
+    <string name="label_source_app">引用元アプリ: %1$s</string>
     <string name="cd_no_memo_image">メモがまだ無いことを示すイラスト</string>
     <string name="drawer_all_categories">すべて</string>
     <string name="drawer_settings">設定</string>
