@@ -17,6 +17,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Description
+import androidx.compose.material.icons.filled.School
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -109,6 +110,24 @@ fun SettingsScreen(
                             )
                         },
                         onClick = { openUsageAccessSettings(context) }
+                    )
+                }
+
+                item {
+                    HorizontalDivider(modifier = Modifier.padding(start = 72.dp))
+                }
+
+                item {
+                    PreferenceItem(
+                        title = stringResource(R.string.settings_tutorial_title),
+                        subtitle = stringResource(R.string.settings_tutorial_description),
+                        leadingIcon = {
+                            Icon(Icons.Default.School, contentDescription = null)
+                        },
+                        onClick = {
+                            viewModel.requestTutorial()
+                            onNavigateBack()
+                        }
                     )
                 }
 

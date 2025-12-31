@@ -109,4 +109,23 @@ Tap the clipboard button or share content to start.</string>
     <string name="dialog_edit_category_auto_hint">New names are saved automatically as My Categories.</string>
     <string name="dialog_choose_existing_category">Choose from existing categories</string>
     <string name="dialog_save">Save</string>
+    <string name="tutorial_title">Memoiz quick tour</string>
+    <string name="tutorial_next">Next</string>
+    <string name="tutorial_done">Got it</string>
+    <string name="tutorial_skip">Skip</string>
+    <string name="tutorial_back">Back</string>
+    <string name="tutorial_step_overview_title">What Memoiz can do</string>
+    <string name="tutorial_step_overview_body">Save text, links, or images and let on-device AI categorize them automatically so you can recall them later.</string>
+    <string name="tutorial_step_ui_title">Main screen &amp; side panel</string>
+    <string name="tutorial_step_ui_body">Use the search bar to find memos. Tap the menu icon to open the side panel where you filter by memo type or category, add or remove My Categories, and reorder categories with the drag handle. Expand a category to review, re-analyze, or share items.</string>
+    <string name="tutorial_step_my_category_title">Teach Memoiz your labels</string>
+    <string name="tutorial_step_my_category_body">Add My Category names so the AI can sort your memos using your own language. You can merge or delete them later without losing memos.</string>
+    <string name="tutorial_step_share_select_title">Share from text selection</string>
+    <string name="tutorial_step_share_select_body">Select text in any app and use the Share to Memoiz option. The memo keeps the source app name when available.</string>
+    <string name="tutorial_step_share_browser_title">Share from apps or browser</string>
+    <string name="tutorial_step_share_browser_body">Send text or images directly from apps like your browser. Memoiz queues the item, categorizes it, and shows it in the right category.</string>
+    <string name="tutorial_step_usage_permission_title">Why usage access helps</string>
+    <string name="tutorial_step_usage_permission_body">Granting usage access lets Memoiz attach the source app and improve the on-device analysis. You can toggle it anytime in Settings &gt; Usage access.</string>
+    <string name="settings_tutorial_title">See tutorial</string>
+    <string name="settings_tutorial_description">Open the quick tour again to review features and permissions.</string>
 </resources>

@@ -5,5 +5,7 @@ package com.machi.memoiz.data.datastore
  */
 data class UserPreferences(
     val customCategories: Set<String> = emptySet(),
-    val categoryOrder: List<String> = emptyList()
+    val categoryOrder: List<String> = emptyList(),
+    val hasSeenTutorial: Boolean = false,
+    val showTutorialOnNextLaunch: Boolean = false
 )

@@ -9,6 +9,7 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -23,6 +24,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.snapshotFlow
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -35,6 +37,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.annotation.DrawableRes
+import androidx.compose.foundation.shape.CircleShape
 import com.machi.memoiz.R
 import com.machi.memoiz.data.entity.MemoType
 import com.machi.memoiz.domain.model.Memo
@@ -65,8 +69,10 @@ fun MainScreen(
     val customCategories by viewModel.customCategories.collectAsState()
     val expandedCategories by viewModel.expandedCategories.collectAsState()
     val categoryOrder by viewModel.categoryOrder.collectAsState()
+    val shouldShowTutorial by viewModel.shouldShowTutorial.collectAsState()
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+    var showTutorialDialog by rememberSaveable { mutableStateOf(false) }
 
     LaunchedEffect(memoGroups) {
         viewModel.ensureCategoryOrder(memoGroups.map { it.category })
@@ -82,6 +88,12 @@ fun MainScreen(
 
     LaunchedEffect(Unit) {
         viewModel.scheduleDailyFailureReanalyze(context)
+    }
+
+    LaunchedEffect(shouldShowTutorial) {
+        if (shouldShowTutorial) {
+            showTutorialDialog = true
+        }
     }
 
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
@@ -518,18 +530,27 @@ fun MainScreen(
 
     if (manualCategoryMemo != null) {
         ManualCategoryDialog(
-             availableCategories = availableCategories,
-             categoryValue = manualCategoryInput,
-             errorMessage = manualCategoryError,
-             onCategoryChange = { updated ->
-                 manualCategoryInput = updated
-                 manualCategoryError = null
-             },
-             onDismiss = clearManualCategoryState,
-             onSave = handleManualCategorySave
-         )
-     }
- }
+            availableCategories = availableCategories,
+            categoryValue = manualCategoryInput,
+            errorMessage = manualCategoryError,
+            onCategoryChange = { updated ->
+                manualCategoryInput = updated
+                manualCategoryError = null
+            },
+            onDismiss = clearManualCategoryState,
+            onSave = handleManualCategorySave
+        )
+    }
+
+    if (showTutorialDialog) {
+        TutorialDialog(
+            onFinished = {
+                showTutorialDialog = false
+                viewModel.markTutorialSeen()
+            }
+        )
+    }
+}
 
 @Composable
 private fun NavigationDrawerContent(
@@ -1161,6 +1182,139 @@ private fun ManualCategoryDialog(
         dismissButton = {
             TextButton(onClick = onDismiss) {
                 Text(stringResource(R.string.dialog_cancel))
+            }
+        }
+    )
+}
+
+private data class TutorialStep(
+    @DrawableRes val imageRes: Int,
+    val title: String,
+    val description: String
+)
+
+@Composable
+private fun TutorialDialog(
+    onFinished: () -> Unit
+) {
+    val steps = listOf(
+        TutorialStep(
+            imageRes = R.drawable.top_banner,
+            title = stringResource(R.string.tutorial_step_overview_title),
+            description = stringResource(R.string.tutorial_step_overview_body)
+        ),
+        TutorialStep(
+            imageRes = R.drawable.top_banner,
+            title = stringResource(R.string.tutorial_step_ui_title),
+            description = stringResource(R.string.tutorial_step_ui_body)
+        ),
+        TutorialStep(
+            imageRes = R.drawable.my_category,
+            title = stringResource(R.string.tutorial_step_my_category_title),
+            description = stringResource(R.string.tutorial_step_my_category_body)
+        ),
+        TutorialStep(
+            imageRes = R.drawable.share_from_select,
+            title = stringResource(R.string.tutorial_step_share_select_title),
+            description = stringResource(R.string.tutorial_step_share_select_body)
+        ),
+        TutorialStep(
+            imageRes = R.drawable.share_from_browser,
+            title = stringResource(R.string.tutorial_step_share_browser_title),
+            description = stringResource(R.string.tutorial_step_share_browser_body)
+        ),
+        TutorialStep(
+            imageRes = R.drawable.app_usages,
+            title = stringResource(R.string.tutorial_step_usage_permission_title),
+            description = stringResource(R.string.tutorial_step_usage_permission_body)
+        )
+    )
+
+    var currentStep by rememberSaveable { mutableStateOf(0) }
+    val isLastStep = currentStep == steps.lastIndex
+    val step = steps[currentStep]
+
+    AlertDialog(
+        onDismissRequest = onFinished,
+        title = { Text(stringResource(R.string.tutorial_title)) },
+        text = {
+            Column(
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Image(
+                    painter = painterResource(id = step.imageRes),
+                    contentDescription = null,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(180.dp)
+                        .clip(RoundedCornerShape(12.dp)),
+                    contentScale = ContentScale.Fit
+                )
+                Text(
+                    text = step.title,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center
+                )
+                Text(
+                    text = step.description,
+                    style = MaterialTheme.typography.bodyMedium,
+                    textAlign = TextAlign.Start
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    steps.forEachIndexed { index, _ ->
+                        val color = if (index == currentStep) {
+                            MaterialTheme.colorScheme.primary
+                        } else {
+                            MaterialTheme.colorScheme.outline
+                        }
+                        Box(
+                            modifier = Modifier
+                                .padding(horizontal = 4.dp)
+                                .size(if (index == currentStep) 10.dp else 8.dp)
+                                .clip(CircleShape)
+                                .background(color)
+                        )
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = {
+                if (isLastStep) {
+                    onFinished()
+                } else {
+                    currentStep++
+                }
+            }) {
+                Text(
+                    if (isLastStep) {
+                        stringResource(R.string.tutorial_done)
+                    } else {
+                        stringResource(R.string.tutorial_next)
+                    }
+                )
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = {
+                if (currentStep > 0) {
+                    currentStep--
+                } else {
+                    onFinished()
+                }
+            }) {
+                Text(
+                    if (currentStep > 0) {
+                        stringResource(R.string.tutorial_back)
+                    } else {
+                        stringResource(R.string.tutorial_skip)
+                    }
+                )
             }
         }
     )

@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
@@ -19,12 +20,16 @@ class PreferencesDataStoreManager(private val context: Context) {
         private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "user_preferences")
         private val CUSTOM_CATEGORIES_KEY = stringSetPreferencesKey("custom_categories")
         private val CATEGORY_ORDER_KEY = stringPreferencesKey("category_order")
+        private val HAS_SEEN_TUTORIAL_KEY = booleanPreferencesKey("has_seen_tutorial")
+        private val SHOW_TUTORIAL_ON_NEXT_LAUNCH_KEY = booleanPreferencesKey("show_tutorial_on_next_launch")
     }
 
     val userPreferencesFlow: Flow<UserPreferences> = context.dataStore.data.map { preferences ->
         UserPreferences(
             customCategories = preferences[CUSTOM_CATEGORIES_KEY] ?: emptySet(),
-            categoryOrder = preferences[CATEGORY_ORDER_KEY]?.split(',')?.filter { it.isNotBlank() } ?: emptyList()
+            categoryOrder = preferences[CATEGORY_ORDER_KEY]?.split(',')?.filter { it.isNotBlank() } ?: emptyList(),
+            hasSeenTutorial = preferences[HAS_SEEN_TUTORIAL_KEY] ?: false,
+            showTutorialOnNextLaunch = preferences[SHOW_TUTORIAL_ON_NEXT_LAUNCH_KEY] ?: false
         )
     }
 
@@ -60,6 +65,25 @@ class PreferencesDataStoreManager(private val context: Context) {
             if (currentOrder.remove(categoryName)) {
                 preferences[CATEGORY_ORDER_KEY] = currentOrder.joinToString(",")
             }
+        }
+    }
+
+    suspend fun markTutorialSeen() {
+        context.dataStore.edit { preferences ->
+            preferences[HAS_SEEN_TUTORIAL_KEY] = true
+            preferences[SHOW_TUTORIAL_ON_NEXT_LAUNCH_KEY] = false
+        }
+    }
+
+    suspend fun requestTutorial() {
+        context.dataStore.edit { preferences ->
+            preferences[SHOW_TUTORIAL_ON_NEXT_LAUNCH_KEY] = true
+        }
+    }
+
+    suspend fun clearQueuedTutorial() {
+        context.dataStore.edit { preferences ->
+            preferences[SHOW_TUTORIAL_ON_NEXT_LAUNCH_KEY] = false
         }
     }
 }
