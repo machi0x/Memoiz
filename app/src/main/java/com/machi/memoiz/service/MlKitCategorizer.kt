@@ -34,22 +34,27 @@ class MlKitCategorizer(private val context: Context) {
     private fun uncategorizableLabel(): String = context.getString(R.string.category_uncategorizable)
     
     private fun getSystemLanguageName(): String {
-        return when (Locale.getDefault().language) {
-            "ja" -> "Japanese"
-            "en" -> "English"
-            "ko" -> "Korean"
-            "zh" -> "Chinese"
-            "es" -> "Spanish"
-            "fr" -> "French"
-            "de" -> "German"
-            else -> "English" // fallback
-        }
+        return if (Locale.getDefault().language == "ja") "Japanese" else "English"
     }
     
     private fun getSummarizerLanguage(): Int {
-        return when (Locale.getDefault().language) {
-            "ja" -> SummarizerOptions.Language.JAPANESE
-            else -> SummarizerOptions.Language.ENGLISH
+        return if (Locale.getDefault().language == "ja") {
+            SummarizerOptions.Language.JAPANESE
+        } else {
+            SummarizerOptions.Language.ENGLISH
+        }
+    }
+
+    private suspend fun localizeDescription(description: String?): String? {
+        if (description.isNullOrBlank()) return description
+        return if (Locale.getDefault().language == "ja") {
+            runCatching {
+                generateText(
+                    "Translate the following image description to Japanese.\nDescription: ${description.take(500)}"
+                ) ?: description
+            }.getOrDefault(description)
+        } else {
+            description
         }
     }
 
@@ -114,10 +119,11 @@ class MlKitCategorizer(private val context: Context) {
             val description = describeImage(bitmap)
             
             // If we have a description, categorize based on it like text
-            if (!description.isNullOrBlank()) {
-                val category = generateText(buildCategorizationPrompt(description, sourceApp))
-                val subCategory = generateText(buildSubCategoryPrompt(description, category ?: "", sourceApp))
-                Triple(category, subCategory, description)
+            val localizedDescription = localizeDescription(description)
+            if (!localizedDescription.isNullOrBlank()) {
+                val category = generateText(buildCategorizationPrompt(localizedDescription, sourceApp))
+                val subCategory = generateText(buildSubCategoryPrompt(localizedDescription, category ?: "", sourceApp))
+                Triple(category, subCategory, localizedDescription)
             } else {
                 // Fallback to image category if description fails
                 Triple(imageCategoryLabel(), null, null)
@@ -137,10 +143,11 @@ class MlKitCategorizer(private val context: Context) {
 
     private suspend fun describeImage(bitmap: Bitmap): String? = withContext(Dispatchers.IO) {
         runCatching {
-            val result = imageDescriber
-                .runInference(ImageDescriptionRequest.builder(bitmap).build())
-                .await()
-            result.description
+            val request = ImageDescriptionRequest.builder(bitmap).build()
+             val result = imageDescriber
+                 .runInference(request)
+                 .await()
+             result.description
         }.onFailure { it.printStackTrace() }.getOrNull()
     }
 

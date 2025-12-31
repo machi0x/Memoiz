@@ -97,6 +97,6 @@ Tap the clipboard button or share content to start.</string>
     <string name="cd_category_drag_handle">Drag to reorder category</string>
     <string name="toast_category_order_saved">Category order updated</string>
     <string name="dialog_reanalyze_title">Re-analyze memo?</string>
-    <string name="dialog_reanalyze_message">Re-analyzing may change this memo's category or summary, but the memo type stays the same.</string>
+    <string name="dialog_reanalyze_message">Re-analyzing may change the category or summary of this memo, but the memo type stays the same.</string>
     <string name="dialog_reanalyze_confirm">Re-analyze</string>
 </resources>
