@@ -22,6 +22,7 @@ import androidx.compose.material.icons.filled.SwapVert
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -118,6 +119,7 @@ fun MainScreen(
     }
 
     val displayedCategories by rememberUpdatedState(newValue = memoGroups.map { it.category })
+    val autoHideFab = memoGroups.isNotEmpty()
 
     val lazyListState = rememberLazyListState()
     val reorderState = rememberReorderableLazyListState(
@@ -127,6 +129,33 @@ fun MainScreen(
         }
     )
     var isFabExpanded by remember { mutableStateOf(false) }
+    var isFabVisible by remember { mutableStateOf(true) }
+
+    LaunchedEffect(autoHideFab, lazyListState) {
+        if (!autoHideFab) {
+            isFabVisible = true
+            return@LaunchedEffect
+        }
+        var previousIndex = lazyListState.firstVisibleItemIndex
+        var previousOffset = lazyListState.firstVisibleItemScrollOffset
+        snapshotFlow {
+            Triple(
+                lazyListState.isScrollInProgress,
+                lazyListState.firstVisibleItemIndex,
+                lazyListState.firstVisibleItemScrollOffset
+            )
+        }.collect { (isScrolling, index, offset) ->
+            if (!isScrolling) {
+                isFabVisible = true
+            } else {
+                val scrollingDown = index > previousIndex ||
+                        (index == previousIndex && offset > previousOffset)
+                isFabVisible = !scrollingDown
+            }
+            previousIndex = index
+            previousOffset = offset
+        }
+    }
 
     val appliedTypeLabel = when (memoTypeFilter) {
         MemoType.TEXT -> stringResource(R.string.memo_type_text)
@@ -234,22 +263,24 @@ fun MainScreen(
                 )
             },
             floatingActionButton = {
-                AnimatedContent(targetState = isFabExpanded, label = "fab") { expanded ->
-                    if (expanded) {
-                        ExtendedFloatingActionButton(
-                            text = { Text(text = stringResource(R.string.fab_paste_clipboard)) },
-                            icon = { Icon(Icons.Default.ContentPaste, contentDescription = null) },
-                            onClick = {
-                                val enqueued = ContentProcessingLauncher.enqueueFromClipboard(context)
-                                if (!enqueued) {
-                                    Toast.makeText(context, R.string.nothing_to_categorize, Toast.LENGTH_SHORT).show()
+                AnimatedVisibility(visible = isFabVisible) {
+                    AnimatedContent(targetState = isFabExpanded, label = "fab") { expanded ->
+                        if (expanded) {
+                            ExtendedFloatingActionButton(
+                                text = { Text(text = stringResource(R.string.fab_paste_clipboard)) },
+                                icon = { Icon(Icons.Default.ContentPaste, contentDescription = null) },
+                                onClick = {
+                                    val enqueued = ContentProcessingLauncher.enqueueFromClipboard(context)
+                                    if (!enqueued) {
+                                        Toast.makeText(context, R.string.nothing_to_categorize, Toast.LENGTH_SHORT).show()
+                                    }
+                                    isFabExpanded = false
                                 }
-                                isFabExpanded = false
+                            )
+                        } else {
+                            FloatingActionButton(onClick = { isFabExpanded = true }) {
+                                Icon(Icons.Default.ContentPaste, contentDescription = stringResource(R.string.fab_paste_clipboard))
                             }
-                        )
-                    } else {
-                        FloatingActionButton(onClick = { isFabExpanded = true }) {
-                            Icon(Icons.Default.ContentPaste, contentDescription = stringResource(R.string.fab_paste_clipboard))
                         }
                     }
                 }
