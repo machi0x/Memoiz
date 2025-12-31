@@ -45,18 +45,18 @@ class MlKitCategorizer(private val context: Context) {
         }
     }
 
-    private suspend fun localizeDescription(description: String?): String? {
-        if (description.isNullOrBlank()) return description
+    private suspend fun localizeText(text: String?): String? {
+        if (text.isNullOrBlank()) return text
         return if (Locale.getDefault().language == "ja") {
             runCatching {
                 generateText(
-                    "Translate the following image description to Japanese.\nDescription: ${description.take(500)}"
-                ) ?: description
-            }.getOrDefault(description)
-        } else {
-            description
-        }
+                    "Translate the following text to Japanese. Provide only the translated text without extra words.\nText: ${text.take(500)}"
+                ) ?: text
+            }.getOrDefault(text)
+        } else text
     }
+
+    private suspend fun localizeDescription(description: String?): String? = localizeText(description)
 
     private val promptModel: GenerativeModel by lazy {
         // Align with sample app: explicit builder so future config tweaks are easier.
@@ -105,8 +105,10 @@ class MlKitCategorizer(private val context: Context) {
             } else null
 
             val category = generateText(buildCategorizationPrompt(content, sourceApp))
-            val subCategory = generateText(buildSubCategoryPrompt(content, category ?: "", sourceApp))
-            Triple(category, subCategory, summary)
+            val localizedCategory = localizeText(category)
+            val subCategory = generateText(buildSubCategoryPrompt(content, localizedCategory ?: "", sourceApp))
+            val localizedSubCategory = localizeText(subCategory)
+            Triple(localizedCategory, localizedSubCategory, summary)
         } catch (e: Exception) {
             e.printStackTrace()
             null
@@ -122,8 +124,10 @@ class MlKitCategorizer(private val context: Context) {
             val localizedDescription = localizeDescription(description)
             if (!localizedDescription.isNullOrBlank()) {
                 val category = generateText(buildCategorizationPrompt(localizedDescription, sourceApp))
-                val subCategory = generateText(buildSubCategoryPrompt(localizedDescription, category ?: "", sourceApp))
-                Triple(category, subCategory, localizedDescription)
+                val localizedCategory = localizeText(category)
+                val subCategory = generateText(buildSubCategoryPrompt(localizedDescription, localizedCategory ?: "", sourceApp))
+                val localizedSubCategory = localizeText(subCategory)
+                Triple(localizedCategory, localizedSubCategory, localizedDescription)
             } else {
                 // Fallback to image category if description fails
                 Triple(imageCategoryLabel(), null, null)
@@ -173,28 +177,29 @@ class MlKitCategorizer(private val context: Context) {
 
     private fun buildCategorizationPrompt(content: String, sourceApp: String?): String {
         val sb = StringBuilder()
-        sb.append("Suggest a concise category name (1-3 words) for the following content.\n")
+        sb.append("Suggest a broad category (1-3 common words) for the following content.\n")
+        sb.append("Think of a general shelf label (e.g., '動物の画像', '金融ニュース', '生活のヒント') rather than a specific proper noun.\n")
         sb.append("Reply in ${getSystemLanguageName()} language.\n")
         if (!sourceApp.isNullOrBlank()) {
             sb.append("Source app: $sourceApp\n")
         }
         sb.append("Content:\n")
         sb.append(content.take(2000))
-        sb.append("\n\nReply with only the category name, no explanation.")
+        sb.append("\n\nReply with only the broad category name, no explanation.")
         return sb.toString()
     }
 
     private fun buildSubCategoryPrompt(content: String, mainCategory: String, sourceApp: String?): String {
         val sb = StringBuilder()
-        sb.append("Provide a very brief sub-category (1-3 words maximum) for the clipboard item.\n")
-        sb.append("Reply in ${getSystemLanguageName()} language.\n")
+        sb.append("Provide a specific sub-category (1-4 words) that narrows down the main category.\n")
+        sb.append("Use the same language (${getSystemLanguageName()}) and include concrete nouns or short phrases relevant to the content.\n")
         sb.append("Main category: $mainCategory\n")
         if (!sourceApp.isNullOrBlank()) {
             sb.append("Source app: $sourceApp\n")
         }
         sb.append("Content:\n")
         sb.append(content.take(2000))
-        sb.append("\n\nReply with only 1-3 words, no explanation. Keep it extremely short and concise.")
+        sb.append("\n\nReply with only the sub-category text, no explanation.")
         return sb.toString()
     }
 }
