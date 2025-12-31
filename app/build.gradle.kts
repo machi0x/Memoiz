@@ -135,6 +135,7 @@ dependencies {
     implementation("androidx.compose.material3:material3")
     implementation("androidx.compose.material:material-icons-extended")
     implementation("androidx.navigation:navigation-compose:2.9.6")
+    implementation("org.burnoutcrew.composereorderable:reorderable:0.9.6")
 
     // Room
     val roomVersion = "2.8.4"
