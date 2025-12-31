@@ -9,9 +9,10 @@
     <string name="settings_about_version">バージョン %1$s</string>
     <string name="dialog_close">閉じる</string>
     <string name="settings_title">設定</string>
-    <string name="settings_usage_title">コピー元アプリの検出</string>
-    <string name="settings_usage_enabled">有効です。コピー元アプリをAIが確認できます</string>
-    <string name="settings_usage_disabled">有効化するとカテゴリ精度が向上します</string>
+    <string name="settings_usage_title">引用元のアプリ名の検出</string>
+    <string name="settings_usage_description">権限を許可すると、解析精度が向上し、メモにアプリ名が記録されます。</string>
+    <string name="settings_usage_status_enabled">権限は許可されています</string>
+    <string name="settings_usage_status_disabled">権限が許可されていません</string>
     <string name="settings_usage_button">使用履歴アクセス設定を開く</string>
     <string name="cd_back">戻る</string>
     <string name="cd_open_drawer">ナビゲーションドロワーを開く</string>

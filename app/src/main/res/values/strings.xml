@@ -69,10 +69,11 @@ Tap the clipboard button or share content to start.</string>
     <string name="settings_about_version">Version %1$s</string>
     <string name="dialog_close">Close</string>
     <string name="settings_title">Settings</string>
-    <string name="settings_usage_title">Source App Detection</string>
-    <string name="settings_usage_enabled">Enabled - AI can see which app you copied from</string>
-    <string name="settings_usage_disabled">Enable to detect source app for better categorization</string>
-    <string name="settings_usage_button">Open Usage Access Settings</string>
+    <string name="settings_usage_title">Detect source app name</string>
+    <string name="settings_usage_description">Granting permission improves analysis accuracy and saves the source app name into your memos.</string>
+    <string name="settings_usage_status_enabled">Permission granted</string>
+    <string name="settings_usage_status_disabled">Permission not granted</string>
+    <string name="settings_usage_button">Open usage access settings</string>
     <string name="cd_back">Back</string>
     <string name="cd_open_drawer">Open navigation drawer</string>
     <string name="cd_sort">Change sort order</string>
