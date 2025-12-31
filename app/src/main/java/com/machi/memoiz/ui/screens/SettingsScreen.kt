@@ -25,6 +25,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.machi.memoiz.BuildConfig
 import com.machi.memoiz.R
 import com.machi.memoiz.ui.theme.MemoizTheme
@@ -41,8 +44,18 @@ fun SettingsScreen(
     var showAboutDialog by remember { mutableStateOf(false) }
 
     val context = LocalContext.current
-    val hasUsageStatsPermission = remember {
-        UsageStatsHelper(context).hasUsageStatsPermission()
+    val lifecycleOwner = LocalLifecycleOwner.current
+    var hasUsageStatsPermission by remember {
+        mutableStateOf(UsageStatsHelper(context).hasUsageStatsPermission())
+    }
+    DisposableEffect(lifecycleOwner, context) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                hasUsageStatsPermission = UsageStatsHelper(context).hasUsageStatsPermission()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
     val appVersion = remember { BuildConfig.VERSION_NAME }
 
@@ -70,27 +83,35 @@ fun SettingsScreen(
                 item {
                     PreferenceItem(
                         title = stringResource(R.string.settings_usage_title),
-                        subtitle = if (hasUsageStatsPermission) {
-                            stringResource(R.string.settings_usage_enabled)
-                        } else {
-                            stringResource(R.string.settings_usage_disabled)
-                        },
+                        subtitle = stringResource(R.string.settings_usage_description),
                         leadingIcon = {
                             Icon(
-                                imageVector = if (hasUsageStatsPermission) Icons.Default.CheckCircle else Icons.Default.Info,
+                                imageVector = Icons.Default.CheckCircle,
                                 contentDescription = null,
                                 tint = if (hasUsageStatsPermission) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         },
-                        trailingContent = {
+                        extraContent = {
+                            val statusText = if (hasUsageStatsPermission) {
+                                stringResource(R.string.settings_usage_status_enabled)
+                            } else {
+                                stringResource(R.string.settings_usage_status_disabled)
+                            }
+                            Text(
+                                text = statusText,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = if (hasUsageStatsPermission) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
+                                modifier = Modifier.padding(top = 4.dp)
+                            )
                             if (!hasUsageStatsPermission) {
+                                Spacer(modifier = Modifier.height(8.dp))
                                 AssistChip(
                                     onClick = { openUsageAccessSettings(context) },
                                     label = { Text(stringResource(R.string.settings_usage_button)) }
                                 )
                             }
                         },
-                        onClick = { openUsageAccessSettings(context) }
+                        onClick = { if (!hasUsageStatsPermission) openUsageAccessSettings(context) }
                     )
                 }
 
@@ -125,24 +146,32 @@ private fun PreferenceItem(
     subtitle: String? = null,
     leadingIcon: (@Composable () -> Unit)? = null,
     trailingContent: (@Composable () -> Unit)? = null,
+    extraContent: (@Composable () -> Unit)? = null,
     onClick: (() -> Unit)? = null
 ) {
+    val supporting: (@Composable () -> Unit)? = if (subtitle != null || extraContent != null) {
+        {
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                subtitle?.let {
+                    Text(
+                        text = it,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                extraContent?.invoke()
+            }
+        }
+    } else {
+        null
+    }
+
     ListItem(
         modifier = Modifier
             .fillMaxWidth()
-            .then(
-                if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier
-            ),
+            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier),
         headlineContent = { Text(title, style = MaterialTheme.typography.titleMedium) },
-        supportingContent = subtitle?.let {
-            {
-                Text(
-                    text = it,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-        },
+        supportingContent = supporting,
         leadingContent = leadingIcon?.let { { it() } },
         trailingContent = trailingContent?.let { { it() } } ?: onClick?.let {
             {
