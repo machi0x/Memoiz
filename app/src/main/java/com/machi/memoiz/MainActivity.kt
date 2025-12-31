@@ -6,8 +6,10 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.Modifier
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.core.view.WindowCompat
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
@@ -24,6 +26,7 @@ import com.machi.memoiz.ui.screens.SettingsViewModel
 import com.machi.memoiz.ui.theme.MemoizTheme
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import androidx.compose.ui.graphics.toArgb
 
 class MainActivity : ComponentActivity() {
 
@@ -54,6 +57,13 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             MemoizTheme {
+                val colorScheme = MaterialTheme.colorScheme
+                val view = window
+                val windowInsetsController = WindowCompat.getInsetsController(view, view.decorView)
+                SideEffect {
+                    view.statusBarColor = colorScheme.background.toArgb()
+                    windowInsetsController.isAppearanceLightStatusBars = !colorScheme.isDark
+                }
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
