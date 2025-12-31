@@ -15,6 +15,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Description
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -122,6 +123,17 @@ fun SettingsScreen(
                         onClick = { showAboutDialog = true }
                     )
                 }
+
+                item {
+                    PreferenceItem(
+                        title = stringResource(R.string.settings_oss_title),
+                        subtitle = stringResource(R.string.settings_oss_description),
+                        leadingIcon = {
+                            Icon(Icons.Default.Description, contentDescription = null)
+                        },
+                        onClick = { openOssLicenses(context) }
+                    )
+                }
             }
         }
     }
@@ -177,6 +189,13 @@ private fun PreferenceItem(
 
 private fun openUsageAccessSettings(context: Context) {
     val intent = Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS).apply {
+        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+    }
+    context.startActivity(intent)
+}
+
+private fun openOssLicenses(context: Context) {
+    val intent = Intent(context, OssLicensesMenuActivity::class.java).apply {
         addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
     }
     context.startActivity(intent)
