@@ -63,6 +63,10 @@ class MainViewModel(
     private val _categoryOrder = MutableStateFlow<List<String>>(emptyList())
     val categoryOrder: StateFlow<List<String>> = _categoryOrder.asStateFlow()
 
+    val shouldShowTutorial: StateFlow<Boolean> = userPreferencesFlow
+        .map { prefs -> !prefs.hasSeenTutorial || prefs.showTutorialOnNextLaunch }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+
     init {
         viewModelScope.launch {
             userPreferencesFlow.collect { prefs ->
@@ -292,6 +296,14 @@ class MainViewModel(
     private fun clearCategoryOrder() {
         _categoryOrder.value = emptyList()
         viewModelScope.launch { preferencesManager.updateCategoryOrder(emptyList()) }
+    }
+
+    fun markTutorialSeen() {
+        viewModelScope.launch { preferencesManager.markTutorialSeen() }
+    }
+
+    fun clearQueuedTutorial() {
+        viewModelScope.launch { preferencesManager.clearQueuedTutorial() }
     }
 
     fun updateMemoCategory(memo: Memo, newCategory: String, newSubCategory: String?) {

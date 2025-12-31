@@ -22,7 +22,7 @@ class ViewModelFactory(
                 MainViewModel(memoRepository, preferencesManager) as T
             }
             modelClass.isAssignableFrom(SettingsViewModel::class.java) -> {
-                SettingsViewModel() as T
+                SettingsViewModel(preferencesManager) as T
             }
             else -> throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
         }
