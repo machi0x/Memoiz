@@ -43,21 +43,23 @@ class ReanalyzeSingleMemoWorker(
 
             val updatedEntity = if (!memo.imageUri.isNullOrBlank()) {
                 val bitmap = aiService.loadBitmapFromUri(memo.imageUri)
-                bitmap?.let { aiService.processImage(it, memo.sourceApp) }
+                bitmap?.let { aiService.processImage(it, memo.sourceApp, memo.imageUri) }
             } else {
                 aiService.processText(memo.content, memo.sourceApp)
             }
 
             if (updatedEntity != null) {
-                memoRepository.updateMemo(memo.copy(
-                    content = updatedEntity.content,
-                    imageUri = updatedEntity.imageUri,
-                    memoType = updatedEntity.memoType,
-                    category = updatedEntity.category,
-                    subCategory = updatedEntity.subCategory,
-                    summary = updatedEntity.summary,
-                    sourceApp = memo.sourceApp
-                ))
+                memoRepository.updateMemo(
+                    memo.copy(
+                        content = updatedEntity.content,
+                        imageUri = updatedEntity.imageUri ?: memo.imageUri,
+                        memoType = memo.memoType,
+                        category = updatedEntity.category,
+                        subCategory = updatedEntity.subCategory,
+                        summary = updatedEntity.summary,
+                        sourceApp = memo.sourceApp
+                    )
+                )
             }
 
             return Result.success()
