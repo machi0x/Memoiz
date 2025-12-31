@@ -19,6 +19,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -86,7 +87,7 @@ fun SettingsScreen(
                         subtitle = stringResource(R.string.settings_usage_description),
                         leadingIcon = {
                             Icon(
-                                imageVector = Icons.Default.CheckCircle,
+                                imageVector = if (hasUsageStatsPermission) Icons.Default.CheckCircle else Icons.Default.Info,
                                 contentDescription = null,
                                 tint = if (hasUsageStatsPermission) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -100,7 +101,7 @@ fun SettingsScreen(
                             Text(
                                 text = statusText,
                                 style = MaterialTheme.typography.bodySmall,
-                                color = if (hasUsageStatsPermission) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
+                                color = if (hasUsageStatsPermission) Color(0xFF2E7D32) else MaterialTheme.colorScheme.error,
                                 modifier = Modifier.padding(top = 4.dp)
                             )
                         },
