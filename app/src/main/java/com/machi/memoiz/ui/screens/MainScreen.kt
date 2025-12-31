@@ -90,6 +90,28 @@ fun MainScreen(
     var manualCategoryInput by remember { mutableStateOf("") }
     var manualCategoryError by remember { mutableStateOf<String?>(null) }
 
+    val clearManualCategoryState: () -> Unit = {
+        manualCategoryMemo = null
+        manualCategoryInput = ""
+        manualCategoryError = null
+    }
+
+    val handleManualCategorySave: (String) -> Unit = save@{ rawInput ->
+        val trimmedCategory = rawInput.trim()
+        if (trimmedCategory.isEmpty()) {
+            manualCategoryError = context.getString(R.string.error_category_name_empty)
+            return@save
+        }
+        manualCategoryMemo?.let { memo ->
+            val exists = availableCategories.any { it.equals(trimmedCategory, ignoreCase = true) }
+            if (!exists) {
+                viewModel.addCustomCategoryIfMissing(trimmedCategory)
+            }
+            viewModel.updateMemoCategory(memo, trimmedCategory, memo.subCategory)
+        }
+        clearManualCategoryState()
+    }
+
     val lazyListState = rememberLazyListState()
     val reorderState = rememberReorderableLazyListState(
         listState = lazyListState,
@@ -444,28 +466,8 @@ fun MainScreen(
                  manualCategoryInput = updated
                  manualCategoryError = null
              },
-             onDismiss = {
-                 manualCategoryMemo = null
-                 manualCategoryInput = ""
-                 manualCategoryError = null
-             },
-             onSave = { newCategory ->
-                 val trimmedCategory = newCategory.trim()
-                 if (trimmedCategory.isEmpty()) {
-                     manualCategoryError = context.getString(R.string.error_category_name_empty)
-                     return@ManualCategoryDialog
-                 }
-                 manualCategoryMemo?.let { memo ->
-                     val existing = availableCategories.any { it.equals(trimmedCategory, ignoreCase = true) }
-                     if (!existing) {
-                         viewModel.addCustomCategoryIfMissing(trimmedCategory)
-                     }
-                     viewModel.updateMemoCategory(memo, trimmedCategory, memo.subCategory)
-                 }
-                 manualCategoryMemo = null
-                 manualCategoryInput = ""
-                 manualCategoryError = null
-             }
+             onDismiss = clearManualCategoryState,
+             onSave = handleManualCategorySave
          )
      }
  }
