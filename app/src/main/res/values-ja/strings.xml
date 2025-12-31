@@ -4,7 +4,7 @@
     <string name="failure_category">分類失敗</string>
     <string name="failure_category_canonical">分類失敗</string>
     <string name="settings_about_title">このアプリについて</string>
-    <string name="settings_about_description">Memoizはクリップボードの内容を素早くまとめて再利用できるノートです。</string>
+    <string name="settings_about_description">メモイズはテキストや画像をスマホ内のAIでカテゴリ分けして保存し、後で参照・再利用できる備忘録です。</string>
     <string name="settings_about_button">このアプリについて</string>
     <string name="settings_about_version">バージョン %1$s</string>
     <string name="dialog_close">閉じる</string>
