@@ -88,9 +88,7 @@ fun MainScreen(
     var pendingReanalyzeMemo by remember { mutableStateOf<Memo?>(null) }
     var manualCategoryMemo by remember { mutableStateOf<Memo?>(null) }
     var manualCategoryInput by remember { mutableStateOf("") }
-    var manualCategorySubCategory by remember { mutableStateOf("") }
     var manualCategoryError by remember { mutableStateOf<String?>(null) }
-    var manualCategoryCreateAsCustom by remember { mutableStateOf(false) }
 
     val lazyListState = rememberLazyListState()
     val reorderState = rememberReorderableLazyListState(
@@ -288,11 +286,7 @@ fun MainScreen(
                                 onEditCategory = { memo ->
                                     manualCategoryMemo = memo
                                     manualCategoryInput = memo.category
-                                    manualCategorySubCategory = memo.subCategory.orEmpty()
                                     manualCategoryError = null
-                                    manualCategoryCreateAsCustom = availableCategories.none {
-                                        it.equals(memo.category, ignoreCase = true)
-                                    }
                                 },
                                 onReanalyzeMemo = { memo ->
                                     pendingReanalyzeMemo = memo
@@ -443,48 +437,37 @@ fun MainScreen(
 
     if (manualCategoryMemo != null) {
         ManualCategoryDialog(
-            memo = manualCategoryMemo!!,
-            availableCategories = availableCategories,
-            categoryValue = manualCategoryInput,
-            subCategoryValue = manualCategorySubCategory,
-            errorMessage = manualCategoryError,
-            createAsCustom = manualCategoryCreateAsCustom,
-            onCategoryChange = { updated ->
-                manualCategoryInput = updated
-                manualCategoryError = null
-                manualCategoryCreateAsCustom = availableCategories.none {
-                    it.equals(updated.trim(), ignoreCase = true)
-                }
-            },
-            onSubCategoryChange = { manualCategorySubCategory = it },
-            onCreateAsCustomChange = { manualCategoryCreateAsCustom = it },
-            onDismiss = {
-                manualCategoryMemo = null
-                manualCategoryInput = ""
-                manualCategorySubCategory = ""
-                manualCategoryError = null
-                manualCategoryCreateAsCustom = false
-            },
-            onSave = { newCategory, newSubCategory, createAsCustom ->
-                val trimmedCategory = newCategory.trim()
-                if (trimmedCategory.isEmpty()) {
-                    manualCategoryError = context.getString(R.string.error_category_name_empty)
-                    return@ManualCategoryDialog
-                }
-                manualCategoryMemo?.let { memo ->
-                    if (createAsCustom) {
-                        viewModel.addCustomCategoryIfMissing(trimmedCategory)
-                    }
-                    viewModel.updateMemoCategory(memo, trimmedCategory, newSubCategory.takeIf { it.isNotBlank() })
-                }
-                manualCategoryMemo = null
-                manualCategoryInput = ""
-                manualCategorySubCategory = ""
-                manualCategoryError = null
-                manualCategoryCreateAsCustom = false
-            }
-        )
-    }
+             availableCategories = availableCategories,
+             categoryValue = manualCategoryInput,
+             errorMessage = manualCategoryError,
+             onCategoryChange = { updated ->
+                 manualCategoryInput = updated
+                 manualCategoryError = null
+             },
+             onDismiss = {
+                 manualCategoryMemo = null
+                 manualCategoryInput = ""
+                 manualCategoryError = null
+             },
+             onSave = { newCategory ->
+                 val trimmedCategory = newCategory.trim()
+                 if (trimmedCategory.isEmpty()) {
+                     manualCategoryError = context.getString(R.string.error_category_name_empty)
+                     return@ManualCategoryDialog
+                 }
+                 manualCategoryMemo?.let { memo ->
+                     val existing = availableCategories.any { it.equals(trimmedCategory, ignoreCase = true) }
+                     if (!existing) {
+                         viewModel.addCustomCategoryIfMissing(trimmedCategory)
+                     }
+                     viewModel.updateMemoCategory(memo, trimmedCategory, memo.subCategory)
+                 }
+                 manualCategoryMemo = null
+                 manualCategoryInput = ""
+                 manualCategoryError = null
+             }
+         )
+     }
  }
 
 @Composable
@@ -1055,58 +1038,72 @@ private fun AddCustomCategoryDialog(
     )
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ManualCategoryDialog(
-    memo: Memo,
     availableCategories: List<String>,
     categoryValue: String,
-    subCategoryValue: String,
     errorMessage: String?,
-    createAsCustom: Boolean,
     onCategoryChange: (String) -> Unit,
-    onSubCategoryChange: (String) -> Unit,
-    onCreateAsCustomChange: (Boolean) -> Unit,
     onDismiss: () -> Unit,
-    onSave: (String, String, Boolean) -> Unit
+    onSave: (String) -> Unit
 ) {
+    var dropdownExpanded by remember { mutableStateOf(false) }
+    val suggestions = remember(categoryValue, availableCategories) {
+        if (categoryValue.isBlank()) availableCategories
+        else availableCategories.filter { it.contains(categoryValue, ignoreCase = true) }
+    }
+
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.dialog_edit_category_title)) },
         text = {
             Column {
                 Text(stringResource(R.string.dialog_edit_category_message))
-                Spacer(modifier = Modifier.height(8.dp))
-                OutlinedTextField(
-                    value = categoryValue,
-                    onValueChange = onCategoryChange,
-                    label = { Text(stringResource(R.string.dialog_category_name_label)) },
-                    isError = errorMessage != null,
-                    supportingText = errorMessage?.let { { Text(it) } },
-                    modifier = Modifier.fillMaxWidth()
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = stringResource(R.string.dialog_edit_category_auto_hint),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Spacer(modifier = Modifier.height(8.dp))
-                OutlinedTextField(
-                    value = subCategoryValue,
-                    onValueChange = onSubCategoryChange,
-                    label = { Text(stringResource(R.string.dialog_subcategory_name_label)) },
-                    modifier = Modifier.fillMaxWidth()
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
+                ExposedDropdownMenuBox(
+                    expanded = dropdownExpanded && suggestions.isNotEmpty(),
+                    onExpandedChange = { dropdownExpanded = it }
                 ) {
-                    Checkbox(
-                        checked = createAsCustom,
-                        onCheckedChange = onCreateAsCustomChange
+                    OutlinedTextField(
+                        value = categoryValue,
+                        onValueChange = {
+                            onCategoryChange(it)
+                            dropdownExpanded = true
+                        },
+                        label = { Text(stringResource(R.string.dialog_category_name_label)) },
+                        isError = errorMessage != null,
+                        supportingText = errorMessage?.let { { Text(it) } },
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = dropdownExpanded && suggestions.isNotEmpty()) },
+                        modifier = Modifier
+                            .menuAnchor()
+                            .fillMaxWidth()
                     )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(stringResource(R.string.dialog_create_as_custom))
+                    ExposedDropdownMenu(
+                        expanded = dropdownExpanded && suggestions.isNotEmpty(),
+                        onDismissRequest = { dropdownExpanded = false }
+                    ) {
+                        suggestions.forEach { option ->
+                            DropdownMenuItem(
+                                text = { Text(option) },
+                                onClick = {
+                                    onCategoryChange(option)
+                                    dropdownExpanded = false
+                                }
+                            )
+                        }
+                    }
                 }
             }
         },
         confirmButton = {
-            TextButton(onClick = { onSave(categoryValue, subCategoryValue, createAsCustom) }) {
+            TextButton(onClick = { onSave(categoryValue) }) {
                 Text(stringResource(R.string.dialog_save))
             }
         },
