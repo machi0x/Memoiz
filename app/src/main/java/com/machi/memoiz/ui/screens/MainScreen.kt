@@ -1260,8 +1260,10 @@ private fun TutorialDialog(
                 Text(
                     text = step.description,
                     style = MaterialTheme.typography.bodyMedium,
-                    textAlign = TextAlign.Start
+                    textAlign = TextAlign.Center
                 )
+                val activeIndicatorSize = 10.dp
+                val inactiveIndicatorSize = 8.dp
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.Center
@@ -1275,7 +1277,7 @@ private fun TutorialDialog(
                         Box(
                             modifier = Modifier
                                 .padding(horizontal = 4.dp)
-                                .size(if (index == currentStep) 10.dp else 8.dp)
+                                .size(if (index == currentStep) activeIndicatorSize else inactiveIndicatorSize)
                                 .clip(CircleShape)
                                 .background(color)
                         )
