@@ -4,18 +4,23 @@ import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.view.Gravity
+import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.lifecycle.lifecycleScope
 import com.machi.memoiz.R
+import com.machi.memoiz.databinding.ActivityProcessingDialogBinding
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 class ProcessingDialogActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_processing_dialog)
+        val binding = ActivityProcessingDialogBinding.inflate(LayoutInflater.from(this))
+        setContentView(binding.root)
+
+        binding.dialogMessage.text = getString(R.string.categorization_started)
 
         window?.apply {
             setGravity(Gravity.BOTTOM)
@@ -39,7 +44,7 @@ class ProcessingDialogActivity : ComponentActivity() {
     }
 
     companion object {
-        private const val DISPLAY_DURATION_MS = 2000L
+        private const val DISPLAY_DURATION_MS = 3000L
 
         fun start(context: Context) {
             context.startActivity(Intent(context, ProcessingDialogActivity::class.java).apply {
