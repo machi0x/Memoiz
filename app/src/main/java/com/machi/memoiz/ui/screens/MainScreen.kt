@@ -12,6 +12,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -39,6 +40,10 @@ import com.machi.memoiz.ui.theme.MemoizTheme
 import com.machi.memoiz.util.FailureCategoryHelper
 import coil.compose.AsyncImage
 import kotlinx.coroutines.launch
+import org.burnoutcrew.reorderable.ReorderableItem
+import org.burnoutcrew.reorderable.detectReorder
+import org.burnoutcrew.reorderable.rememberReorderableLazyListState
+import org.burnoutcrew.reorderable.reorderable
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -59,6 +64,10 @@ fun MainScreen(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
 
+    LaunchedEffect(memoGroups) {
+        viewModel.ensureCategoryOrder(memoGroups.map { it.category })
+    }
+
     val toastMessage by viewModel.toastMessage.collectAsState()
     LaunchedEffect(toastMessage) {
         toastMessage?.let {
@@ -77,6 +86,15 @@ fun MainScreen(
     var showDeleteConfirmationDialog by remember { mutableStateOf(false) }
     var deleteTarget by remember { mutableStateOf<Any?>(null) }
     var deleteTargetIsCustomCategory by remember { mutableStateOf(false) }
+    // val categoryOrder by viewModel.categoryOrder.collectAsState()
+
+    val lazyListState = rememberLazyListState()
+    val reorderState = rememberReorderableLazyListState(
+        listState = lazyListState,
+        onMove = { from, to ->
+            viewModel.onCategoryMoved(from.index, to.index)
+        }
+    )
 
     ModalNavigationDrawer(
         drawerState = drawerState,
@@ -204,35 +222,40 @@ fun MainScreen(
                 LazyColumn(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(padding),
+                        .padding(padding)
+                        .reorderable(reorderState),
+                    state = lazyListState,
                     contentPadding = PaddingValues(16.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    items(memoGroups) { group ->
-                        val isCustomCategory = customCategories.contains(group.category)
-                        CategoryAccordion(
-                            group = group,
-                            isExpanded = group.category in expandedCategories,
-                            context = context,
-                            isCustomCategory = isCustomCategory,
-                            onHeaderClick = { viewModel.toggleCategoryExpanded(group.category) },
-                            onDeleteCategory = {
-                                deleteTarget = group.category
-                                deleteTargetIsCustomCategory = isCustomCategory
-                                showDeleteConfirmationDialog = true
-                            },
-                            onDeleteMemo = { memo ->
-                                deleteTarget = memo
-                                deleteTargetIsCustomCategory = false
-                                showDeleteConfirmationDialog = true
-                            },
-                            onReanalyzeMemo = { memo ->
-                                viewModel.reanalyzeMemo(context, memo.id)
-                            },
-                            onReanalyzeCategory = {
-                                viewModel.reanalyzeFailureBatch(context)
-                            }
-                        )
+                    items(memoGroups, key = { it.category }) { group ->
+                        ReorderableItem(state = reorderState, key = group.category) { _ ->
+                            val isCustomCategory = customCategories.contains(group.category)
+                            CategoryAccordion(
+                                group = group,
+                                isExpanded = group.category in expandedCategories,
+                                context = context,
+                                isCustomCategory = isCustomCategory,
+                                onHeaderClick = { viewModel.toggleCategoryExpanded(group.category) },
+                                onDeleteCategory = {
+                                    deleteTarget = group.category
+                                    deleteTargetIsCustomCategory = isCustomCategory
+                                    showDeleteConfirmationDialog = true
+                                },
+                                onDeleteMemo = { memo ->
+                                    deleteTarget = memo
+                                    deleteTargetIsCustomCategory = false
+                                    showDeleteConfirmationDialog = true
+                                },
+                                onReanalyzeMemo = { memo ->
+                                    viewModel.reanalyzeMemo(context, memo.id)
+                                },
+                                onReanalyzeCategory = {
+                                    viewModel.reanalyzeFailureBatch(context)
+                                },
+                                dragHandle = Modifier.detectReorder(reorderState)
+                            )
+                        }
                     }
                 }
             }
@@ -523,7 +546,8 @@ private fun CategoryAccordion(
     onDeleteCategory: () -> Unit,
     onDeleteMemo: (Memo) -> Unit,
     onReanalyzeMemo: (Memo) -> Unit,
-    onReanalyzeCategory: () -> Unit
+    onReanalyzeCategory: () -> Unit,
+    dragHandle: Modifier
 ) {
     val reanalyzeFailuresString = stringResource(R.string.action_reanalyze_failures)
     val deleteCategoryString = stringResource(R.string.action_delete_category)
@@ -560,12 +584,7 @@ private fun CategoryAccordion(
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
-                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                    if (FailureCategoryHelper.isFailureLabel(context, group.category)) {
-                        IconButton(onClick = onReanalyzeCategory) {
-                            Icon(Icons.Default.Refresh, reanalyzeFailuresString)
-                        }
-                    }
+                Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
                     val deleteIcon = Icons.Default.Delete
                     val deleteContentDescription = if (isCustomCategory) {
                         stringResource(R.string.dialog_delete_custom_category_message)
@@ -575,6 +594,16 @@ private fun CategoryAccordion(
                     IconButton(onClick = onDeleteCategory) {
                         Icon(deleteIcon, deleteContentDescription)
                     }
+                    if (FailureCategoryHelper.isFailureLabel(context, group.category)) {
+                        IconButton(onClick = onReanalyzeCategory) {
+                            Icon(Icons.Default.Refresh, reanalyzeFailuresString)
+                        }
+                    }
+                    Icon(
+                        imageVector = Icons.Default.DragHandle,
+                        contentDescription = stringResource(R.string.cd_category_drag_handle),
+                        modifier = dragHandle
+                    )
                 }
             }
 

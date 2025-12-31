@@ -18,6 +18,7 @@ import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import com.machi.memoiz.R
 import java.util.concurrent.TimeUnit
+import com.machi.memoiz.data.datastore.UserPreferences
 
 data class MemoGroup(val category: String, val memos: List<Memo>)
 
@@ -25,6 +26,14 @@ enum class SortMode {
     CREATED_DESC,  // Category groups ordered by latest memo timestamp
     CATEGORY_NAME  // Category groups ordered alphabetically
 }
+
+private data class MemoFilterState(
+    val memos: List<Memo>,
+    val query: String,
+    val sortMode: SortMode,
+    val categoryFilter: String?,
+    val typeFilter: String?
+)
 
 class MainViewModel(
     private val memoRepository: MemoRepository,
@@ -48,8 +57,22 @@ class MainViewModel(
     private val _expandedCategories = MutableStateFlow<Set<String>>(emptySet())
     val expandedCategories: StateFlow<Set<String>> = _expandedCategories.asStateFlow()
 
+    private val userPreferencesFlow = preferencesManager.userPreferencesFlow
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), UserPreferences())
+
+    private val _categoryOrder = MutableStateFlow<List<String>>(emptyList())
+    val categoryOrder: StateFlow<List<String>> = _categoryOrder.asStateFlow()
+
+    init {
+        viewModelScope.launch {
+            userPreferencesFlow.collect { prefs ->
+                _categoryOrder.value = prefs.categoryOrder
+            }
+        }
+    }
+
     // Custom categories from DataStore
-    val customCategories: StateFlow<Set<String>> = preferencesManager.userPreferencesFlow
+    val customCategories: StateFlow<Set<String>> = userPreferencesFlow
         .map { it.customCategories }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptySet())
 
@@ -61,31 +84,40 @@ class MainViewModel(
         (memos.map { it.category }.toSet() + custom).sorted()
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    // Filtered and sorted memo groups
-    val memoGroups: StateFlow<List<MemoGroup>> = combine(
+    private val memoFilterFlow = combine(
         memoRepository.getAllMemos(),
         _searchQuery,
         _sortMode,
         _categoryFilter,
         _memoTypeFilter
     ) { memos, query, mode, filter, typeFilter ->
+        MemoFilterState(memos, query, mode, filter, typeFilter)
+    }
+
+    // Filtered and sorted memo groups
+    val memoGroups: StateFlow<List<MemoGroup>> = combine(
+        memoFilterFlow,
+        categoryOrder
+    ) { state, order ->
+        var filtered = state.memos
+
         // Filter by memo type
-        var filtered = if (typeFilter != null) {
-            memos.filter { it.memoType == typeFilter }
+        filtered = if (state.typeFilter != null) {
+            filtered.filter { it.memoType == state.typeFilter }
         } else {
-            memos
+            filtered
         }
 
         // Filter by category
-        filtered = if (filter != null) {
-            filtered.filter { it.category == filter }
+        filtered = if (state.categoryFilter != null) {
+            filtered.filter { it.category == state.categoryFilter }
         } else {
             filtered
         }
 
         // Filter by search query
-        if (query.isNotBlank()) {
-            val lowerQuery = query.lowercase()
+        if (state.query.isNotBlank()) {
+            val lowerQuery = state.query.lowercase()
             filtered = filtered.filter { memo ->
                 memo.content.lowercase().contains(lowerQuery) ||
                         memo.summary?.lowercase()?.contains(lowerQuery) == true ||
@@ -97,24 +129,34 @@ class MainViewModel(
         // Group by category
         val grouped = filtered.groupBy { it.category }
             .map { (category, memos) ->
-                // Sort memos within category by created date (newest first)
                 MemoGroup(category, memos.sortedByDescending { it.createdAt })
             }
 
-        // Sort groups
-        when (mode) {
-            SortMode.CREATED_DESC -> {
-                // Order by latest memo in each group (desc)
-                grouped.sortedByDescending { group ->
+        val orderedGroups = if (order.isNotEmpty()) {
+            val orderMap = order.mapIndexed { index, value -> value to index }.toMap()
+            grouped.sortedWith(compareBy({ orderMap[it.category] ?: Int.MAX_VALUE }, { it.category }))
+        } else {
+            grouped
+        }
+
+        if (order.isNotEmpty()) {
+            orderedGroups
+        } else {
+            when (state.sortMode) {
+                SortMode.CREATED_DESC -> orderedGroups.sortedByDescending { group ->
                     group.memos.maxOfOrNull { it.createdAt } ?: 0L
                 }
-            }
-            SortMode.CATEGORY_NAME -> {
-                // Order alphabetically by category name
-                grouped.sortedBy { it.category }
+                SortMode.CATEGORY_NAME -> orderedGroups.sortedBy { it.category }
             }
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    private val _toastMessage = MutableStateFlow<String?>(null)
+    val toastMessage: StateFlow<String?> = _toastMessage.asStateFlow()
+
+    fun clearToast() {
+        _toastMessage.value = null
+    }
 
     fun setSearchQuery(query: String) {
         _searchQuery.value = query
@@ -134,16 +176,8 @@ class MainViewModel(
 
     fun toggleCategoryExpanded(category: String) {
         _expandedCategories.update { current ->
-            if (category in current) {
-                current - category
-            } else {
-                current + category
-            }
+            if (category in current) current - category else current + category
         }
-    }
-
-    fun isCategoryExpanded(category: String): Boolean {
-        return category in _expandedCategories.value
     }
 
     fun addCustomCategory(categoryName: String) {
@@ -159,15 +193,11 @@ class MainViewModel(
     }
 
     fun deleteMemo(memo: Memo) {
-        viewModelScope.launch {
-            memoRepository.deleteMemo(memo)
-        }
+        viewModelScope.launch { memoRepository.deleteMemo(memo) }
     }
 
     fun deleteCategory(categoryName: String) {
-        viewModelScope.launch {
-            memoRepository.deleteMemosByCategoryName(categoryName)
-        }
+        viewModelScope.launch { memoRepository.deleteMemosByCategoryName(categoryName) }
     }
 
     fun reanalyzeMemo(context: Context, memoId: Long) {
@@ -184,8 +214,7 @@ class MainViewModel(
     }
 
     fun scheduleDailyFailureReanalyze(context: Context) {
-        val request = PeriodicWorkRequestBuilder<ReanalyzeFailedMemosWorker>(1, TimeUnit.DAYS)
-            .build()
+        val request = PeriodicWorkRequestBuilder<ReanalyzeFailedMemosWorker>(1, TimeUnit.DAYS).build()
         WorkManager.getInstance(context.applicationContext)
             .enqueueUniquePeriodicWork(
                 "daily_failure_reanalyze",
@@ -221,10 +250,27 @@ class MainViewModel(
         WorkManager.getInstance(context.applicationContext).enqueue(request)
     }
 
-    private val _toastMessage = MutableStateFlow<String?>(null)
-    val toastMessage: StateFlow<String?> = _toastMessage.asStateFlow()
+    fun onCategoryMoved(fromIndex: Int, toIndex: Int) {
+        val current = _categoryOrder.value.toMutableList()
+        if (fromIndex !in current.indices || toIndex !in current.indices) return
+        val item = current.removeAt(fromIndex)
+        current.add(toIndex, item)
+        _categoryOrder.value = current
+        viewModelScope.launch { preferencesManager.updateCategoryOrder(current) }
+    }
 
-    fun clearToast() {
-        _toastMessage.value = null
+    fun ensureCategoryOrder(categories: List<String>) {
+        val current = _categoryOrder.value
+        val merged = categories.filter { it in current }
+        val missing = categories.filter { it !in current }
+        val newOrder = merged + missing
+        if (newOrder != current) {
+            _categoryOrder.value = newOrder
+            viewModelScope.launch { preferencesManager.updateCategoryOrder(newOrder) }
+        }
+    }
+
+    fun removeCategoryFromOrder(category: String) {
+        viewModelScope.launch { preferencesManager.removeCategoryFromOrder(category) }
     }
 }
