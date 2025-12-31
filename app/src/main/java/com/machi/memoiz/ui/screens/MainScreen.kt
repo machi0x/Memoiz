@@ -32,10 +32,12 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.machi.memoiz.R
+import com.machi.memoiz.data.entity.MemoType
 import com.machi.memoiz.domain.model.Memo
 import com.machi.memoiz.service.ContentProcessingLauncher
 import com.machi.memoiz.ui.theme.MemoizTheme
 import com.machi.memoiz.util.FailureCategoryHelper
+import coil.compose.AsyncImage
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
@@ -50,6 +52,7 @@ fun MainScreen(
     val searchQuery by viewModel.searchQuery.collectAsState()
     val sortMode by viewModel.sortMode.collectAsState()
     val categoryFilter by viewModel.categoryFilter.collectAsState()
+    val memoTypeFilter by viewModel.memoTypeFilter.collectAsState()
     val availableCategories by viewModel.availableCategories.collectAsState()
     val customCategories by viewModel.customCategories.collectAsState()
     val expandedCategories by viewModel.expandedCategories.collectAsState()
@@ -79,10 +82,15 @@ fun MainScreen(
             ModalDrawerSheet {
                 NavigationDrawerContent(
                     currentFilter = categoryFilter,
+                    memoTypeFilter = memoTypeFilter,
                     availableCategories = availableCategories,
                     customCategories = customCategories,
                     onFilterSelected = { filter ->
                         viewModel.setCategoryFilter(filter)
+                        scope.launch { drawerState.close() }
+                    },
+                    onMemoTypeFilterSelected = { typeFilter ->
+                        viewModel.setMemoTypeFilter(typeFilter)
                         scope.launch { drawerState.close() }
                     },
                     onAddCategoryClick = {
@@ -309,9 +317,11 @@ fun MainScreen(
 @Composable
 private fun NavigationDrawerContent(
     currentFilter: String?,
+    memoTypeFilter: String?,
     availableCategories: List<String>,
     customCategories: Set<String>,
     onFilterSelected: (String?) -> Unit,
+    onMemoTypeFilterSelected: (String?) -> Unit,
     onAddCategoryClick: () -> Unit,
     onSettingsClick: () -> Unit,
     onRemoveCustomCategory: (String) -> Unit
@@ -340,15 +350,73 @@ private fun NavigationDrawerContent(
             modifier = Modifier.weight(1f),
             contentPadding = PaddingValues(vertical = 8.dp)
         ) {
+            // Filter by Type section header
             item {
                 Text(
-                    text = stringResource(R.string.drawer_category_hint),
+                    text = stringResource(R.string.drawer_filter_by_type),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
                 )
             }
 
+            // All types option
+            item {
+                NavigationDrawerItem(
+                    label = { Text(stringResource(R.string.drawer_all_categories)) },
+                    selected = memoTypeFilter == null,
+                    onClick = { onMemoTypeFilterSelected(null) },
+                    icon = { Icon(Icons.Default.List, contentDescription = null) },
+                    modifier = Modifier.padding(horizontal = 12.dp)
+                )
+            }
+
+            // Memo type filters
+            item {
+                NavigationDrawerItem(
+                    label = { Text(stringResource(R.string.memo_type_text)) },
+                    selected = memoTypeFilter == MemoType.TEXT,
+                    onClick = { onMemoTypeFilterSelected(MemoType.TEXT) },
+                    icon = { Icon(Icons.Default.Notes, contentDescription = null) },
+                    modifier = Modifier.padding(horizontal = 12.dp)
+                )
+            }
+
+            item {
+                NavigationDrawerItem(
+                    label = { Text(stringResource(R.string.memo_type_web_site)) },
+                    selected = memoTypeFilter == MemoType.WEB_SITE,
+                    onClick = { onMemoTypeFilterSelected(MemoType.WEB_SITE) },
+                    icon = { Icon(Icons.Default.Language, contentDescription = null) },
+                    modifier = Modifier.padding(horizontal = 12.dp)
+                )
+            }
+
+            item {
+                NavigationDrawerItem(
+                    label = { Text(stringResource(R.string.memo_type_image)) },
+                    selected = memoTypeFilter == MemoType.IMAGE,
+                    onClick = { onMemoTypeFilterSelected(MemoType.IMAGE) },
+                    icon = { Icon(Icons.Default.Image, contentDescription = null) },
+                    modifier = Modifier.padding(horizontal = 12.dp)
+                )
+            }
+
+            item {
+                HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+            }
+
+            // Filter by Category section header
+            item {
+                Text(
+                    text = stringResource(R.string.drawer_filter_by_category),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                )
+            }
+
+            // All categories option
             item {
                 NavigationDrawerItem(
                     label = { Text(stringResource(R.string.drawer_all_categories)) },
@@ -523,25 +591,57 @@ private fun MemoCard(
             .fillMaxWidth()
             .padding(16.dp)
     ) {
+        // Memo Type Badge and SubCategory Row
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            if (memo.subCategory != null) {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Memo type badge
                 AssistChip(
                     onClick = { },
-                    label = { Text(memo.subCategory) },
+                    label = {
+                        Text(
+                            when (memo.memoType) {
+                                MemoType.TEXT -> stringResource(R.string.memo_type_text)
+                                MemoType.WEB_SITE -> stringResource(R.string.memo_type_web_site)
+                                MemoType.IMAGE -> stringResource(R.string.memo_type_image)
+                                else -> stringResource(R.string.memo_type_text)
+                            }
+                        )
+                    },
                     leadingIcon = {
                         Icon(
-                            Icons.Default.Info,
+                            when (memo.memoType) {
+                                MemoType.TEXT -> Icons.Default.Notes
+                                MemoType.WEB_SITE -> Icons.Default.Language
+                                MemoType.IMAGE -> Icons.Default.Image
+                                else -> Icons.Default.Notes
+                            },
                             contentDescription = null,
                             modifier = Modifier.size(14.dp)
                         )
                     }
                 )
-            } else {
-                Spacer(modifier = Modifier.height(28.dp))
+
+                // SubCategory chip if exists
+                if (memo.subCategory != null) {
+                    AssistChip(
+                        onClick = { },
+                        label = { Text(memo.subCategory) },
+                        leadingIcon = {
+                            Icon(
+                                Icons.Default.Info,
+                                contentDescription = null,
+                                modifier = Modifier.size(14.dp)
+                            )
+                        }
+                    )
+                }
             }
 
             Row(
@@ -550,27 +650,28 @@ private fun MemoCard(
                 IconButton(onClick = onReanalyze) {
                     Icon(Icons.Default.Refresh, reanalyzeString)
                 }
-                // Action buttons based on content type
-                when {
-                    // Image memo - open image
-                    !memo.imageUri.isNullOrBlank() -> {
-                        IconButton(onClick = {
-                            val intent = Intent(Intent.ACTION_VIEW).apply {
-                                setDataAndType(Uri.parse(memo.imageUri), "image/*")
-                                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                // Action buttons based on memo type
+                when (memo.memoType) {
+                    MemoType.IMAGE -> {
+                        // Image memo - open image
+                        if (!memo.imageUri.isNullOrBlank()) {
+                            IconButton(onClick = {
+                                val intent = Intent(Intent.ACTION_VIEW).apply {
+                                    setDataAndType(Uri.parse(memo.imageUri), "image/*")
+                                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                }
+                                try {
+                                    context.startActivity(intent)
+                                } catch (e: Exception) {
+                                    Toast.makeText(context, "Cannot open image", Toast.LENGTH_SHORT).show()
+                                }
+                            }) {
+                                Icon(Icons.Default.OpenInNew, stringResource(R.string.action_open))
                             }
-                            try {
-                                context.startActivity(intent)
-                            } catch (e: Exception) {
-                                Toast.makeText(context, "Cannot open image", Toast.LENGTH_SHORT).show()
-                            }
-                        }) {
-                            Icon(Icons.Default.OpenInNew, openString)
                         }
                     }
-                    // URL memo - open URL
-                    memo.content.startsWith("http://", ignoreCase = true) ||
-                    memo.content.startsWith("https://", ignoreCase = true) -> {
+                    MemoType.WEB_SITE -> {
+                        // URL memo - open URL
                         IconButton(onClick = {
                             val intent = Intent(Intent.ACTION_VIEW, Uri.parse(memo.content))
                             try {
@@ -582,8 +683,8 @@ private fun MemoCard(
                             Icon(Icons.Default.OpenInNew, openString)
                         }
                     }
-                    // Text memo - share
                     else -> {
+                        // Text memo - share
                         IconButton(onClick = {
                             val shareIntent = Intent(Intent.ACTION_SEND).apply {
                                 type = "text/plain"
@@ -604,22 +705,47 @@ private fun MemoCard(
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        Text(
-            text = memo.content,
-            style = MaterialTheme.typography.bodyLarge,
-            maxLines = 5,
-            overflow = TextOverflow.Ellipsis
-        )
+        // Image thumbnail and content
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            // Show image thumbnail if available
+            if (!memo.imageUri.isNullOrBlank()) {
+                AsyncImage(
+                    model = Uri.parse(memo.imageUri),
+                    contentDescription = "Memo image",
+                    modifier = Modifier
+                        .size(80.dp)
+                        .clip(RoundedCornerShape(8.dp)),
+                    contentScale = ContentScale.Crop
+                )
+            }
 
-        if (memo.summary != null) {
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = memo.summary,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 3,
-                overflow = TextOverflow.Ellipsis
-            )
+            // Content column
+            Column(
+                modifier = Modifier.weight(1f)
+            ) {
+                if (memo.content.isNotBlank()) {
+                    Text(
+                        text = memo.content,
+                        style = MaterialTheme.typography.bodyLarge,
+                        maxLines = 5,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+
+                if (memo.summary != null && (memo.memoType != MemoType.IMAGE || memo.summary != memo.content)) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = memo.summary,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 3,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+            }
         }
 
         Spacer(modifier = Modifier.height(8.dp))
@@ -700,7 +826,7 @@ private fun AddCustomCategoryDialog(
     val errorEmpty = stringResource(R.string.error_category_name_empty)
     val errorTooLong = stringResource(R.string.error_category_name_too_long)
     val errorExists = stringResource(R.string.error_category_already_exists)
-    
+
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.dialog_add_category_title)) },
@@ -756,9 +882,9 @@ private fun formatTimestamp(timestamp: Long): String {
 @Composable
 fun MainScreenPreview() {
     val sampleMemos = listOf(
-        Memo(id = 1, content = "Buy groceries", category = "Personal", subCategory = "To-Do", createdAt = System.currentTimeMillis()),
-        Memo(id = 2, content = "Prepare slides for meeting", category = "Work", subCategory = "Presentation", summary = "Finish the slides for the Q3 financial review.", createdAt = System.currentTimeMillis()),
-        Memo(id = 3, content = "App idea: smart notebook", category = "Ideas", subCategory = "Mobile App", createdAt = System.currentTimeMillis())
+        Memo(id = 1, content = "Buy groceries", memoType = MemoType.TEXT, category = "Personal", subCategory = "To-Do", createdAt = System.currentTimeMillis()),
+        Memo(id = 2, content = "Prepare slides for meeting", memoType = MemoType.TEXT, category = "Work", subCategory = "Presentation", summary = "Finish the slides for the Q3 financial review.", createdAt = System.currentTimeMillis()),
+        Memo(id = 3, content = "App idea: smart notebook", memoType = MemoType.TEXT, category = "Ideas", subCategory = "Mobile App", createdAt = System.currentTimeMillis())
     )
     val sampleMemoGroups = sampleMemos.groupBy { it.category }.map { (category, memos) -> MemoGroup(category, memos) }
 

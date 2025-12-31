@@ -11,7 +11,7 @@ import com.machi.memoiz.data.entity.MemoEntity
 
 @Database(
     entities = [MemoEntity::class],
-    version = 4, // Incremented version to 4
+    version = 5, // Incremented version to 5
     exportSchema = false
 )
 abstract class MemoizDatabase : RoomDatabase() {
@@ -70,6 +70,29 @@ abstract class MemoizDatabase : RoomDatabase() {
             }
         }
 
+        // Migration to add memoType field
+        private val MIGRATION_4_5 = object : Migration(4, 5) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                // Add memoType column with default value
+                database.execSQL("ALTER TABLE memos ADD COLUMN memoType TEXT NOT NULL DEFAULT 'TEXT'")
+                
+                // Update existing records based on their content
+                // Set WEB_SITE for URLs
+                database.execSQL("""
+                    UPDATE memos 
+                    SET memoType = 'WEB_SITE' 
+                    WHERE content LIKE 'http://%' OR content LIKE 'https://%'
+                """.trimIndent())
+                
+                // Set IMAGE for records with imageUri
+                database.execSQL("""
+                    UPDATE memos 
+                    SET memoType = 'IMAGE' 
+                    WHERE imageUri IS NOT NULL
+                """.trimIndent())
+            }
+        }
+
         fun getDatabase(context: Context): MemoizDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
@@ -77,7 +100,7 @@ abstract class MemoizDatabase : RoomDatabase() {
                     MemoizDatabase::class.java,
                     "memoiz_database"
                 )
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
                     .build()
                 INSTANCE = instance
                 instance

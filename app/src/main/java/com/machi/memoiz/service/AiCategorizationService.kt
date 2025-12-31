@@ -41,8 +41,17 @@ class AiCategorizationService(
         try {
             val (category, subCategory, summary) = mlKitCategorizer.categorize(content, sourceApp) ?: return@withContext null
             val finalCategory = mergeCategory(category ?: "Uncategorized", subCategory)
+            
+            // Determine memo type based on content
+            val memoType = when {
+                content.startsWith("http://", ignoreCase = true) || 
+                content.startsWith("https://", ignoreCase = true) -> com.machi.memoiz.data.entity.MemoType.WEB_SITE
+                else -> com.machi.memoiz.data.entity.MemoType.TEXT
+            }
+            
             MemoEntity(
                 content = content,
+                memoType = memoType,
                 category = finalCategory,
                 subCategory = subCategory,
                 summary = summary,
@@ -62,8 +71,9 @@ class AiCategorizationService(
             val (category, subCategory, summary) = mlKitCategorizer.categorizeImage(bitmap, sourceApp) ?: return@withContext null
             val finalCategory = mergeCategory(category ?: "Image", subCategory)
             MemoEntity(
-                content = "", // No text content for images
+                content = summary ?: "", // Store image description in content field
                 imageUri = originalImageUri,
+                memoType = com.machi.memoiz.data.entity.MemoType.IMAGE,
                 category = finalCategory,
                 subCategory = subCategory,
                 summary = summary,
