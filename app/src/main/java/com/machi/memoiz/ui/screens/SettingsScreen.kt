@@ -30,6 +30,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import com.google.android.gms.oss.licenses.OssLicensesMenuActivity
 import com.machi.memoiz.BuildConfig
 import com.machi.memoiz.R
 import com.machi.memoiz.ui.theme.MemoizTheme
@@ -111,7 +112,7 @@ fun SettingsScreen(
                 }
 
                 item {
-                    Divider(modifier = Modifier.padding(start = 72.dp))
+                    HorizontalDivider(modifier = Modifier.padding(start = 72.dp))
                 }
 
                 item {
@@ -122,6 +123,10 @@ fun SettingsScreen(
                         },
                         onClick = { showAboutDialog = true }
                     )
+                }
+
+                item {
+                    HorizontalDivider(modifier = Modifier.padding(start = 72.dp))
                 }
 
                 item {
@@ -264,7 +269,7 @@ fun SettingsScreenPreview() {
                     )
                 }
                 item {
-                    Divider(modifier = Modifier.padding(start = 72.dp))
+                    HorizontalDivider(modifier = Modifier.padding(start = 72.dp))
                 }
                 item {
                     PreferenceItem(
