@@ -46,9 +46,17 @@ object ContentProcessingLauncher {
 
         val workData = Data.Builder().apply {
             text?.let { putString(ClipboardProcessingWorker.KEY_CLIPBOARD_CONTENT, it) }
-            imageUri?.let { putString(ClipboardProcessingWorker.KEY_IMAGE_URI, it.toString()) }
+            imageUri?.let { original ->
+                val persistedUri = ImageUriManager.prepareUriForWork(context, original)
+                persistedUri?.let { putString(ClipboardProcessingWorker.KEY_IMAGE_URI, it.toString()) }
+            }
             sourceApp?.let { putString(ClipboardProcessingWorker.KEY_SOURCE_APP, it) }
         }.build()
+        if (!workData.keyValueMap.containsKey(ClipboardProcessingWorker.KEY_CLIPBOARD_CONTENT)
+            && !workData.keyValueMap.containsKey(ClipboardProcessingWorker.KEY_IMAGE_URI)
+        ) {
+            return false
+        }
 
         val workRequest = OneTimeWorkRequestBuilder<ClipboardProcessingWorker>()
             .setInputData(workData)
