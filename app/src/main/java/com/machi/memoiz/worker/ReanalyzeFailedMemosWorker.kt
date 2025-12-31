@@ -50,6 +50,7 @@ class ReanalyzeFailedMemosWorker(
                         memoRepository.updateMemo(memo.copy(
                             content = updatedEntity.content,
                             imageUri = updatedEntity.imageUri,
+                            memoType = updatedEntity.memoType,
                             category = updatedEntity.category,
                             subCategory = updatedEntity.subCategory,
                             summary = updatedEntity.summary

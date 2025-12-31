@@ -22,6 +22,7 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.jsoup.Jsoup
 import com.machi.memoiz.R
+import java.util.Locale
 
 /**
  * Wrapper that calls ML Kit GenAI APIs to generate a short category
@@ -31,6 +32,27 @@ class MlKitCategorizer(private val context: Context) {
     private fun webCategoryLabel(): String = context.getString(R.string.category_web_site)
     private fun imageCategoryLabel(): String = context.getString(R.string.category_image)
     private fun uncategorizableLabel(): String = context.getString(R.string.category_uncategorizable)
+    
+    private fun getSystemLanguageName(): String {
+        return when (Locale.getDefault().language) {
+            "ja" -> "Japanese"
+            "en" -> "English"
+            "ko" -> "Korean"
+            "zh" -> "Chinese"
+            "es" -> "Spanish"
+            "fr" -> "French"
+            "de" -> "German"
+            else -> "English" // fallback
+        }
+    }
+    
+    private fun getSummarizerLanguage(): SummarizerOptions.Language {
+        return when (Locale.getDefault().language) {
+            "ja" -> SummarizerOptions.Language.JAPANESE
+            "ko" -> SummarizerOptions.Language.KOREAN
+            else -> SummarizerOptions.Language.ENGLISH
+        }
+    }
 
     private val promptModel: GenerativeModel by lazy {
         // Align with sample app: explicit builder so future config tweaks are easier.
@@ -42,7 +64,7 @@ class MlKitCategorizer(private val context: Context) {
             SummarizerOptions.builder(context)
                 .setInputType(SummarizerOptions.InputType.ARTICLE)
                 .setOutputType(SummarizerOptions.OutputType.ONE_BULLET)
-                .setLanguage(SummarizerOptions.Language.ENGLISH)
+                .setLanguage(getSummarizerLanguage())
                 .build()
         )
     }
@@ -89,8 +111,18 @@ class MlKitCategorizer(private val context: Context) {
 
     suspend fun categorizeImage(bitmap: Bitmap, sourceApp: String?): Triple<String?, String?, String?>? {
         return try {
+            // Get image description first
             val description = describeImage(bitmap)
-            Triple(imageCategoryLabel(), description, description)
+            
+            // If we have a description, categorize based on it like text
+            if (!description.isNullOrBlank()) {
+                val category = generateText(buildCategorizationPrompt(description, sourceApp))
+                val subCategory = generateText(buildSubCategoryPrompt(description, category ?: "", sourceApp))
+                Triple(category, subCategory, description)
+            } else {
+                // Fallback to image category if description fails
+                Triple(imageCategoryLabel(), null, null)
+            }
         } catch (e: Exception) {
             e.printStackTrace()
             null
@@ -136,6 +168,7 @@ class MlKitCategorizer(private val context: Context) {
     private fun buildCategorizationPrompt(content: String, sourceApp: String?): String {
         val sb = StringBuilder()
         sb.append("Suggest a concise category name (1-3 words) for the following content.\n")
+        sb.append("Reply in ${getSystemLanguageName()} language.\n")
         if (!sourceApp.isNullOrBlank()) {
             sb.append("Source app: $sourceApp\n")
         }
@@ -147,14 +180,15 @@ class MlKitCategorizer(private val context: Context) {
 
     private fun buildSubCategoryPrompt(content: String, mainCategory: String, sourceApp: String?): String {
         val sb = StringBuilder()
-        sb.append("Provide a short context phrase for the clipboard item.\n")
+        sb.append("Provide a very brief sub-category (1-3 words maximum) for the clipboard item.\n")
+        sb.append("Reply in ${getSystemLanguageName()} language.\n")
         sb.append("Main category: $mainCategory\n")
         if (!sourceApp.isNullOrBlank()) {
             sb.append("Source app: $sourceApp\n")
         }
         sb.append("Content:\n")
         sb.append(content.take(2000))
-        sb.append("\n\nReply with a short phrase (or single word) representing context; return empty if none.")
+        sb.append("\n\nReply with only 1-3 words, no explanation. Keep it extremely short and concise.")
         return sb.toString()
     }
 }
