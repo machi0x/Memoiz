@@ -8,6 +8,7 @@ import com.machi.memoiz.data.repository.MemoRepository
 import com.machi.memoiz.domain.model.Memo
 import com.machi.memoiz.worker.ReanalyzeFailedMemosWorker
 import com.machi.memoiz.worker.ReanalyzeSingleMemoWorker
+import com.machi.memoiz.worker.ReanalyzeCategoryMergeWorker
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import androidx.work.Data
@@ -15,6 +16,7 @@ import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
+import com.machi.memoiz.R
 import java.util.concurrent.TimeUnit
 
 data class MemoGroup(val category: String, val memos: List<Memo>)
@@ -190,5 +192,39 @@ class MainViewModel(
                 ExistingPeriodicWorkPolicy.UPDATE,
                 request
             )
+    }
+
+    fun addCustomCategoryWithMerge(context: Context, categoryName: String) {
+        viewModelScope.launch {
+            val trimmed = categoryName.trim()
+            preferencesManager.addCustomCategory(trimmed)
+            enqueueMergeWork(context, null)
+            _toastMessage.value = context.getString(R.string.toast_merge_enqueued)
+        }
+    }
+
+    fun removeCustomCategoryAndReanalyze(context: Context, categoryName: String) {
+        viewModelScope.launch {
+            preferencesManager.removeCustomCategory(categoryName)
+            enqueueMergeWork(context, categoryName)
+            _toastMessage.value = context.getString(R.string.toast_merge_enqueued)
+        }
+    }
+
+    private fun enqueueMergeWork(context: Context, targetCategory: String?) {
+        val data = Data.Builder()
+            .putString(ReanalyzeCategoryMergeWorker.KEY_TARGET_CATEGORY, targetCategory)
+            .build()
+        val request = OneTimeWorkRequestBuilder<ReanalyzeCategoryMergeWorker>()
+            .setInputData(data)
+            .build()
+        WorkManager.getInstance(context.applicationContext).enqueue(request)
+    }
+
+    private val _toastMessage = MutableStateFlow<String?>(null)
+    val toastMessage: StateFlow<String?> = _toastMessage.asStateFlow()
+
+    fun clearToast() {
+        _toastMessage.value = null
     }
 }
