@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.widget.Toast
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
@@ -119,6 +120,7 @@ fun MainScreen(
             viewModel.onCategoryMoved(from.index, to.index)
         }
     )
+    var isFabExpanded by remember { mutableStateOf(false) }
 
     ModalNavigationDrawer(
         drawerState = drawerState,
@@ -233,16 +235,25 @@ fun MainScreen(
                 )
             },
             floatingActionButton = {
-                ExtendedFloatingActionButton(
-                    text = { Text(text = stringResource(R.string.fab_paste_clipboard)) },
-                    icon = { Icon(Icons.Default.ContentPaste, contentDescription = null) },
-                    onClick = {
-                        val enqueued = ContentProcessingLauncher.enqueueFromClipboard(context)
-                        if (!enqueued) {
-                            Toast.makeText(context, R.string.nothing_to_categorize, Toast.LENGTH_SHORT).show()
+                AnimatedContent(targetState = isFabExpanded, label = "fab") { expanded ->
+                    if (expanded) {
+                        ExtendedFloatingActionButton(
+                            text = { Text(text = stringResource(R.string.fab_paste_clipboard)) },
+                            icon = { Icon(Icons.Default.ContentPaste, contentDescription = null) },
+                            onClick = {
+                                val enqueued = ContentProcessingLauncher.enqueueFromClipboard(context)
+                                if (!enqueued) {
+                                    Toast.makeText(context, R.string.nothing_to_categorize, Toast.LENGTH_SHORT).show()
+                                }
+                                isFabExpanded = false
+                            }
+                        )
+                    } else {
+                        FloatingActionButton(onClick = { isFabExpanded = true }) {
+                            Icon(Icons.Default.ContentPaste, contentDescription = stringResource(R.string.fab_paste_clipboard))
                         }
                     }
-                )
+                }
             }
         ) { padding ->
             if (memoGroups.isEmpty()) {
@@ -309,13 +320,16 @@ fun MainScreen(
                                     manualCategoryMemo = memo
                                     manualCategoryInput = memo.category
                                     manualCategoryError = null
+                                    isFabExpanded = false
                                 },
                                 onReanalyzeMemo = { memo ->
                                     pendingReanalyzeMemo = memo
+                                    isFabExpanded = false
                                 },
                                 onReanalyzeCategory = {
                                     pendingReanalyzeMemo = null
                                     viewModel.reanalyzeFailureBatch(context)
+                                    isFabExpanded = false
                                 },
                                 dragHandle = Modifier.detectReorder(reorderState)
                             )
