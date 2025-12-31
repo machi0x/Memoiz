@@ -48,7 +48,7 @@ Tap the clipboard button or share content to start.</string>
 
     <!-- Custom category dialog -->
     <string name="dialog_add_category_title">Add My Category</string>
-    <string name="dialog_add_category_message">Enter a category name you'd like to use. AI will reference it when classifying your memos.</string>
+    <string name="dialog_add_category_message">Enter a category name you would like to use. AI will reference it when classifying your memos.</string>
     <string name="dialog_category_name_label">Category Name</string>
     <string name="dialog_add">Add</string>
     <string name="dialog_cancel">Cancel</string>
