@@ -70,4 +70,7 @@
     <string name="dialog_reanalyze_title">再解析しますか？</string>
     <string name="dialog_reanalyze_message">再解析するとカテゴリや要約が変わる場合がありますが、メモタイプは維持されます。</string>
     <string name="dialog_reanalyze_confirm">再解析</string>
+    <string name="filter_note_type_and_category">%1$sタイプとカテゴリ「%2$s」でフィルタ中</string>
+    <string name="filter_note_type_only">%1$sタイプでフィルタ中</string>
+    <string name="filter_note_category_only">カテゴリ「%1$s」でフィルタ中</string>
 </resources>
