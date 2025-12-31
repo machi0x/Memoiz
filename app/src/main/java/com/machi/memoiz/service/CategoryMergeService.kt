@@ -87,16 +87,42 @@ class CategoryMergeService(private val context: Context) {
             "Existing categories include: " + existingPool.joinToString(", ")
         } else ""
 
+        val examples = when (Locale.getDefault().language) {
+            "ja" -> "\"子供とタブレット\" (children with tablet) → \"家族\" (family), \"猫の写真\" (cat photos) → \"ペット\" (pets), \"誕生日ケーキ\" (birthday cake) → \"記念日\" (anniversaries)"
+            else -> "\"Children playing with tablet\" → \"Family\", \"Cat photos\" → \"Pets\", \"Birthday cake\" → \"Celebrations\""
+        }
+
         return buildString {
-            appendLine("You are a categorization assistant.")
+            appendLine("You are a categorization assistant that helps merge similar categories intelligently.")
             appendLine("Reply in ${getSystemLanguageName()} language.")
+            appendLine()
             appendLine("Original AI suggestion: \"${input.aiCategory}\"")
-            input.aiSubCategory?.let { appendLine("Context: $it") }
-            if (fixed.isNotBlank()) appendLine(fixed)
-            if (poolText.isNotBlank()) appendLine(poolText)
+            input.aiSubCategory?.let { appendLine("Sub-category context: $it") }
+            appendLine()
+            if (fixed.isNotBlank()) {
+                appendLine(fixed)
+                appendLine()
+            }
+            if (poolText.isNotBlank()) {
+                appendLine(poolText)
+                appendLine()
+            }
+            appendLine("Task: Decide if the suggestion should merge into an existing category.")
+            appendLine()
+            appendLine("Merging guidelines:")
+            appendLine("1. Consider semantic relationships and broader context:")
+            appendLine("   - If the suggestion describes a specific activity or subject that naturally belongs to a broader existing category, prefer the existing category.")
+            appendLine("   - Examples: $examples")
+            appendLine("2. Use the sub-category context to understand the full meaning:")
+            appendLine("   - The sub-category provides additional context about what the content actually contains.")
+            appendLine("   - Consider whether this context suggests the content belongs to an existing broader category.")
+            appendLine("3. Prioritize user-created categories (marked as FIXED) when semantically related.")
+            appendLine("4. Only merge if there's a clear semantic relationship. When in doubt, keep the suggestion separate.")
+            appendLine("5. Match exact names, synonyms, or clear parent-child relationships.")
+            appendLine()
             appendLine("Do not map anything into the special failure label \"" + FailureCategoryHelper.currentLabel(context) + "\" unless the suggestion already equals it, and never merge that label into other names.")
-            appendLine("If the suggestion matches or is a subset/synonym of an existing label, return that exact existing label. Otherwise return the suggestion itself.")
-            appendLine("Never invent explanations. Respond with only a single category label.")
+            appendLine()
+            appendLine("Decision: Return ONLY the final category name to use (either an existing category or the original suggestion). No explanations, no extra text.")
         }
     }
 }
