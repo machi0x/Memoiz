@@ -241,7 +241,7 @@ private fun AboutDialog(
                     painter = painterResource(id = R.drawable.thanks),
                     contentDescription = null,
                     modifier = Modifier
-                        .size(160.dp)
+                        .size(200.dp)
                         .padding(top = 8.dp)
                 )
             }
