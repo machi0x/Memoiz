@@ -132,14 +132,15 @@ class MainViewModel(
                 MemoGroup(category, memos.sortedByDescending { it.createdAt })
             }
 
-        val orderedGroups = if (order.isNotEmpty()) {
+        val manualOrderActive = order.isNotEmpty()
+        val orderedGroups = if (manualOrderActive) {
             val orderMap = order.mapIndexed { index, value -> value to index }.toMap()
             grouped.sortedWith(compareBy({ orderMap[it.category] ?: Int.MAX_VALUE }, { it.category }))
         } else {
             grouped
         }
 
-        if (order.isNotEmpty()) {
+        if (manualOrderActive) {
             orderedGroups
         } else {
             when (state.sortMode) {
@@ -164,6 +165,9 @@ class MainViewModel(
 
     fun setSortMode(mode: SortMode) {
         _sortMode.value = mode
+        if (_categoryOrder.value.isNotEmpty()) {
+            clearCategoryOrder()
+        }
     }
 
     fun setCategoryFilter(category: String?) {
@@ -250,8 +254,18 @@ class MainViewModel(
         WorkManager.getInstance(context.applicationContext).enqueue(request)
     }
 
-    fun onCategoryMoved(fromIndex: Int, toIndex: Int) {
-        val current = _categoryOrder.value.toMutableList()
+    fun onCategoryMoved(fromIndex: Int, toIndex: Int, displayedCategories: List<String>) {
+        if (displayedCategories.isEmpty()) return
+        val baseOrder = if (_categoryOrder.value.isEmpty()) {
+            displayedCategories
+        } else {
+            _categoryOrder.value
+        }
+        val current = baseOrder.toMutableList()
+        if (current.size != displayedCategories.size) {
+            current.clear()
+            current.addAll(displayedCategories)
+        }
         if (fromIndex !in current.indices || toIndex !in current.indices) return
         val item = current.removeAt(fromIndex)
         current.add(toIndex, item)
@@ -261,7 +275,8 @@ class MainViewModel(
 
     fun ensureCategoryOrder(categories: List<String>) {
         val current = _categoryOrder.value
-        val merged = categories.filter { it in current }
+        if (current.isEmpty()) return
+        val merged = current.filter { it in categories }
         val missing = categories.filter { it !in current }
         val newOrder = merged + missing
         if (newOrder != current) {
@@ -272,6 +287,11 @@ class MainViewModel(
 
     fun removeCategoryFromOrder(category: String) {
         viewModelScope.launch { preferencesManager.removeCategoryFromOrder(category) }
+    }
+
+    private fun clearCategoryOrder() {
+        _categoryOrder.value = emptyList()
+        viewModelScope.launch { preferencesManager.updateCategoryOrder(emptyList()) }
     }
 
     fun updateMemoCategory(memo: Memo, newCategory: String, newSubCategory: String?) {
