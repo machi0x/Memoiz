@@ -59,10 +59,11 @@ fun MainScreen(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
 
-    var toastMessage by remember { mutableStateOf<String?>(null) }
-    toastMessage?.let {
-        LaunchedEffect(it) {
+    val toastMessage by viewModel.toastMessage.collectAsState()
+    LaunchedEffect(toastMessage) {
+        toastMessage?.let {
             Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
+            viewModel.clearToast()
         }
     }
 
@@ -75,6 +76,7 @@ fun MainScreen(
     var showAddCategoryDialog by remember { mutableStateOf(false) }
     var showDeleteConfirmationDialog by remember { mutableStateOf(false) }
     var deleteTarget by remember { mutableStateOf<Any?>(null) }
+    var deleteTargetIsCustomCategory by remember { mutableStateOf(false) }
 
     ModalNavigationDrawer(
         drawerState = drawerState,
@@ -102,6 +104,7 @@ fun MainScreen(
                     },
                     onRemoveCustomCategory = { category ->
                         deleteTarget = category
+                        deleteTargetIsCustomCategory = true
                         showDeleteConfirmationDialog = true
                     }
                 )
@@ -206,6 +209,7 @@ fun MainScreen(
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     items(memoGroups) { group ->
+                        val isCustomCategory = customCategories.contains(group.category)
                         CategoryAccordion(
                             group = group,
                             isExpanded = group.category in expandedCategories,
@@ -213,10 +217,12 @@ fun MainScreen(
                             onHeaderClick = { viewModel.toggleCategoryExpanded(group.category) },
                             onDeleteCategory = {
                                 deleteTarget = group.category
+                                deleteTargetIsCustomCategory = isCustomCategory
                                 showDeleteConfirmationDialog = true
                             },
                             onDeleteMemo = { memo ->
                                 deleteTarget = memo
+                                deleteTargetIsCustomCategory = false
                                 showDeleteConfirmationDialog = true
                             },
                             onReanalyzeMemo = { memo ->
@@ -250,6 +256,10 @@ fun MainScreen(
                 viewModel.addCustomCategory(categoryName)
                 showAddCategoryDialog = false
             },
+            onConfirmWithReanalyze = { categoryName ->
+                viewModel.addCustomCategoryWithMerge(context, categoryName)
+                showAddCategoryDialog = false
+            },
             onDismiss = { showAddCategoryDialog = false }
         )
     }
@@ -278,14 +288,24 @@ fun MainScreen(
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(
                         text = if (isCategory) {
-                            stringResource(R.string.dialog_delete_category_message)
+                            val messageRes = if (deleteTargetIsCustomCategory) {
+                                R.string.dialog_delete_custom_category_message
+                            } else {
+                                R.string.dialog_delete_category_message
+                            }
+                            stringResource(messageRes)
                         } else {
                             stringResource(R.string.dialog_delete_memo_message)
                         }
                     )
                     if (isCategory) {
+                        val warningRes = if (deleteTargetIsCustomCategory) {
+                            R.string.dialog_delete_custom_category_warning
+                        } else {
+                            R.string.dialog_delete_category_warning
+                        }
                         Text(
-                            text = stringResource(R.string.dialog_delete_category_warning),
+                            text = stringResource(warningRes),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.error
                         )
@@ -296,9 +316,16 @@ fun MainScreen(
                 TextButton(
                     onClick = {
                         when (val target = deleteTarget) {
-                            is String -> viewModel.deleteCategory(target)
+                            is String -> {
+                                if (deleteTargetIsCustomCategory) {
+                                    viewModel.removeCustomCategoryAndReanalyze(context, target)
+                                } else {
+                                    viewModel.deleteCategory(target)
+                                }
+                            }
                             is Memo -> viewModel.deleteMemo(target)
                         }
+                        deleteTargetIsCustomCategory = false
                         showDeleteConfirmationDialog = false
                     }
                 ) {
@@ -306,7 +333,10 @@ fun MainScreen(
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showDeleteConfirmationDialog = false }) {
+                TextButton(onClick = {
+                    showDeleteConfirmationDialog = false
+                    deleteTargetIsCustomCategory = false
+                }) {
                     Text(stringResource(R.string.dialog_cancel))
                 }
             }
@@ -436,23 +466,11 @@ private fun NavigationDrawerContent(
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                if (isCustom) {
-                                    Icon(
-                                        Icons.Default.Star,
-                                        contentDescription = null,
-                                        modifier = Modifier.size(18.dp),
-                                        tint = MaterialTheme.colorScheme.primary
-                                    )
-                                }
-                                Text(category, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                            }
+                            Text(category, maxLines = 1, overflow = TextOverflow.Ellipsis)
                             if (isCustom) {
-                                IconButton(onClick = {
-                                    onRemoveCustomCategory(category)
-                                }) {
+                                IconButton(onClick = { onRemoveCustomCategory(category) }) {
                                     Icon(
-                                        Icons.Default.RemoveCircleOutline,
+                                        Icons.Default.Warning,
                                         contentDescription = stringResource(R.string.cd_remove_custom_category)
                                     )
                                 }
@@ -819,6 +837,7 @@ private fun SortModeDialog(
 private fun AddCustomCategoryDialog(
     existingCategories: List<String>,
     onConfirm: (String) -> Unit,
+    onConfirmWithReanalyze: (String) -> Unit,
     onDismiss: () -> Unit
 ) {
     var categoryName by remember { mutableStateOf("") }
@@ -826,6 +845,20 @@ private fun AddCustomCategoryDialog(
     val errorEmpty = stringResource(R.string.error_category_name_empty)
     val errorTooLong = stringResource(R.string.error_category_name_too_long)
     val errorExists = stringResource(R.string.error_category_already_exists)
+
+    fun handleSubmit(onValid: (String) -> Unit) {
+        val validationError = when {
+            categoryName.isBlank() -> errorEmpty
+            categoryName.length > 50 -> errorTooLong
+            categoryName.trim().lowercase() in existingCategories.map { it.lowercase() } -> errorExists
+            else -> null
+        }
+        if (validationError != null) {
+            error = validationError
+        } else {
+            onValid(categoryName.trim())
+        }
+    }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -847,22 +880,13 @@ private fun AddCustomCategoryDialog(
             }
         },
         confirmButton = {
-            TextButton(
-                onClick = {
-                    val validationError = when {
-                        categoryName.isBlank() -> errorEmpty
-                        categoryName.length > 50 -> errorTooLong
-                        categoryName.trim().lowercase() in existingCategories.map { it.lowercase() } -> errorExists
-                        else -> null
-                    }
-                    if (validationError != null) {
-                        error = validationError
-                    } else {
-                        onConfirm(categoryName.trim())
-                    }
+            Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                TextButton(onClick = { handleSubmit(onConfirm) }) {
+                    Text(stringResource(R.string.dialog_add))
                 }
-            ) {
-                Text(stringResource(R.string.dialog_add))
+                TextButton(onClick = { handleSubmit(onConfirmWithReanalyze) }) {
+                    Text(stringResource(R.string.dialog_add_and_remerge))
+                }
             }
         },
         dismissButton = {

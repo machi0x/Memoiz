@@ -40,4 +40,10 @@ interface MemoDao {
 
     @Query("SELECT * FROM memos WHERE category IN (:categoryNames)")
     suspend fun getMemosByCategories(categoryNames: List<String>): List<MemoEntity>
+
+    @Query("SELECT * FROM memos")
+    suspend fun getAllMemosImmediate(): List<MemoEntity>
+
+    @Query("SELECT * FROM memos WHERE category = :categoryName")
+    suspend fun getMemosByCategoryImmediate(categoryName: String): List<MemoEntity>
 }
