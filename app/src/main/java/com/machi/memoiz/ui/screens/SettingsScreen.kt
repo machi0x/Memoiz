@@ -46,11 +46,11 @@ fun SettingsScreen(
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     var hasUsageStatsPermission by remember {
-        mutableStateOf(UsageStatsHelper(context).hasUsageStatsPermission())
+        mutableStateOf(if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) UsageStatsHelper(context).hasUsageStatsPermission() else false)
     }
     DisposableEffect(lifecycleOwner, context) {
         val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_RESUME) {
+            if (event == Lifecycle.Event.ON_RESUME && Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
                 hasUsageStatsPermission = UsageStatsHelper(context).hasUsageStatsPermission()
             }
         }
@@ -103,15 +103,8 @@ fun SettingsScreen(
                                 color = if (hasUsageStatsPermission) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
                                 modifier = Modifier.padding(top = 4.dp)
                             )
-                            if (!hasUsageStatsPermission) {
-                                Spacer(modifier = Modifier.height(8.dp))
-                                AssistChip(
-                                    onClick = { openUsageAccessSettings(context) },
-                                    label = { Text(stringResource(R.string.settings_usage_button)) }
-                                )
-                            }
                         },
-                        onClick = { if (!hasUsageStatsPermission) openUsageAccessSettings(context) }
+                        onClick = { openUsageAccessSettings(context) }
                     )
                 }
 

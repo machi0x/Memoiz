@@ -10,7 +10,7 @@
     <string name="dialog_close">閉じる</string>
     <string name="settings_title">設定</string>
     <string name="settings_usage_title">引用元のアプリ名の検出</string>
-    <string name="settings_usage_description">権限を許可すると、解析精度が向上し、メモにアプリ名が記録されます。</string>
+    <string name="settings_usage_description">権限を許可すると、解析精度が向上し、メモにアプリ名が記録されます。タップして使用履歴アクセス設定画面を開き、メモイズを許可してください。</string>
     <string name="settings_usage_status_enabled">権限は許可されています</string>
     <string name="settings_usage_status_disabled">権限が許可されていません</string>
     <string name="settings_usage_button">使用履歴アクセス設定を開く</string>
