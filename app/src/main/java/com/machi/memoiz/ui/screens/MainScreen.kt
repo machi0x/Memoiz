@@ -18,6 +18,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.filled.SwapVert
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -61,6 +62,7 @@ fun MainScreen(
     val availableCategories by viewModel.availableCategories.collectAsState()
     val customCategories by viewModel.customCategories.collectAsState()
     val expandedCategories by viewModel.expandedCategories.collectAsState()
+    val categoryOrder by viewModel.categoryOrder.collectAsState()
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
 
@@ -90,6 +92,7 @@ fun MainScreen(
     var manualCategoryMemo by remember { mutableStateOf<Memo?>(null) }
     var manualCategoryInput by remember { mutableStateOf("") }
     var manualCategoryError by remember { mutableStateOf<String?>(null) }
+    val hasManualOrder = categoryOrder.isNotEmpty()
 
     val clearManualCategoryState: () -> Unit = {
         manualCategoryMemo = null
@@ -113,11 +116,13 @@ fun MainScreen(
         clearManualCategoryState()
     }
 
+    val displayedCategories = memoGroups.map { it.category }
+
     val lazyListState = rememberLazyListState()
     val reorderState = rememberReorderableLazyListState(
         listState = lazyListState,
         onMove = { from, to ->
-            viewModel.onCategoryMoved(from.index, to.index)
+            viewModel.onCategoryMoved(from.index, to.index, displayedCategories)
         }
     )
     var isFabExpanded by remember { mutableStateOf(false) }
@@ -350,7 +355,8 @@ fun MainScreen(
                 viewModel.setSortMode(mode)
                 showSortDialog = false
             },
-            onDismiss = { showSortDialog = false }
+            onDismiss = { showSortDialog = false },
+            hasManualOrder = hasManualOrder
         )
     }
 
@@ -955,7 +961,8 @@ private fun MemoCard(
 private fun SortModeDialog(
     currentMode: SortMode,
     onModeSelected: (SortMode) -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    hasManualOrder: Boolean
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
