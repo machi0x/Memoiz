@@ -133,28 +133,55 @@ fun MainScreen(
             topBar = {
                 TopAppBar(
                     title = {
-                        OutlinedTextField(
-                            value = searchQuery,
-                            onValueChange = { viewModel.setSearchQuery(it) },
-                            placeholder = { Text(stringResource(R.string.search_hint)) },
-                            modifier = Modifier.fillMaxWidth(),
-                            singleLine = true,
-                            shape = RoundedCornerShape(24.dp),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = MaterialTheme.colorScheme.primary,
-                                unfocusedBorderColor = MaterialTheme.colorScheme.outline
-                            ),
-                            leadingIcon = {
-                                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
-                            },
-                            trailingIcon = {
-                                if (searchQuery.isNotEmpty()) {
-                                    IconButton(onClick = { viewModel.setSearchQuery("") }) {
-                                        Icon(Icons.Default.Clear, contentDescription = stringResource(R.string.cd_clear_search))
+                        Column(modifier = Modifier.fillMaxWidth()) {
+                            OutlinedTextField(
+                                value = searchQuery,
+                                onValueChange = { viewModel.setSearchQuery(it) },
+                                placeholder = { Text(stringResource(R.string.search_hint)) },
+                                modifier = Modifier.fillMaxWidth(),
+                                singleLine = true,
+                                shape = RoundedCornerShape(24.dp),
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                    unfocusedBorderColor = MaterialTheme.colorScheme.outline
+                                ),
+                                leadingIcon = {
+                                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
+                                },
+                                trailingIcon = {
+                                    if (searchQuery.isNotEmpty()) {
+                                        IconButton(onClick = { viewModel.setSearchQuery("") }) {
+                                            Icon(Icons.Default.Clear, contentDescription = stringResource(R.string.cd_clear_search))
+                                        }
                                     }
                                 }
+                            )
+
+                            val typeLabel = when (memoTypeFilter) {
+                                MemoType.TEXT -> stringResource(R.string.memo_type_text)
+                                MemoType.WEB_SITE -> stringResource(R.string.memo_type_web_site)
+                                MemoType.IMAGE -> stringResource(R.string.memo_type_image)
+                                else -> null
                             }
-                        )
+                            val filterNote = when {
+                                typeLabel != null && categoryFilter != null -> stringResource(
+                                    R.string.filter_note_type_and_category,
+                                    typeLabel,
+                                    categoryFilter
+                                )
+                                typeLabel != null -> stringResource(R.string.filter_note_type_only, typeLabel)
+                                categoryFilter != null -> stringResource(R.string.filter_note_category_only, categoryFilter)
+                                else -> null
+                            }
+                            if (filterNote != null) {
+                                Text(
+                                    text = filterNote,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.padding(top = 4.dp)
+                                )
+                            }
+                        }
                     },
                     navigationIcon = {
                         IconButton(onClick = { scope.launch { drawerState.open() } }) {
