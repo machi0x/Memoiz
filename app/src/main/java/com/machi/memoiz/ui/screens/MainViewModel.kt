@@ -302,10 +302,6 @@ class MainViewModel(
         viewModelScope.launch { preferencesManager.markTutorialSeen() }
     }
 
-    fun clearQueuedTutorial() {
-        viewModelScope.launch { preferencesManager.clearQueuedTutorial() }
-    }
-
     fun updateMemoCategory(memo: Memo, newCategory: String, newSubCategory: String?) {
         viewModelScope.launch {
             memoRepository.updateMemo(
