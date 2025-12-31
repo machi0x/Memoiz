@@ -7,6 +7,7 @@ plugins {
     id("com.google.devtools.ksp")
     id("com.google.gms.google-services")
     id("com.google.firebase.crashlytics")
+    id("com.google.android.gms.oss-licenses-plugin")
 }
 
 // Gitのコミット数を取得する関数
