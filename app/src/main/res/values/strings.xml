@@ -102,4 +102,9 @@ Tap the clipboard button or share content to start.</string>
     <string name="filter_note_type_and_category">Filtering by type "%1$s" and category "%2$s"</string>
     <string name="filter_note_type_only">Filtering by type "%1$s"</string>
     <string name="filter_note_category_only">Filtering by category "%1$s"</string>
+    <string name="dialog_edit_category_title">Edit Category</string>
+    <string name="dialog_edit_category_message">Pick one of your categories or enter a new label. Sub-category is optional.</string>
+    <string name="dialog_subcategory_name_label">Sub-category</string>
+    <string name="dialog_create_as_custom">Register as My Category</string>
+    <string name="dialog_save">Save</string>
 </resources>

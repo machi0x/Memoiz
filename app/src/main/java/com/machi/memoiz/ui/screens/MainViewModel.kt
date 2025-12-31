@@ -273,4 +273,23 @@ class MainViewModel(
     fun removeCategoryFromOrder(category: String) {
         viewModelScope.launch { preferencesManager.removeCategoryFromOrder(category) }
     }
+
+    fun updateMemoCategory(memo: Memo, newCategory: String, newSubCategory: String?) {
+        viewModelScope.launch {
+            memoRepository.updateMemo(
+                memo.copy(
+                    category = newCategory,
+                    subCategory = newSubCategory
+                )
+            )
+        }
+    }
+
+    fun addCustomCategoryIfMissing(categoryName: String) {
+        val trimmed = categoryName.trim()
+        if (trimmed.isEmpty()) return
+        viewModelScope.launch {
+            preferencesManager.addCustomCategory(trimmed)
+        }
+    }
 }

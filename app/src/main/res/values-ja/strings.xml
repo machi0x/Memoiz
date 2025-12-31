@@ -73,4 +73,9 @@
     <string name="filter_note_type_and_category">%1$sタイプとカテゴリ「%2$s」でフィルタ中</string>
     <string name="filter_note_type_only">%1$sタイプでフィルタ中</string>
     <string name="filter_note_category_only">カテゴリ「%1$s」でフィルタ中</string>
+    <string name="dialog_edit_category_title">カテゴリを編集</string>
+    <string name="dialog_edit_category_message">既存のカテゴリを選ぶか、新しい名前を入力してください。サブカテゴリは任意です。</string>
+    <string name="dialog_subcategory_name_label">サブカテゴリ</string>
+    <string name="dialog_create_as_custom">マイカテゴリとして登録</string>
+    <string name="dialog_save">保存</string>
 </resources>
