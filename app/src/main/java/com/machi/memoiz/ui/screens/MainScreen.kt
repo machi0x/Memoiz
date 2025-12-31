@@ -132,7 +132,7 @@ fun MainScreen(
                             trailingIcon = {
                                 if (searchQuery.isNotEmpty()) {
                                     IconButton(onClick = { viewModel.setSearchQuery("") }) {
-                                        Icon(Icons.Default.Clear, contentDescription = "Clear search")
+                                        Icon(Icons.Default.Clear, contentDescription = stringResource(R.string.cd_clear_search))
                                     }
                                 }
                             }
@@ -140,7 +140,7 @@ fun MainScreen(
                     },
                     navigationIcon = {
                         IconButton(onClick = { scope.launch { drawerState.open() } }) {
-                            Icon(Icons.Default.Menu, "Open drawer")
+                            Icon(Icons.Default.Menu, stringResource(R.string.cd_open_drawer))
                         }
                     },
                     actions = {
@@ -150,7 +150,7 @@ fun MainScreen(
                                     SortMode.CREATED_DESC -> Icons.Default.DateRange
                                     SortMode.CATEGORY_NAME -> Icons.Default.SortByAlpha
                                 },
-                                "Sort"
+                                stringResource(R.string.cd_sort)
                             )
                         }
                     }
@@ -214,6 +214,7 @@ fun MainScreen(
                             group = group,
                             isExpanded = group.category in expandedCategories,
                             context = context,
+                            isCustomCategory = isCustomCategory,
                             onHeaderClick = { viewModel.toggleCategoryExpanded(group.category) },
                             onDeleteCategory = {
                                 deleteTarget = group.category
@@ -470,7 +471,7 @@ private fun NavigationDrawerContent(
                             if (isCustom) {
                                 IconButton(onClick = { onRemoveCustomCategory(category) }) {
                                     Icon(
-                                        Icons.Default.Warning,
+                                        Icons.Default.Remove,
                                         contentDescription = stringResource(R.string.cd_remove_custom_category)
                                     )
                                 }
@@ -516,6 +517,7 @@ private fun CategoryAccordion(
     group: MemoGroup,
     isExpanded: Boolean,
     context: Context,
+    isCustomCategory: Boolean,
     onHeaderClick: () -> Unit,
     onDeleteCategory: () -> Unit,
     onDeleteMemo: (Memo) -> Unit,
@@ -552,7 +554,7 @@ private fun CategoryAccordion(
                         fontWeight = FontWeight.Bold
                     )
                     Text(
-                        text = "(${group.memos.size})",
+                        text = stringResource(R.string.category_memo_count, group.memos.size),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -563,8 +565,14 @@ private fun CategoryAccordion(
                             Icon(Icons.Default.Refresh, reanalyzeFailuresString)
                         }
                     }
+                    val deleteIcon = if (isCustomCategory) Icons.Default.Remove else Icons.Default.Delete
+                    val deleteContentDescription = if (isCustomCategory) {
+                        stringResource(R.string.cd_remove_custom_category)
+                    } else {
+                        deleteCategoryString
+                    }
                     IconButton(onClick = onDeleteCategory) {
-                        Icon(Icons.Default.Delete, deleteCategoryString)
+                        Icon(deleteIcon, deleteContentDescription)
                     }
                 }
             }
@@ -603,6 +611,8 @@ private fun MemoCard(
     val openString = stringResource(R.string.action_open)
     val shareString = stringResource(R.string.action_share)
     val deleteString = stringResource(R.string.action_delete)
+    val errorOpenImageString = stringResource(R.string.error_open_image)
+    val errorOpenUrlString = stringResource(R.string.error_open_url)
 
     Column(
         modifier = Modifier
@@ -681,7 +691,7 @@ private fun MemoCard(
                                 try {
                                     context.startActivity(intent)
                                 } catch (e: Exception) {
-                                    Toast.makeText(context, "Cannot open image", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(context, errorOpenImageString, Toast.LENGTH_SHORT).show()
                                 }
                             }) {
                                 Icon(Icons.Default.OpenInNew, stringResource(R.string.action_open))
@@ -695,7 +705,7 @@ private fun MemoCard(
                             try {
                                 context.startActivity(intent)
                             } catch (e: Exception) {
-                                Toast.makeText(context, "Cannot open URL", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, errorOpenUrlString, Toast.LENGTH_SHORT).show()
                             }
                         }) {
                             Icon(Icons.Default.OpenInNew, openString)
@@ -732,7 +742,7 @@ private fun MemoCard(
             if (!memo.imageUri.isNullOrBlank()) {
                 AsyncImage(
                     model = Uri.parse(memo.imageUri),
-                    contentDescription = "Memo image",
+                    contentDescription = stringResource(R.string.cd_memo_image),
                     modifier = Modifier
                         .size(80.dp)
                         .clip(RoundedCornerShape(8.dp)),
@@ -775,7 +785,7 @@ private fun MemoCard(
         ) {
             if (memo.sourceApp != null) {
                 Text(
-                    text = "From: ${memo.sourceApp}",
+                    text = stringResource(R.string.label_source_app, memo.sourceApp),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
