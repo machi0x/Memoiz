@@ -1,5 +1,6 @@
 package com.machi.memoiz.util
 
+import android.Manifest
 import android.app.AppOpsManager
 import android.app.usage.UsageEvents
 import android.app.usage.UsageStatsManager
@@ -36,7 +37,13 @@ class UsageStatsHelper(private val context: Context) {
                 context.packageName
             )
         }
-        return mode == AppOpsManager.MODE_ALLOWED
+        return when (mode) {
+            AppOpsManager.MODE_ALLOWED -> true
+            AppOpsManager.MODE_DEFAULT -> context.checkCallingOrSelfPermission(
+                Manifest.permission.PACKAGE_USAGE_STATS
+            ) == PackageManager.PERMISSION_GRANTED
+            else -> false
+        }
     }
     
     /**
