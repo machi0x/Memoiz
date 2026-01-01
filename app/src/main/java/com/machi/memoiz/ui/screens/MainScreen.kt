@@ -38,7 +38,14 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.annotation.DrawableRes
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.graphics.StrokeCap
 import com.machi.memoiz.R
 import com.machi.memoiz.data.entity.MemoType
 import com.machi.memoiz.domain.model.Memo
@@ -70,6 +77,7 @@ fun MainScreen(
     val expandedCategories by viewModel.expandedCategories.collectAsState()
     val categoryOrder by viewModel.categoryOrder.collectAsState()
     val shouldShowTutorial by viewModel.shouldShowTutorial.collectAsState()
+    val isProcessing by viewModel.isProcessing.collectAsState()
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var showTutorialDialog by rememberSaveable { mutableStateOf(false) }
@@ -225,31 +233,39 @@ fun MainScreen(
                 TopAppBar(
                     title = {
                         Column(modifier = Modifier.fillMaxWidth()) {
-                            OutlinedTextField(
-                                value = searchQuery,
-                                onValueChange = { viewModel.setSearchQuery(it) },
-                                placeholder = { Text(stringResource(R.string.search_hint)) },
-                                modifier = Modifier.fillMaxWidth(),
-                                singleLine = true,
-                                shape = RoundedCornerShape(24.dp),
-                                colors = OutlinedTextFieldDefaults.colors(
-                                    focusedBorderColor = MaterialTheme.colorScheme.primary,
-                                    unfocusedBorderColor = MaterialTheme.colorScheme.outline
-                                ),
-                                leadingIcon = {
-                                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
-                                },
-                                trailingIcon = {
-                                    if (searchQuery.isNotEmpty()) {
-                                        IconButton(onClick = { viewModel.setSearchQuery("") }) {
-                                            Icon(
-                                                Icons.Default.Clear,
-                                                contentDescription = stringResource(R.string.cd_clear_search)
-                                            )
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                OutlinedTextField(
+                                    value = searchQuery,
+                                    onValueChange = { viewModel.setSearchQuery(it) },
+                                    placeholder = { Text(stringResource(R.string.search_hint)) },
+                                    modifier = Modifier
+                                        .weight(if (isProcessing) 0.85f else 1f)
+                                        .padding(end = if (isProcessing) 8.dp else 0.dp),
+                                    singleLine = true,
+                                    shape = RoundedCornerShape(24.dp),
+                                    colors = OutlinedTextFieldDefaults.colors(
+                                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                        unfocusedBorderColor = MaterialTheme.colorScheme.outline
+                                    ),
+                                    leadingIcon = {
+                                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
+                                    },
+                                    trailingIcon = {
+                                        if (searchQuery.isNotEmpty()) {
+                                            IconButton(onClick = { viewModel.setSearchQuery("") }) {
+                                                Icon(
+                                                    Icons.Default.Clear,
+                                                    contentDescription = stringResource(R.string.cd_clear_search)
+                                                )
+                                            }
                                         }
                                     }
+                                )
+                                if (isProcessing) {
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    AnalyzingIndicator()
                                 }
-                            )
+                            }
                         }
                     },
                     navigationIcon = {
@@ -1408,6 +1424,54 @@ private fun MemoTypeIcon(memoType: String) {
             contentDescription = null,
             tint = tint,
             modifier = Modifier.size(20.dp)
+        )
+    }
+}
+
+@Composable
+private fun AnalyzingIndicator() {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        val infiniteTransition = rememberInfiniteTransition(label = "rainbow")
+        val sweep by infiniteTransition.animateFloat(
+            initialValue = 0f,
+            targetValue = 360f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(durationMillis = 1200, easing = LinearEasing),
+                repeatMode = RepeatMode.Restart
+            ),
+            label = "sweep"
+        )
+        val colors = listOf(
+            MaterialTheme.colorScheme.primary,
+            MaterialTheme.colorScheme.tertiary,
+            MaterialTheme.colorScheme.secondary,
+            MaterialTheme.colorScheme.primary
+        )
+        Box(
+            modifier = Modifier
+                .size(48.dp)
+                .clip(CircleShape)
+                .background(MaterialTheme.colorScheme.surfaceVariant),
+            contentAlignment = Alignment.Center
+        ) {
+            CircularProgressIndicator(
+                strokeWidth = 3.dp,
+                strokeCap = StrokeCap.Round,
+                modifier = Modifier.size(40.dp),
+                trackColor = MaterialTheme.colorScheme.surfaceVariant,
+                color = MaterialTheme.colorScheme.primary
+            )
+            Image(
+                painter = painterResource(id = R.drawable.analyzing),
+                contentDescription = stringResource(R.string.cd_analyzing_indicator),
+                modifier = Modifier.size(24.dp)
+            )
+        }
+        Text(
+            text = stringResource(R.string.label_analyzing),
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.padding(top = 4.dp)
         )
     }
 }

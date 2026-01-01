@@ -98,6 +98,8 @@ Tap the clipboard button or share content to start.</string>
     <string name="cd_remove_custom_category">Remove this My Category</string>
     <string name="category_memo_count">(%1$d)</string>
     <string name="cd_memo_image">Thumbnail preview for memo image</string>
+    <string name="cd_analyzing_indicator">AI is analyzing memo data</string>
+    <string name="label_analyzing">Analyzing…</string>
     <string name="cd_category_drag_handle">Drag to reorder category</string>
     <string name="toast_category_order_saved">Category order updated</string>
     <string name="dialog_reanalyze_title">Re-analyze memo?</string>

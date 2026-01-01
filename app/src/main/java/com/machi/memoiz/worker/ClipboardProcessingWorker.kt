@@ -8,6 +8,7 @@ import com.machi.memoiz.data.repository.MemoRepository
 import com.machi.memoiz.service.AiCategorizationService
 import com.machi.memoiz.domain.model.Memo
 import com.machi.memoiz.util.UsageStatsHelper
+import com.machi.memoiz.worker.WORK_TAG_MEMO_PROCESSING
 
 /**
  * WorkManager worker for processing clipboard content in background.
