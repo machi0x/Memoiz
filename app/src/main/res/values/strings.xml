@@ -16,7 +16,6 @@
     
     <string name="fab_paste_clipboard">Paste from clipboard</string>
     <string name="share_to_memoiz">Share to Memoiz</string>
-    <string name="tile_label">Save clipboard</string>
     <string name="empty_state_message">No memos yet.
 Tap the clipboard button or share content to start.</string>
     <string name="nothing_to_categorize">No text or image in clipboard to categorize.</string>
