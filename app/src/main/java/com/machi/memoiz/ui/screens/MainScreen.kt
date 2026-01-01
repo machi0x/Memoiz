@@ -843,34 +843,12 @@ private fun MemoCard(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                AssistChip(
-                    onClick = { },
-                    enabled = !readOnly,
-                    label = {
-                        Text(
-                            when (memo.memoType) {
-                                MemoType.TEXT -> stringResource(R.string.memo_type_text)
-                                MemoType.WEB_SITE -> stringResource(R.string.memo_type_web_site)
-                                MemoType.IMAGE -> stringResource(R.string.memo_type_image)
-                                else -> stringResource(R.string.memo_type_text)
-                            }
-                        )
-                    },
-                    leadingIcon = {
-                        Icon(
-                            when (memo.memoType) {
-                                MemoType.TEXT -> Icons.Default.Notes
-                                MemoType.WEB_SITE -> Icons.Default.Language
-                                MemoType.IMAGE -> Icons.Default.Image
-                                else -> Icons.Default.Notes
-                            },
-                            contentDescription = null,
-                            modifier = Modifier.size(14.dp)
-                        )
-                    }
-                )
-
+            Row(
+                modifier = Modifier.weight(1f),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                MemoTypeIcon(memo.memoType)
                 if (memo.subCategory != null) {
                     AssistChip(
                         onClick = { },
@@ -1386,5 +1364,29 @@ fun MainScreenPreview() {
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun MemoTypeIcon(memoType: String) {
+    val (icon, tint, background) = when (memoType) {
+        MemoType.TEXT -> Triple(Icons.Default.Notes, MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.primary.copy(alpha = 0.12f))
+        MemoType.WEB_SITE -> Triple(Icons.Default.Language, MaterialTheme.colorScheme.tertiary, MaterialTheme.colorScheme.tertiary.copy(alpha = 0.12f))
+        MemoType.IMAGE -> Triple(Icons.Default.Image, MaterialTheme.colorScheme.secondary, MaterialTheme.colorScheme.secondary.copy(alpha = 0.12f))
+        else -> Triple(Icons.Default.Notes, MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.primary.copy(alpha = 0.12f))
+    }
+
+    Box(
+        modifier = Modifier.size(36.dp)
+            .clip(RoundedCornerShape(12.dp))
+            .background(background),
+        contentAlignment = Alignment.Center
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = tint,
+            modifier = Modifier.size(20.dp)
+        )
     }
 }
