@@ -17,6 +17,7 @@
     <string name="settings_oss_title">オープンソースライセンス</string>
     <string name="settings_oss_description">メモイズで利用しているサードパーティライブラリのライセンスを表示します。</string>
     <string name="cd_back">戻る</string>
+    <string name="cd_open_memo_menu">メモのメニューを開く</string>
     <string name="cd_open_drawer">ナビゲーションドロワーを開く</string>
     <string name="cd_sort">並び順を変更</string>
     <string name="cd_delete_category">カテゴリを削除</string>
@@ -41,6 +42,8 @@
     <string name="action_open">開く</string>
     <string name="action_reanalyze">再解析</string>
     <string name="action_reanalyze_failures">失敗を再解析</string>
+    <string name="action_delete">削除</string>
+    <string name="memo_menu_delete">メモの削除</string>
     <string name="dialog_add_category_title">マイカテゴリを追加</string>
     <string name="dialog_add_category_message">分類に使用したいカテゴリ名を入力してください。AIがメモをカテゴリ分けする時に参考にします。</string>
     <string name="dialog_category_name_label">カテゴリ名</string>

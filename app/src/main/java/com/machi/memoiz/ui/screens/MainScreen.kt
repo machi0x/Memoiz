@@ -831,6 +831,7 @@ private fun MemoCard(
     val deleteString = stringResource(R.string.action_delete)
     val errorOpenImageString = stringResource(R.string.error_open_image)
     val errorOpenUrlString = stringResource(R.string.error_open_url)
+    var menuExpanded by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
@@ -865,21 +866,35 @@ private fun MemoCard(
                 }
             }
 
-            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                IconButton(onClick = { if (!readOnly) onEditCategory() }, enabled = !readOnly) {
-                    Icon(Icons.Default.Edit, stringResource(R.string.dialog_edit_category_title))
+            Box {
+                IconButton(onClick = { menuExpanded = true }, enabled = !readOnly) {
+                    Icon(Icons.Default.Menu, contentDescription = stringResource(R.string.cd_sort))
                 }
-                IconButton(onClick = { if (!readOnly) onReanalyze() }, enabled = !readOnly) {
-                    Icon(Icons.Default.Refresh, reanalyzeString)
-                }
-                // Action buttons based on memo type
-                when (memo.memoType) {
-                    MemoType.IMAGE -> {
-                        // Image memo - open image
-                        if (!memo.imageUri.isNullOrBlank()) {
-                            IconButton(
+                DropdownMenu(expanded = menuExpanded, onDismissRequest = { menuExpanded = false }) {
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.dialog_edit_category_title)) },
+                        enabled = !readOnly,
+                        onClick = {
+                            menuExpanded = false
+                            if (!readOnly) onEditCategory()
+                        }
+                    )
+                    DropdownMenuItem(
+                        text = { Text(reanalyzeString) },
+                        enabled = !readOnly,
+                        onClick = {
+                            menuExpanded = false
+                            if (!readOnly) onReanalyze()
+                        }
+                    )
+                    when (memo.memoType) {
+                        MemoType.IMAGE -> {
+                            DropdownMenuItem(
+                                text = { Text(openString) },
+                                enabled = !readOnly && !memo.imageUri.isNullOrBlank(),
                                 onClick = {
-                                    if (!readOnly) {
+                                    menuExpanded = false
+                                    if (!readOnly && !memo.imageUri.isNullOrBlank()) {
                                         val intent = Intent(Intent.ACTION_VIEW).apply {
                                             setDataAndType(Uri.parse(memo.imageUri), "image/*")
                                             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
@@ -890,52 +905,51 @@ private fun MemoCard(
                                             Toast.makeText(context, errorOpenImageString, Toast.LENGTH_SHORT).show()
                                         }
                                     }
-                                },
-                                enabled = !readOnly
-                            ) {
-                                Icon(Icons.Default.OpenInNew, stringResource(R.string.action_open))
-                            }
+                                }
+                            )
                         }
-                    }
-                    MemoType.WEB_SITE -> {
-                        // URL memo - open URL
-                        IconButton(
-                            onClick = {
-                                if (!readOnly) {
-                                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(memo.content))
-                                    try {
-                                        context.startActivity(intent)
-                                    } catch (e: Exception) {
-                                        Toast.makeText(context, errorOpenUrlString, Toast.LENGTH_SHORT).show()
+                        MemoType.WEB_SITE -> {
+                            DropdownMenuItem(
+                                text = { Text(openString) },
+                                enabled = !readOnly,
+                                onClick = {
+                                    menuExpanded = false
+                                    if (!readOnly) {
+                                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(memo.content))
+                                        try {
+                                            context.startActivity(intent)
+                                        } catch (e: Exception) {
+                                            Toast.makeText(context, errorOpenUrlString, Toast.LENGTH_SHORT).show()
+                                        }
                                     }
                                 }
-                            },
-                            enabled = !readOnly
-                        ) {
-                            Icon(Icons.Default.OpenInNew, openString)
+                            )
                         }
-                    }
-                    else -> {
-                        // Text memo - share
-                        IconButton(
-                            onClick = {
-                                if (!readOnly) {
-                                    val shareIntent = Intent(Intent.ACTION_SEND).apply {
-                                        type = "text/plain"
-                                        putExtra(Intent.EXTRA_TEXT, memo.content)
+                        else -> {
+                            DropdownMenuItem(
+                                text = { Text(shareString) },
+                                enabled = !readOnly,
+                                onClick = {
+                                    menuExpanded = false
+                                    if (!readOnly) {
+                                        val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                                            type = "text/plain"
+                                            putExtra(Intent.EXTRA_TEXT, memo.content)
+                                        }
+                                        context.startActivity(Intent.createChooser(shareIntent, shareString))
                                     }
-                                    context.startActivity(Intent.createChooser(shareIntent, shareString))
                                 }
-                            },
-                            enabled = !readOnly
-                        ) {
-                            Icon(Icons.Default.Share, shareString)
+                            )
                         }
                     }
-                }
-
-                IconButton(onClick = { if (!readOnly) onDelete() }, enabled = !readOnly) {
-                    Icon(Icons.Default.Delete, deleteString)
+                    DropdownMenuItem(
+                        text = { Text(deleteString) },
+                        enabled = !readOnly,
+                        onClick = {
+                            menuExpanded = false
+                            if (!readOnly) onDelete()
+                        }
+                    )
                 }
             }
         }
