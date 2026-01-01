@@ -1,24 +1,20 @@
 package com.machi.memoiz.ui.screens
 
 import android.content.Context
+import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.machi.memoiz.data.datastore.PreferencesDataStoreManager
 import com.machi.memoiz.data.repository.MemoRepository
 import com.machi.memoiz.domain.model.Memo
-import com.machi.memoiz.worker.ReanalyzeFailedMemosWorker
-import com.machi.memoiz.worker.ReanalyzeSingleMemoWorker
-import com.machi.memoiz.worker.ReanalyzeCategoryMergeWorker
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
-import androidx.work.Data
-import androidx.work.ExistingPeriodicWorkPolicy
-import androidx.work.OneTimeWorkRequestBuilder
-import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
+import androidx.work.WorkInfo
 import com.machi.memoiz.R
-import java.util.concurrent.TimeUnit
+import com.machi.memoiz.worker.WORK_TAG_MEMO_PROCESSING
 import com.machi.memoiz.data.datastore.UserPreferences
+import com.machi.memoiz.service.ContentProcessingLauncher
 
 data class MemoGroup(val category: String, val memos: List<Memo>)
 
@@ -37,8 +33,14 @@ private data class MemoFilterState(
 
 class MainViewModel(
     private val memoRepository: MemoRepository,
-    private val preferencesManager: PreferencesDataStoreManager
+    private val preferencesManager: PreferencesDataStoreManager,
+    private val workManager: WorkManager
 ) : ViewModel() {
+    private val processingLiveData = workManager.getWorkInfosByTagLiveData(WORK_TAG_MEMO_PROCESSING)
+    private val processingObserver = Observer<List<WorkInfo>> { infos ->
+        val hasRunning = infos?.any { it.state == WorkInfo.State.RUNNING } == true
+        _isProcessing.value = hasRunning
+    }
 
     // Search and filter state
     private val _searchQuery = MutableStateFlow("")
@@ -73,6 +75,16 @@ class MainViewModel(
                 _categoryOrder.value = prefs.categoryOrder
             }
         }
+
+        processingLiveData.observeForever(processingObserver)
+    }
+
+    private val _isProcessing = MutableStateFlow(false)
+    val isProcessing: StateFlow<Boolean> = _isProcessing.asStateFlow()
+
+    override fun onCleared() {
+        processingLiveData.removeObserver(processingObserver)
+        super.onCleared()
     }
 
     // Custom categories from DataStore
@@ -209,33 +221,22 @@ class MainViewModel(
     }
 
     fun reanalyzeMemo(context: Context, memoId: Long) {
-        val data = Data.Builder().putLong(ReanalyzeSingleMemoWorker.KEY_MEMO_ID, memoId).build()
-        val request = OneTimeWorkRequestBuilder<ReanalyzeSingleMemoWorker>()
-            .setInputData(data)
-            .build()
-        WorkManager.getInstance(context.applicationContext).enqueue(request)
+        ContentProcessingLauncher.enqueueSingleMemoReanalyze(context, memoId)
     }
 
     fun reanalyzeFailureBatch(context: Context) {
-        val request = OneTimeWorkRequestBuilder<ReanalyzeFailedMemosWorker>().build()
-        WorkManager.getInstance(context.applicationContext).enqueue(request)
+        ContentProcessingLauncher.enqueueFailureBatchReanalyze(context)
     }
 
     fun scheduleDailyFailureReanalyze(context: Context) {
-        val request = PeriodicWorkRequestBuilder<ReanalyzeFailedMemosWorker>(1, TimeUnit.DAYS).build()
-        WorkManager.getInstance(context.applicationContext)
-            .enqueueUniquePeriodicWork(
-                "daily_failure_reanalyze",
-                ExistingPeriodicWorkPolicy.UPDATE,
-                request
-            )
+        ContentProcessingLauncher.scheduleDailyFailureReanalyze(context)
     }
 
     fun addCustomCategoryWithMerge(context: Context, categoryName: String) {
         viewModelScope.launch {
             val trimmed = categoryName.trim()
             preferencesManager.addCustomCategory(trimmed)
-            enqueueMergeWork(context, null)
+            ContentProcessingLauncher.enqueueMergeWork(context, null)
             _toastMessage.value = context.getString(R.string.toast_merge_enqueued)
         }
     }
@@ -243,19 +244,9 @@ class MainViewModel(
     fun removeCustomCategoryAndReanalyze(context: Context, categoryName: String) {
         viewModelScope.launch {
             preferencesManager.removeCustomCategory(categoryName)
-            enqueueMergeWork(context, categoryName)
+            ContentProcessingLauncher.enqueueMergeWork(context, categoryName)
             _toastMessage.value = context.getString(R.string.toast_merge_enqueued)
         }
-    }
-
-    private fun enqueueMergeWork(context: Context, targetCategory: String?) {
-        val data = Data.Builder()
-            .putString(ReanalyzeCategoryMergeWorker.KEY_TARGET_CATEGORY, targetCategory)
-            .build()
-        val request = OneTimeWorkRequestBuilder<ReanalyzeCategoryMergeWorker>()
-            .setInputData(data)
-            .build()
-        WorkManager.getInstance(context.applicationContext).enqueue(request)
     }
 
     fun onCategoryMoved(fromIndex: Int, toIndex: Int, displayedCategories: List<String>) {

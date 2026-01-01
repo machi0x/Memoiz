@@ -67,6 +67,8 @@
     <string name="error_open_url">URLを開けませんでした</string>
     <string name="category_memo_count">(%1$d)</string>
     <string name="cd_memo_image">メモ画像のサムネイル</string>
+    <string name="cd_analyzing_indicator">AIが解析中</string>
+    <string name="label_analyzing">解析中…</string>
     <string name="dialog_add_and_remerge">追加して再解析</string>
     <string name="dialog_delete_custom_category_message">このマイカテゴリを削除してもメモは残り、バックグラウンドで再解析されます。</string>
     <string name="dialog_delete_custom_category_warning">再解析後、メモは別のカテゴリへ移動します。</string>
