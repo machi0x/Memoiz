@@ -141,4 +141,5 @@ Tap the clipboard button or share content to start.</string>
     <string name="dialog_create_memo_message">Enter text to save as a memo. AI will analyze it like other items.</string>
     <string name="dialog_create_memo_placeholder">Memo text</string>
     <string name="dialog_create_memo_error_empty">Please enter some text</string>
+    <string name="fab_close_menu">Close menu</string>
 </resources>
