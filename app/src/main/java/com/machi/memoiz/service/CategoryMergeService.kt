@@ -9,6 +9,7 @@ import com.machi.memoiz.util.FailureCategoryHelper
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.util.Locale
+import androidx.core.text.BidiFormatter
 
 /**
  * Second stage category merging service.
@@ -41,7 +42,8 @@ class CategoryMergeService(private val context: Context) {
         val aiCategory: String,
         val aiSubCategory: String? = null,
         val existingCategories: List<String>,
-        val customCategories: Set<String> = emptySet()
+        val customCategories: Set<String> = emptySet(),
+        val memoSummary: String? = null
     )
 
     data class MergeResult(
@@ -86,11 +88,9 @@ class CategoryMergeService(private val context: Context) {
         val poolText = if (existingPool.isNotEmpty()) {
             "Existing categories include: " + existingPool.joinToString(", ")
         } else ""
-
-        val examples = when (Locale.getDefault().language) {
-            "ja" -> "\"子供とタブレット\" (children with tablet) → \"家族\" (family), \"猫の写真\" (cat photos) → \"ペット\" (pets), \"誕生日ケーキ\" (birthday cake) → \"記念日\" (anniversaries)"
-            else -> "\"Children playing with tablet\" → \"Family\", \"Cat photos\" → \"Pets\", \"Birthday cake\" → \"Celebrations\""
-        }
+        val summaryText = input.memoSummary?.takeIf { it.isNotBlank() }?.let {
+            "Memo summary: " + it.replace("\n", " ").take(400)
+        } ?: ""
 
         return buildString {
             appendLine("You are a categorization assistant that helps merge similar categories intelligently.")
@@ -98,6 +98,9 @@ class CategoryMergeService(private val context: Context) {
             appendLine()
             appendLine("Original AI suggestion: \"${input.aiCategory}\"")
             input.aiSubCategory?.let { appendLine("Sub-category context: $it") }
+            if (summaryText.isNotBlank()) {
+                appendLine(summaryText)
+            }
             appendLine()
             if (fixed.isNotBlank()) {
                 appendLine(fixed)
@@ -112,7 +115,6 @@ class CategoryMergeService(private val context: Context) {
             appendLine("Merging guidelines:")
             appendLine("1. Consider semantic relationships and broader context:")
             appendLine("   - If the suggestion describes a specific activity or subject that naturally belongs to a broader existing category, prefer the existing category.")
-            appendLine("   - Examples: $examples")
             appendLine("2. Use the sub-category context to understand the full meaning:")
             appendLine("   - The sub-category provides additional context about what the content actually contains.")
             appendLine("   - Consider whether this context suggests the content belongs to an existing broader category.")

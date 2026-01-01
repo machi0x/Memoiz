@@ -41,6 +41,7 @@ Tap the clipboard button or share content to start.</string>
 
     <!-- General actions -->
     <string name="action_delete">Delete</string>
+    <string name="memo_menu_delete">Delete memo</string>
 
     <!-- Category actions -->
     <string name="action_delete_category">Delete category</string>
@@ -77,6 +78,7 @@ Tap the clipboard button or share content to start.</string>
     <string name="settings_oss_description">See the list of third-party libraries used in Memoiz.</string>
     <string name="cd_back">Back</string>
     <string name="cd_open_drawer">Open navigation drawer</string>
+    <string name="cd_open_memo_menu">Open memo menu</string>
     <string name="cd_sort">Change sort order</string>
     <string name="cd_delete_category">Delete category</string>
     <string name="cd_delete_memo">Delete memo</string>
@@ -96,6 +98,8 @@ Tap the clipboard button or share content to start.</string>
     <string name="cd_remove_custom_category">Remove this My Category</string>
     <string name="category_memo_count">(%1$d)</string>
     <string name="cd_memo_image">Thumbnail preview for memo image</string>
+    <string name="cd_analyzing_indicator">AI is analyzing memo data</string>
+    <string name="label_analyzing">Analyzing…</string>
     <string name="cd_category_drag_handle">Drag to reorder category</string>
     <string name="toast_category_order_saved">Category order updated</string>
     <string name="dialog_reanalyze_title">Re-analyze memo?</string>
@@ -109,4 +113,35 @@ Tap the clipboard button or share content to start.</string>
     <string name="dialog_edit_category_auto_hint">New names are saved automatically as My Categories.</string>
     <string name="dialog_choose_existing_category">Choose from existing categories</string>
     <string name="dialog_save">Save</string>
+    <string name="tutorial_title">Memoiz quick tour</string>
+    <string name="tutorial_next">Next</string>
+    <string name="tutorial_done">Got it</string>
+    <string name="tutorial_skip">Skip</string>
+    <string name="tutorial_back">Back</string>
+    <string name="tutorial_step_overview_title">What Memoiz can do</string>
+    <string name="tutorial_step_overview_body">Save text, links, or images and let on-device AI categorize them automatically so you can recall them later.</string>
+    <string name="tutorial_step_share_browser_title">Share from apps or browser</string>
+    <string name="tutorial_step_share_browser_body">Send text or images directly from apps like your browser. Memoiz queues the item, categorizes it, and shows it in the right category.</string>
+    <string name="tutorial_step_share_select_title">Share from text selection</string>
+    <string name="tutorial_step_share_select_body">Select text in any app and use the Share to Memoiz option. The memo keeps the source app name when available.</string>
+    <string name="tutorial_step_main_ui_title">Main screen basics</string>
+    <string name="tutorial_step_main_ui_body">Use the top search bar, expand category headers, drag them to reorder, and run memo actions (open, share, re-analyze, delete) directly from the list.</string>
+    <string name="tutorial_step_side_panel_title">Side panel filters</string>
+    <string name="tutorial_step_side_panel_body">Open the menu icon to access the side panel, filter by memo type or category, manage your My Categories with “+”, and jump to Settings.</string>
+    <string name="tutorial_step_my_category_title">Teach Memoiz your labels</string>
+    <string name="tutorial_step_my_category_body">Add My Category names so the AI can sort your memos using your own language. You can merge or delete them later without losing memos.</string>
+    <string name="tutorial_step_usage_permission_title">Why usage access helps</string>
+    <string name="tutorial_step_usage_permission_body">Granting usage access lets Memoiz attach the source app and improve the on-device analysis. You can toggle it anytime in Settings &gt; Usage access.</string>
+    <string name="settings_tutorial_title">See tutorial</string>
+    <string name="settings_tutorial_description">Open the quick tour again to review features and permissions.</string>
+    <string name="settings_remerge_all_title">Re-run memo merges</string>
+    <string name="settings_remerge_all_description">When AI-generated categories get out of hand, review every memo and consolidate similar labels.</string>
+    <string name="fab_create_memo">Type text to create memo</string>
+    <string name="fab_pick_image">Pick image</string>
+    <string name="dialog_create_memo_title">Create memo</string>
+    <string name="dialog_create_memo_message">Enter text to save as a memo. AI will analyze it like other items.</string>
+    <string name="dialog_create_memo_placeholder">Memo text</string>
+    <string name="dialog_create_memo_error_empty">Please enter some text</string>
+    <string name="fab_close_menu">Close menu</string>
+    <string name="processtext_label">Save to Memoiz</string>
 </resources>

@@ -4,11 +4,15 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -23,6 +27,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.snapshotFlow
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -35,6 +40,16 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.annotation.DrawableRes
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.vector.ImageVector
 import com.machi.memoiz.R
 import com.machi.memoiz.data.entity.MemoType
 import com.machi.memoiz.domain.model.Memo
@@ -42,13 +57,13 @@ import com.machi.memoiz.service.ContentProcessingLauncher
 import com.machi.memoiz.ui.theme.MemoizTheme
 import com.machi.memoiz.util.FailureCategoryHelper
 import coil.compose.AsyncImage
+import java.text.DateFormat
+import java.util.*
 import kotlinx.coroutines.launch
 import org.burnoutcrew.reorderable.ReorderableItem
 import org.burnoutcrew.reorderable.detectReorder
 import org.burnoutcrew.reorderable.rememberReorderableLazyListState
 import org.burnoutcrew.reorderable.reorderable
-import java.text.SimpleDateFormat
-import java.util.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -65,8 +80,11 @@ fun MainScreen(
     val customCategories by viewModel.customCategories.collectAsState()
     val expandedCategories by viewModel.expandedCategories.collectAsState()
     val categoryOrder by viewModel.categoryOrder.collectAsState()
+    val shouldShowTutorial by viewModel.shouldShowTutorial.collectAsState()
+    val isProcessing by viewModel.isProcessing.collectAsState()
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+    var showTutorialDialog by rememberSaveable { mutableStateOf(false) }
 
     LaunchedEffect(memoGroups) {
         viewModel.ensureCategoryOrder(memoGroups.map { it.category })
@@ -84,6 +102,12 @@ fun MainScreen(
         viewModel.scheduleDailyFailureReanalyze(context)
     }
 
+    LaunchedEffect(shouldShowTutorial) {
+        if (shouldShowTutorial) {
+            showTutorialDialog = true
+        }
+    }
+
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     var showSortDialog by remember { mutableStateOf(false) }
     var showAddCategoryDialog by remember { mutableStateOf(false) }
@@ -94,6 +118,9 @@ fun MainScreen(
     var manualCategoryMemo by remember { mutableStateOf<Memo?>(null) }
     var manualCategoryInput by remember { mutableStateOf("") }
     var manualCategoryError by remember { mutableStateOf<String?>(null) }
+    var showCreateMemoDialog by remember { mutableStateOf(false) }
+    var createMemoText by remember { mutableStateOf("") }
+    var createMemoError by remember { mutableStateOf<String?>(null) }
     val hasManualOrder = categoryOrder.isNotEmpty()
 
     val clearManualCategoryState: () -> Unit = {
@@ -163,6 +190,21 @@ fun MainScreen(
         MemoType.IMAGE -> stringResource(R.string.memo_type_image)
         else -> null
     }
+    val fabCreateMemoLabel = stringResource(R.string.fab_create_memo)
+    val fabPickImageLabel = stringResource(R.string.fab_pick_image)
+    val fabPasteLabel = stringResource(R.string.fab_paste_clipboard)
+
+    val imagePickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.PickVisualMedia()
+    ) { uri: Uri? ->
+        if (uri != null) {
+            val enqueued = ContentProcessingLauncher.enqueueWork(context, null, uri)
+            if (!enqueued) {
+                Toast.makeText(context, R.string.nothing_to_categorize, Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
     val selectedCategoryFilter = categoryFilter
     val filterNote = when {
         appliedTypeLabel != null && selectedCategoryFilter != null -> stringResource(
@@ -213,31 +255,39 @@ fun MainScreen(
                 TopAppBar(
                     title = {
                         Column(modifier = Modifier.fillMaxWidth()) {
-                            OutlinedTextField(
-                                value = searchQuery,
-                                onValueChange = { viewModel.setSearchQuery(it) },
-                                placeholder = { Text(stringResource(R.string.search_hint)) },
-                                modifier = Modifier.fillMaxWidth(),
-                                singleLine = true,
-                                shape = RoundedCornerShape(24.dp),
-                                colors = OutlinedTextFieldDefaults.colors(
-                                    focusedBorderColor = MaterialTheme.colorScheme.primary,
-                                    unfocusedBorderColor = MaterialTheme.colorScheme.outline
-                                ),
-                                leadingIcon = {
-                                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
-                                },
-                                trailingIcon = {
-                                    if (searchQuery.isNotEmpty()) {
-                                        IconButton(onClick = { viewModel.setSearchQuery("") }) {
-                                            Icon(
-                                                Icons.Default.Clear,
-                                                contentDescription = stringResource(R.string.cd_clear_search)
-                                            )
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                OutlinedTextField(
+                                    value = searchQuery,
+                                    onValueChange = { viewModel.setSearchQuery(it) },
+                                    placeholder = { Text(stringResource(R.string.search_hint)) },
+                                    modifier = Modifier
+                                        .weight(if (isProcessing) 0.85f else 1f)
+                                        .padding(end = if (isProcessing) 8.dp else 0.dp),
+                                    singleLine = true,
+                                    shape = RoundedCornerShape(24.dp),
+                                    colors = OutlinedTextFieldDefaults.colors(
+                                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                        unfocusedBorderColor = MaterialTheme.colorScheme.outline
+                                    ),
+                                    leadingIcon = {
+                                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
+                                    },
+                                    trailingIcon = {
+                                        if (searchQuery.isNotEmpty()) {
+                                            IconButton(onClick = { viewModel.setSearchQuery("") }) {
+                                                Icon(
+                                                    Icons.Default.Clear,
+                                                    contentDescription = stringResource(R.string.cd_clear_search)
+                                                )
+                                            }
                                         }
                                     }
+                                )
+                                if (isProcessing) {
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    AnalyzingIndicator()
                                 }
-                            )
+                            }
                         }
                     },
                     navigationIcon = {
@@ -266,20 +316,43 @@ fun MainScreen(
                 AnimatedVisibility(visible = isFabVisible) {
                     AnimatedContent(targetState = isFabExpanded, label = "fab") { expanded ->
                         if (expanded) {
-                            ExtendedFloatingActionButton(
-                                text = { Text(text = stringResource(R.string.fab_paste_clipboard)) },
-                                icon = { Icon(Icons.Default.ContentPaste, contentDescription = null) },
-                                onClick = {
-                                    val enqueued = ContentProcessingLauncher.enqueueFromClipboard(context)
-                                    if (!enqueued) {
-                                        Toast.makeText(context, R.string.nothing_to_categorize, Toast.LENGTH_SHORT).show()
+                            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                                ExtendedFloatingActionButton(
+                                    icon = { Icon(Icons.Default.Edit, contentDescription = null) },
+                                    text = { Text(text = fabCreateMemoLabel) },
+                                    onClick = {
+                                        showCreateMemoDialog = true
+                                        isFabExpanded = false
                                     }
-                                    isFabExpanded = false
+                                )
+                                ExtendedFloatingActionButton(
+                                    text = { Text(text = fabPickImageLabel) },
+                                    icon = { Icon(Icons.Default.Image, contentDescription = null) },
+                                    onClick = {
+                                        imagePickerLauncher.launch(
+                                            PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                                        )
+                                        isFabExpanded = false
+                                    }
+                                )
+                                ExtendedFloatingActionButton(
+                                    text = { Text(text = fabPasteLabel) },
+                                    icon = { Icon(Icons.Default.ContentPaste, contentDescription = null) },
+                                    onClick = {
+                                        val enqueued = ContentProcessingLauncher.enqueueFromClipboard(context)
+                                        if (!enqueued) {
+                                            Toast.makeText(context, R.string.nothing_to_categorize, Toast.LENGTH_SHORT).show()
+                                        }
+                                        isFabExpanded = false
+                                    }
+                                )
+                                SmallFloatingActionButton(onClick = { isFabExpanded = false }) {
+                                    Icon(Icons.Default.Close, contentDescription = stringResource(R.string.fab_close_menu))
                                 }
-                            )
+                            }
                         } else {
                             FloatingActionButton(onClick = { isFabExpanded = true }) {
-                                Icon(Icons.Default.ContentPaste, contentDescription = stringResource(R.string.fab_paste_clipboard))
+                                Icon(Icons.Default.Add, contentDescription = stringResource(R.string.fab_paste_clipboard))
                             }
                         }
                     }
@@ -518,18 +591,83 @@ fun MainScreen(
 
     if (manualCategoryMemo != null) {
         ManualCategoryDialog(
-             availableCategories = availableCategories,
-             categoryValue = manualCategoryInput,
-             errorMessage = manualCategoryError,
-             onCategoryChange = { updated ->
-                 manualCategoryInput = updated
-                 manualCategoryError = null
-             },
-             onDismiss = clearManualCategoryState,
-             onSave = handleManualCategorySave
-         )
-     }
- }
+            availableCategories = availableCategories,
+            categoryValue = manualCategoryInput,
+            errorMessage = manualCategoryError,
+            onCategoryChange = { updated ->
+                manualCategoryInput = updated
+                manualCategoryError = null
+            },
+            onDismiss = clearManualCategoryState,
+            onSave = handleManualCategorySave
+        )
+    }
+
+    if (showTutorialDialog) {
+        TutorialDialog(
+            onFinished = {
+                showTutorialDialog = false
+                viewModel.markTutorialSeen()
+            }
+        )
+    }
+
+    if (showCreateMemoDialog) {
+        AlertDialog(
+            onDismissRequest = {
+                showCreateMemoDialog = false
+                createMemoText = ""
+                createMemoError = null
+            },
+            title = { Text(stringResource(R.string.dialog_create_memo_title)) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(stringResource(R.string.dialog_create_memo_message))
+                    OutlinedTextField(
+                        value = createMemoText,
+                        onValueChange = {
+                            createMemoText = it
+                            createMemoError = null
+                        },
+                        label = { Text(stringResource(R.string.dialog_create_memo_placeholder)) },
+                        isError = createMemoError != null,
+                        supportingText = createMemoError?.let { err -> { Text(err) } },
+                        minLines = 3,
+                        maxLines = 6,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    val trimmed = createMemoText.trim()
+                    if (trimmed.isEmpty()) {
+                        createMemoError = context.getString(R.string.dialog_create_memo_error_empty)
+                        return@TextButton
+                    }
+                    val enqueued = ContentProcessingLauncher.enqueueManualMemo(context, trimmed)
+                    if (!enqueued) {
+                        Toast.makeText(context, R.string.nothing_to_categorize, Toast.LENGTH_SHORT).show()
+                    }
+                    showCreateMemoDialog = false
+                    createMemoText = ""
+                    createMemoError = null
+                }) {
+                    Text(stringResource(R.string.dialog_add))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = {
+                    showCreateMemoDialog = false
+                    createMemoText = ""
+                    createMemoError = null
+                }) {
+                    Text(stringResource(R.string.dialog_cancel))
+                }
+            }
+        )
+    }
+}
 
 @Composable
 private fun NavigationDrawerContent(
@@ -798,59 +936,90 @@ private fun MemoCard(
     memo: Memo,
     onDelete: () -> Unit,
     onEditCategory: () -> Unit,
-    onReanalyze: () -> Unit
+    onReanalyze: () -> Unit,
+    readOnly: Boolean = false
 ) {
     val context = LocalContext.current
 
-    // Hoist string resources to the composable context
     val reanalyzeString = stringResource(R.string.action_reanalyze)
     val openString = stringResource(R.string.action_open)
     val shareString = stringResource(R.string.action_share)
     val deleteString = stringResource(R.string.action_delete)
     val errorOpenImageString = stringResource(R.string.error_open_image)
     val errorOpenUrlString = stringResource(R.string.error_open_url)
+    var menuExpanded by remember { mutableStateOf(false) }
+
+    fun openImage() {
+        val uri = memo.imageUri ?: return
+        val intent = Intent(Intent.ACTION_VIEW).apply {
+            setDataAndType(Uri.parse(uri), "image/*")
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+        try {
+            context.startActivity(intent)
+        } catch (e: Exception) {
+            Toast.makeText(context, errorOpenImageString, Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    fun openWebsite() {
+        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(memo.content))
+        try {
+            context.startActivity(intent)
+        } catch (e: Exception) {
+            Toast.makeText(context, errorOpenUrlString, Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    fun shareText() {
+        val shareIntent = Intent(Intent.ACTION_SEND).apply {
+            type = "text/plain"
+            putExtra(Intent.EXTRA_TEXT, memo.content)
+        }
+        context.startActivity(Intent.createChooser(shareIntent, shareString))
+    }
+
+    val primaryAction = when (memo.memoType) {
+        MemoType.IMAGE -> PrimaryAction(
+            label = openString,
+            icon = Icons.Default.OpenInNew,
+            enabled = !readOnly && !memo.imageUri.isNullOrBlank(),
+            onInvoke = { openImage() }
+        )
+        MemoType.WEB_SITE -> PrimaryAction(
+            label = openString,
+            icon = Icons.Default.OpenInNew,
+            enabled = !readOnly,
+            onInvoke = { openWebsite() }
+        )
+        else -> PrimaryAction(
+            label = shareString,
+            icon = Icons.Default.Share,
+            enabled = !readOnly,
+            onInvoke = { shareText() }
+        )
+    }
 
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .padding(16.dp)
     ) {
-        // Memo Type Badge and SubCategory Row
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                AssistChip(
-                    onClick = { },
-                    label = {
-                        Text(
-                            when (memo.memoType) {
-                                MemoType.TEXT -> stringResource(R.string.memo_type_text)
-                                MemoType.WEB_SITE -> stringResource(R.string.memo_type_web_site)
-                                MemoType.IMAGE -> stringResource(R.string.memo_type_image)
-                                else -> stringResource(R.string.memo_type_text)
-                            }
-                        )
-                    },
-                    leadingIcon = {
-                        Icon(
-                            when (memo.memoType) {
-                                MemoType.TEXT -> Icons.Default.Notes
-                                MemoType.WEB_SITE -> Icons.Default.Language
-                                MemoType.IMAGE -> Icons.Default.Image
-                                else -> Icons.Default.Notes
-                            },
-                            contentDescription = null,
-                            modifier = Modifier.size(14.dp)
-                        )
-                    }
-                )
-
+            Row(
+                modifier = Modifier.weight(1f),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                MemoTypeIcon(memo.memoType)
                 if (memo.subCategory != null) {
                     AssistChip(
                         onClick = { },
+                        enabled = !readOnly,
                         label = { Text(memo.subCategory) },
                         leadingIcon = {
                             Icon(
@@ -863,62 +1032,94 @@ private fun MemoCard(
                 }
             }
 
-            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                IconButton(onClick = onEditCategory) {
-                    Icon(Icons.Default.Edit, stringResource(R.string.dialog_edit_category_title))
+            if (primaryAction.enabled) {
+                FilledTonalButton(
+                    onClick = {
+                        primaryAction.onInvoke()
+                        menuExpanded = false
+                    },
+                    enabled = primaryAction.enabled
+                ) {
+                    Icon(primaryAction.icon, contentDescription = null)
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(primaryAction.label)
                 }
-                IconButton(onClick = onReanalyze) {
-                    Icon(Icons.Default.Refresh, reanalyzeString)
-                }
-                // Action buttons based on memo type
-                when (memo.memoType) {
-                    MemoType.IMAGE -> {
-                        // Image memo - open image
-                        if (!memo.imageUri.isNullOrBlank()) {
-                            IconButton(onClick = {
-                                val intent = Intent(Intent.ACTION_VIEW).apply {
-                                    setDataAndType(Uri.parse(memo.imageUri), "image/*")
-                                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                                }
-                                try {
-                                    context.startActivity(intent)
-                                } catch (e: Exception) {
-                                    Toast.makeText(context, errorOpenImageString, Toast.LENGTH_SHORT).show()
-                                }
-                            }) {
-                                Icon(Icons.Default.OpenInNew, stringResource(R.string.action_open))
-                            }
-                        }
-                    }
-                    MemoType.WEB_SITE -> {
-                        // URL memo - open URL
-                        IconButton(onClick = {
-                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(memo.content))
-                            try {
-                                context.startActivity(intent)
-                            } catch (e: Exception) {
-                                Toast.makeText(context, errorOpenUrlString, Toast.LENGTH_SHORT).show()
-                            }
-                        }) {
-                            Icon(Icons.Default.OpenInNew, openString)
-                        }
-                    }
-                    else -> {
-                        // Text memo - share
-                        IconButton(onClick = {
-                            val shareIntent = Intent(Intent.ACTION_SEND).apply {
-                                type = "text/plain"
-                                putExtra(Intent.EXTRA_TEXT, memo.content)
-                            }
-                            context.startActivity(Intent.createChooser(shareIntent, shareString))
-                        }) {
-                            Icon(Icons.Default.Share, shareString)
-                        }
-                    }
-                }
+                Spacer(modifier = Modifier.width(8.dp))
+            }
 
-                IconButton(onClick = { onDelete() }) {
-                    Icon(Icons.Default.Delete, deleteString)
+            Box {
+                IconButton(onClick = { menuExpanded = true }, enabled = !readOnly) {
+                    Icon(Icons.Default.MoreVert, contentDescription = stringResource(R.string.cd_open_memo_menu))
+                }
+                DropdownMenu(expanded = menuExpanded, onDismissRequest = { menuExpanded = false }) {
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.dialog_edit_category_title)) },
+                        leadingIcon = { Icon(Icons.Default.Edit, contentDescription = null) },
+                        enabled = !readOnly,
+                        onClick = {
+                            menuExpanded = false
+                            if (!readOnly) onEditCategory()
+                        }
+                    )
+                    DropdownMenuItem(
+                        text = { Text(reanalyzeString) },
+                        leadingIcon = { Icon(Icons.Default.Refresh, contentDescription = null) },
+                        enabled = !readOnly,
+                        onClick = {
+                            menuExpanded = false
+                            if (!readOnly) onReanalyze()
+                        }
+                    )
+                    when (memo.memoType) {
+                        MemoType.IMAGE -> {
+                            DropdownMenuItem(
+                                text = { Text(openString) },
+                                leadingIcon = { Icon(Icons.Default.OpenInNew, contentDescription = null) },
+                                enabled = !readOnly && !memo.imageUri.isNullOrBlank(),
+                                onClick = {
+                                    menuExpanded = false
+                                    if (!readOnly && !memo.imageUri.isNullOrBlank()) {
+                                        openImage()
+                                    }
+                                }
+                            )
+                        }
+                        MemoType.WEB_SITE -> {
+                            DropdownMenuItem(
+                                text = { Text(openString) },
+                                leadingIcon = { Icon(Icons.Default.OpenInNew, contentDescription = null) },
+                                enabled = !readOnly,
+                                onClick = {
+                                    menuExpanded = false
+                                    if (!readOnly) {
+                                        openWebsite()
+                                    }
+                                }
+                            )
+                        }
+                        else -> {
+                            DropdownMenuItem(
+                                text = { Text(shareString) },
+                                leadingIcon = { Icon(Icons.Default.Share, contentDescription = null) },
+                                enabled = !readOnly,
+                                onClick = {
+                                    menuExpanded = false
+                                    if (!readOnly) {
+                                        shareText()
+                                    }
+                                }
+                            )
+                        }
+                    }
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.memo_menu_delete)) },
+                        leadingIcon = { Icon(Icons.Default.Delete, contentDescription = null) },
+                        enabled = !readOnly,
+                        onClick = {
+                            menuExpanded = false
+                            if (!readOnly) onDelete()
+                        }
+                    )
                 }
             }
         }
@@ -1166,9 +1367,150 @@ private fun ManualCategoryDialog(
     )
 }
 
+private data class TutorialStep(
+    @DrawableRes val imageRes: Int,
+    val title: String,
+    val description: String
+)
+
+@Composable
+private fun TutorialDialog(
+    onFinished: () -> Unit
+) {
+    val steps = listOf(
+        TutorialStep(
+            imageRes = R.drawable.top_banner,
+            title = stringResource(R.string.tutorial_step_overview_title),
+            description = stringResource(R.string.tutorial_step_overview_body)
+        ),
+        TutorialStep(
+            imageRes = R.drawable.tutorial_main_ui,
+            title = stringResource(R.string.tutorial_step_main_ui_title),
+            description = stringResource(R.string.tutorial_step_main_ui_body)
+        ),
+        TutorialStep(
+            imageRes = R.drawable.tutorial_side_panel,
+            title = stringResource(R.string.tutorial_step_side_panel_title),
+            description = stringResource(R.string.tutorial_step_side_panel_body)
+        ),
+        TutorialStep(
+            imageRes = R.drawable.share_from_browser,
+            title = stringResource(R.string.tutorial_step_share_browser_title),
+            description = stringResource(R.string.tutorial_step_share_browser_body)
+        ),
+        TutorialStep(
+            imageRes = R.drawable.share_from_select,
+            title = stringResource(R.string.tutorial_step_share_select_title),
+            description = stringResource(R.string.tutorial_step_share_select_body)
+        ),
+        TutorialStep(
+            imageRes = R.drawable.my_category,
+            title = stringResource(R.string.tutorial_step_my_category_title),
+            description = stringResource(R.string.tutorial_step_my_category_body)
+        ),
+        TutorialStep(
+            imageRes = R.drawable.app_usages,
+            title = stringResource(R.string.tutorial_step_usage_permission_title),
+            description = stringResource(R.string.tutorial_step_usage_permission_body)
+        )
+    )
+
+    var currentStep by rememberSaveable { mutableStateOf(0) }
+    val isLastStep = currentStep == steps.lastIndex
+    val step = steps[currentStep]
+
+    AlertDialog(
+        onDismissRequest = onFinished,
+        title = { Text(stringResource(R.string.tutorial_title)) },
+        text = {
+            Column(
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Image(
+                    painter = painterResource(id = step.imageRes),
+                    contentDescription = null,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(180.dp)
+                        .clip(RoundedCornerShape(12.dp)),
+                    contentScale = ContentScale.Fit
+                )
+                Text(
+                    text = step.title,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center
+                )
+                Text(
+                    text = step.description,
+                    style = MaterialTheme.typography.bodyMedium,
+                    textAlign = TextAlign.Center
+                )
+                val activeIndicatorSize = 10.dp
+                val inactiveIndicatorSize = 8.dp
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    steps.forEachIndexed { index, _ ->
+                        val color = if (index == currentStep) {
+                            MaterialTheme.colorScheme.primary
+                        } else {
+                            MaterialTheme.colorScheme.outline
+                        }
+                        Box(
+                            modifier = Modifier
+                                .padding(horizontal = 4.dp)
+                                .size(if (index == currentStep) activeIndicatorSize else inactiveIndicatorSize)
+                                .clip(CircleShape)
+                                .background(color)
+                        )
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = {
+                if (isLastStep) {
+                    onFinished()
+                } else {
+                    currentStep++
+                }
+            }) {
+                Text(
+                    if (isLastStep) {
+                        stringResource(R.string.tutorial_done)
+                    } else {
+                        stringResource(R.string.tutorial_next)
+                    }
+                )
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = {
+                if (currentStep > 0) {
+                    currentStep--
+                } else {
+                    onFinished()
+                }
+            }) {
+                Text(
+                    if (currentStep > 0) {
+                        stringResource(R.string.tutorial_back)
+                    } else {
+                        stringResource(R.string.tutorial_skip)
+                    }
+                )
+            }
+        }
+    )
+}
+
 private fun formatTimestamp(timestamp: Long): String {
-    val sdf = SimpleDateFormat("MMM dd, yyyy HH:mm", Locale.getDefault())
-    return sdf.format(Date(timestamp))
+    val locale = Locale.getDefault()
+    val formatter = DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT, locale)
+    return formatter.format(Date(timestamp))
 }
 
 @Preview(showBackground = true)
@@ -1209,3 +1551,82 @@ fun MainScreenPreview() {
         }
     }
 }
+
+@Composable
+private fun MemoTypeIcon(memoType: String) {
+    val (icon, tint, background) = when (memoType) {
+        MemoType.TEXT -> Triple(Icons.Default.Notes, MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.primary.copy(alpha = 0.12f))
+        MemoType.WEB_SITE -> Triple(Icons.Default.Language, MaterialTheme.colorScheme.tertiary, MaterialTheme.colorScheme.tertiary.copy(alpha = 0.12f))
+        MemoType.IMAGE -> Triple(Icons.Default.Image, MaterialTheme.colorScheme.secondary, MaterialTheme.colorScheme.secondary.copy(alpha = 0.12f))
+        else -> Triple(Icons.Default.Notes, MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.primary.copy(alpha = 0.12f))
+    }
+
+    Box(
+        modifier = Modifier.size(36.dp)
+            .clip(RoundedCornerShape(12.dp))
+            .background(background),
+        contentAlignment = Alignment.Center
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = tint,
+            modifier = Modifier.size(20.dp)
+        )
+    }
+}
+
+@Composable
+private fun AnalyzingIndicator() {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        val infiniteTransition = rememberInfiniteTransition(label = "rainbow")
+        val sweep by infiniteTransition.animateFloat(
+            initialValue = 0f,
+            targetValue = 360f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(durationMillis = 1200, easing = LinearEasing),
+                repeatMode = RepeatMode.Restart
+            ),
+            label = "sweep"
+        )
+        val colors = listOf(
+            MaterialTheme.colorScheme.primary,
+            MaterialTheme.colorScheme.tertiary,
+            MaterialTheme.colorScheme.secondary,
+            MaterialTheme.colorScheme.primary
+        )
+        Box(
+            modifier = Modifier
+                .size(48.dp)
+                .clip(CircleShape)
+                .background(MaterialTheme.colorScheme.surfaceVariant),
+            contentAlignment = Alignment.Center
+        ) {
+            CircularProgressIndicator(
+                strokeWidth = 3.dp,
+                strokeCap = StrokeCap.Round,
+                modifier = Modifier.size(40.dp),
+                trackColor = MaterialTheme.colorScheme.surfaceVariant,
+                color = MaterialTheme.colorScheme.primary
+            )
+            Image(
+                painter = painterResource(id = R.drawable.analyzing),
+                contentDescription = stringResource(R.string.cd_analyzing_indicator),
+                modifier = Modifier.size(24.dp)
+            )
+        }
+        Text(
+            text = stringResource(R.string.label_analyzing),
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.padding(top = 4.dp)
+        )
+    }
+}
+
+private data class PrimaryAction(
+    val label: String,
+    val icon: ImageVector,
+    val enabled: Boolean,
+    val onInvoke: () -> Unit
+)

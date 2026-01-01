@@ -7,8 +7,15 @@ import android.net.Uri
 import androidx.work.Data
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
+import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.PeriodicWorkRequestBuilder
 import com.machi.memoiz.ui.ProcessingDialogActivity
 import com.machi.memoiz.worker.ClipboardProcessingWorker
+import com.machi.memoiz.worker.ReanalyzeSingleMemoWorker
+import com.machi.memoiz.worker.ReanalyzeFailedMemosWorker
+import com.machi.memoiz.worker.ReanalyzeCategoryMergeWorker
+import com.machi.memoiz.worker.WORK_TAG_MEMO_PROCESSING
+import java.util.concurrent.TimeUnit
 
 /**
  * Helper functions to enqueue clipboard categorization work from various entry points.
@@ -60,6 +67,7 @@ object ContentProcessingLauncher {
 
         val workRequest = OneTimeWorkRequestBuilder<ClipboardProcessingWorker>()
             .setInputData(workData)
+            .addTag(WORK_TAG_MEMO_PROCESSING)
             .build()
 
         WorkManager.getInstance(context.applicationContext).enqueue(workRequest)
@@ -67,5 +75,48 @@ object ContentProcessingLauncher {
             ProcessingDialogActivity.start(context.applicationContext)
         }
         return true
+    }
+
+    fun enqueueSingleMemoReanalyze(context: Context, memoId: Long) {
+        val data = Data.Builder().putLong(ReanalyzeSingleMemoWorker.KEY_MEMO_ID, memoId).build()
+        val request = OneTimeWorkRequestBuilder<ReanalyzeSingleMemoWorker>()
+            .setInputData(data)
+            .addTag(WORK_TAG_MEMO_PROCESSING)
+            .build()
+        WorkManager.getInstance(context.applicationContext).enqueue(request)
+    }
+
+    fun enqueueFailureBatchReanalyze(context: Context) {
+        val request = OneTimeWorkRequestBuilder<ReanalyzeFailedMemosWorker>()
+            .addTag(WORK_TAG_MEMO_PROCESSING)
+            .build()
+        WorkManager.getInstance(context.applicationContext).enqueue(request)
+    }
+
+    fun enqueueMergeWork(context: Context, targetCategory: String?) {
+        val data = Data.Builder()
+            .putString(ReanalyzeCategoryMergeWorker.KEY_TARGET_CATEGORY, targetCategory)
+            .build()
+        val request = OneTimeWorkRequestBuilder<ReanalyzeCategoryMergeWorker>()
+            .setInputData(data)
+            .addTag(WORK_TAG_MEMO_PROCESSING)
+            .build()
+        WorkManager.getInstance(context.applicationContext).enqueue(request)
+    }
+
+    fun scheduleDailyFailureReanalyze(context: Context) {
+        val request = PeriodicWorkRequestBuilder<ReanalyzeFailedMemosWorker>(1, TimeUnit.DAYS)
+            .addTag(WORK_TAG_MEMO_PROCESSING)
+            .build()
+        WorkManager.getInstance(context.applicationContext)
+            .enqueueUniquePeriodicWork(
+                "daily_failure_reanalyze",
+                ExistingPeriodicWorkPolicy.UPDATE,
+                request
+            )
+    }
+
+    fun enqueueManualMemo(context: Context, text: String): Boolean {
+        return enqueueWork(context, text, null, showDialog = true)
     }
 }

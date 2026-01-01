@@ -2,10 +2,13 @@ package com.machi.memoiz.ui
 
 import android.content.Context
 import android.content.Intent
+import android.graphics.Color
+import android.graphics.drawable.ColorDrawable
 import android.os.Bundle
 import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.MotionEvent
+import android.view.Window
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.lifecycle.lifecycleScope
@@ -16,9 +19,12 @@ import kotlinx.coroutines.launch
 
 class ProcessingDialogActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
+        requestWindowFeature(Window.FEATURE_NO_TITLE)
         super.onCreate(savedInstanceState)
         val binding = ActivityProcessingDialogBinding.inflate(LayoutInflater.from(this))
         setContentView(binding.root)
+
+        window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
 
         binding.dialogMessage.text = getString(R.string.categorization_started)
 
