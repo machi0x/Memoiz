@@ -41,6 +41,7 @@ Tap the clipboard button or share content to start.</string>
 
     <!-- General actions -->
     <string name="action_delete">Delete</string>
+    <string name="memo_menu_delete">Delete memo</string>
 
     <!-- Category actions -->
     <string name="action_delete_category">Delete category</string>
@@ -77,6 +78,7 @@ Tap the clipboard button or share content to start.</string>
     <string name="settings_oss_description">See the list of third-party libraries used in Memoiz.</string>
     <string name="cd_back">Back</string>
     <string name="cd_open_drawer">Open navigation drawer</string>
+    <string name="cd_open_memo_menu">Open memo menu</string>
     <string name="cd_sort">Change sort order</string>
     <string name="cd_delete_category">Delete category</string>
     <string name="cd_delete_memo">Delete memo</string>
