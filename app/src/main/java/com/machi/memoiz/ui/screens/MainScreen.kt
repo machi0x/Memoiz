@@ -13,6 +13,8 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.Indication
+import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
@@ -864,7 +866,7 @@ private fun CategoryAccordion(
                     .fillMaxWidth()
                     .clickable(
                         interactionSource = remember { MutableInteractionSource() },
-                        indication = null
+                        indication = LocalIndication.current
                     ) { onHeaderClick() }
                     .padding(16.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -1216,7 +1218,7 @@ private fun SortModeDialog(
                             .fillMaxWidth()
                             .clickable(
                                 interactionSource = remember { MutableInteractionSource() },
-                                indication = null
+                                indication = LocalIndication.current
                             ) { onModeSelected(mode) }
                             .padding(vertical = 12.dp),
                         verticalAlignment = Alignment.CenterVertically
