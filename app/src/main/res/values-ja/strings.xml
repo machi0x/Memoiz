@@ -15,7 +15,7 @@
     <string name="settings_usage_status_disabled">権限が許可されていません</string>
     <string name="settings_usage_button">使用履歴アクセス設定を開く</string>
     <string name="settings_oss_title">オープンソースライセンス</string>
-    <string name="settings_oss_description">Memoizで利用しているサードパーティライブラリのライセンスを表示します。</string>
+    <string name="settings_oss_description">メモイズで利用しているサードパーティライブラリのライセンスを表示します。</string>
     <string name="cd_back">戻る</string>
     <string name="cd_open_drawer">ナビゲーションドロワーを開く</string>
     <string name="cd_sort">並び順を変更</string>
@@ -66,7 +66,7 @@
     <string name="cd_memo_image">メモ画像のサムネイル</string>
     <string name="dialog_add_and_remerge">追加して再解析</string>
     <string name="dialog_delete_custom_category_message">このマイカテゴリを削除してもメモは残り、バックグラウンドで再解析されます。</string>
-    <string name="dialog_delete_custom_category_warning">再解析後にメモが別のカテゴリへ移動する場合があります。</string>
+    <string name="dialog_delete_custom_category_warning">再解析後、メモは別のカテゴリへ移動します。</string>
     <string name="cd_remove_custom_category">このマイカテゴリを削除</string>
     <string name="cd_category_drag_handle">ドラッグしてカテゴリを並べ替え</string>
     <string name="toast_category_order_saved">カテゴリの順序を更新しました</string>
@@ -89,7 +89,7 @@
     <string name="tutorial_skip">スキップ</string>
     <string name="tutorial_back">戻る</string>
     <string name="tutorial_step_overview_title">メモイズでできること</string>
-    <string name="tutorial_step_overview_body">気になったテキストやリンク、お気に入りの画像データをメモイズに共有することで、端末内のAIがデータをカテゴリ分けし、詳細をメモとして保存。後でメイン画面で簡単に見つけて再利用できます。メモが外部に送信されることはありません。</string>
+    <string name="tutorial_step_overview_body">気になったテキストやリンク、画像をメモイズに共有すると、端末内のAIが解析・分類してメモとして保存します。保存したメモは後で簡単に検索・再利用できます。メモが外部に送信されることはありません。</string>
     <string name="tutorial_step_share_browser_title">他アプリやブラウザから共有</string>
     <string name="tutorial_step_share_browser_body">ブラウザなど他アプリからテキストや画像を共有すると、AIによる解析後、メイン画面に分類されたメモとして表示されます。画像やリンクの場合は、内容の要約も記録されます。 (リンク先の確認にはインターネット接続が必要です)</string>
     <string name="tutorial_step_share_select_title">テキスト選択・クリップボードから共有</string>
