@@ -117,4 +117,5 @@
     <string name="dialog_create_memo_message">テキストを入力してメモとして保存します。他のメモと同様にAIが解析します。</string>
     <string name="dialog_create_memo_placeholder">メモ本文</string>
     <string name="dialog_create_memo_error_empty">テキストを入力してください</string>
+    <string name="fab_close_menu">メニューを閉じる</string>
 </resources>

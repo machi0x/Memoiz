@@ -320,6 +320,9 @@ fun MainScreen(
                                         isFabExpanded = false
                                     }
                                 )
+                                SmallFloatingActionButton(onClick = { isFabExpanded = false }) {
+                                    Icon(Icons.Default.Close, contentDescription = stringResource(R.string.fab_close_menu))
+                                }
                             }
                         } else {
                             FloatingActionButton(onClick = { isFabExpanded = true }) {
