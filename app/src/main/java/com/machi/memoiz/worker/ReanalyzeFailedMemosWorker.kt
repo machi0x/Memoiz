@@ -9,6 +9,7 @@ import com.machi.memoiz.data.repository.MemoRepository
 import com.machi.memoiz.service.AiCategorizationService
 import com.machi.memoiz.service.CategoryMergeService
 import com.machi.memoiz.util.FailureCategoryHelper
+import com.machi.memoiz.worker.WORK_TAG_MEMO_PROCESSING
 import kotlinx.coroutines.flow.first
 
 /**

@@ -28,6 +28,7 @@ import com.machi.memoiz.ui.theme.MemoizTheme
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import androidx.compose.ui.graphics.toArgb
+import androidx.work.WorkManager
 
 class MainActivity : ComponentActivity() {
 
@@ -48,7 +49,8 @@ class MainActivity : ComponentActivity() {
         val preferencesManager = PreferencesDataStoreManager(applicationContext)
 
         // Create ViewModelFactory
-        viewModelFactory = ViewModelFactory(memoRepository, preferencesManager)
+        val workManager = WorkManager.getInstance(applicationContext)
+        viewModelFactory = ViewModelFactory(memoRepository, preferencesManager, workManager)
 
         // Hide splash screen after 1.5 seconds
         lifecycleScope.launch {

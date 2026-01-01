@@ -21,14 +21,16 @@ class AiCategorizationService(
 
     private val mlKitCategorizer = MlKitCategorizer(context)
 
-    private suspend fun mergeCategory(category: String, subCategory: String?): String {
+    private suspend fun mergeCategory(category: String, subCategory: String?, summary: String?): String {
+        if (customCategories.contains(category)) return category
         if (existingCategories.isEmpty() && customCategories.isEmpty()) return category
         val result = mergeService.merge(
             CategoryMergeService.MergeInput(
                 aiCategory = category,
                 aiSubCategory = subCategory,
                 existingCategories = existingCategories,
-                customCategories = customCategories
+                customCategories = customCategories,
+                memoSummary = summary
             )
         )
         return result.finalCategory
@@ -40,8 +42,8 @@ class AiCategorizationService(
     suspend fun processText(content: String, sourceApp: String?): MemoEntity? = withContext(Dispatchers.Default) {
         try {
             val (category, subCategory, summary) = mlKitCategorizer.categorize(content, sourceApp) ?: return@withContext null
-            val finalCategory = mergeCategory(category ?: "Uncategorized", subCategory)
-            
+            val finalCategory = mergeCategory(category ?: "Uncategorized", subCategory, summary)
+
             // Determine memo type based on content
             val memoType = when {
                 content.startsWith("http://", ignoreCase = true) || 
@@ -69,7 +71,7 @@ class AiCategorizationService(
     suspend fun processImage(bitmap: Bitmap, sourceApp: String?, originalImageUri: String? = null): MemoEntity? = withContext(Dispatchers.Default) {
         try {
             val (category, subCategory, summary) = mlKitCategorizer.categorizeImage(bitmap, sourceApp) ?: return@withContext null
-            val finalCategory = mergeCategory(category ?: "Image", subCategory)
+            val finalCategory = mergeCategory(category ?: "Image", subCategory, summary)
             MemoEntity(
                 content = summary ?: "", // Store image description in content field
                 imageUri = originalImageUri,

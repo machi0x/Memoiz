@@ -15,8 +15,9 @@
     <string name="settings_usage_status_disabled">権限が許可されていません</string>
     <string name="settings_usage_button">使用履歴アクセス設定を開く</string>
     <string name="settings_oss_title">オープンソースライセンス</string>
-    <string name="settings_oss_description">Memoizで利用しているサードパーティライブラリのライセンスを表示します。</string>
+    <string name="settings_oss_description">メモイズで利用しているサードパーティライブラリのライセンスを表示します。</string>
     <string name="cd_back">戻る</string>
+    <string name="cd_open_memo_menu">メモのメニューを開く</string>
     <string name="cd_open_drawer">ナビゲーションドロワーを開く</string>
     <string name="cd_sort">並び順を変更</string>
     <string name="cd_delete_category">カテゴリを削除</string>
@@ -41,6 +42,8 @@
     <string name="action_open">開く</string>
     <string name="action_reanalyze">再解析</string>
     <string name="action_reanalyze_failures">失敗を再解析</string>
+    <string name="action_delete">削除</string>
+    <string name="memo_menu_delete">メモの削除</string>
     <string name="dialog_add_category_title">マイカテゴリを追加</string>
     <string name="dialog_add_category_message">分類に使用したいカテゴリ名を入力してください。AIがメモをカテゴリ分けする時に参考にします。</string>
     <string name="dialog_category_name_label">カテゴリ名</string>
@@ -64,9 +67,11 @@
     <string name="error_open_url">URLを開けませんでした</string>
     <string name="category_memo_count">(%1$d)</string>
     <string name="cd_memo_image">メモ画像のサムネイル</string>
+    <string name="cd_analyzing_indicator">AIが解析中</string>
+    <string name="label_analyzing">解析中…</string>
     <string name="dialog_add_and_remerge">追加して再解析</string>
     <string name="dialog_delete_custom_category_message">このマイカテゴリを削除してもメモは残り、バックグラウンドで再解析されます。</string>
-    <string name="dialog_delete_custom_category_warning">再解析後にメモが別のカテゴリへ移動する場合があります。</string>
+    <string name="dialog_delete_custom_category_warning">再解析後、メモは別のカテゴリへ移動します。</string>
     <string name="cd_remove_custom_category">このマイカテゴリを削除</string>
     <string name="cd_category_drag_handle">ドラッグしてカテゴリを並べ替え</string>
     <string name="toast_category_order_saved">カテゴリの順序を更新しました</string>
@@ -76,9 +81,43 @@
     <string name="filter_note_type_and_category">%1$sタイプとカテゴリ「%2$s」でフィルタ中</string>
     <string name="filter_note_type_only">%1$sタイプでフィルタ中</string>
     <string name="filter_note_category_only">カテゴリ「%1$s」でフィルタ中</string>
-    <string name="dialog_edit_category_title">カテゴリを編集</string>
+    <string name="dialog_edit_category_title">カテゴリを変更</string>
     <string name="dialog_edit_category_message">リストから選ぶか、新しいカテゴリ名を入力してください。</string>
     <string name="dialog_edit_category_auto_hint">新しい名前は自動的にマイカテゴリとして登録されます。</string>
     <string name="dialog_choose_existing_category">既存のカテゴリから選択</string>
     <string name="dialog_save">保存</string>
+
+    <!-- tutorial -->
+    <string name="tutorial_title">メモイズ クイックツアー</string>
+    <string name="tutorial_next">次へ</string>
+    <string name="tutorial_done">わかりました</string>
+    <string name="tutorial_skip">スキップ</string>
+    <string name="tutorial_back">戻る</string>
+    <string name="tutorial_step_overview_title">メモイズでできること</string>
+    <string name="tutorial_step_overview_body">気になったテキストやリンク、画像をメモイズに共有すると、端末内のAIが解析・分類してメモとして保存します。保存したメモは後で簡単に検索・再利用できます。メモが外部に送信されることはありません。</string>
+    <string name="tutorial_step_share_browser_title">他アプリやブラウザから共有</string>
+    <string name="tutorial_step_share_browser_body">ブラウザなど他アプリからテキストや画像を共有すると、AIによる解析後、メイン画面に分類されたメモとして表示されます。画像やリンクの場合は、内容の要約も記録されます。 (リンク先の確認にはインターネット接続が必要です)</string>
+    <string name="tutorial_step_share_select_title">テキスト選択・クリップボードから共有</string>
+    <string name="tutorial_step_share_select_body">テキストを選択時に表示されるコンテキストメニューで「メモイズに保存」を選択することでも解析、保存できます。メイン画面のフローティングボタンで、クリップボードのデータも利用できます。</string>
+    <string name="tutorial_step_main_ui_title">メイン画面の基本</string>
+    <string name="tutorial_step_main_ui_body">検索バーを使い、カテゴリヘッダーを展開・ドラッグで並べ替え、各メモの開く/共有/再解析/削除をその場で操作できます。</string>
+    <string name="tutorial_step_side_panel_title">サイドパネルで絞り込み</string>
+    <string name="tutorial_step_side_panel_body">メニューアイコンでサイドパネルを開き、タイプやカテゴリで絞り込み、＋でマイカテゴリ管理や設定画面へ移動できます。</string>
+    <string name="tutorial_step_my_category_title">自分のラベルを教える</string>
+    <string name="tutorial_step_my_category_body">メイン画面のサイドパネル等からあなた独自のカテゴリを追加することもできます。AIによるカテゴリ分けの際に考慮されるようになります。</string>
+    <string name="tutorial_step_usage_permission_title">アプリの利用状況へのアクセス権限が必要な理由</string>
+    <string name="tutorial_step_usage_permission_body">権限を許可すると、データを共有した元アプリ名をメモに記録することができ、またAI分析の精度が上がります。この機能はサイドパネル > 設定から有効化できます。</string>
+    <string name="settings_tutorial_title">チュートリアルを見る</string>
+    <string name="settings_tutorial_description">機能と権限の説明をもう一度表示します。</string>
+    <string name="settings_remerge_all_title">全てのメモを再解析する</string>
+    <string name="settings_remerge_all_description">AIが生成したカテゴリが増えすぎてしまった時に、全体を見直して類似するカテゴリを統合します</string>
+    <string name="category_uncategorizable">分類不能</string>
+    <string name="fab_create_memo">テキストを入力</string>
+    <string name="fab_pick_image">端末内の画像を選択</string>
+    <string name="dialog_create_memo_title">メモを作成</string>
+    <string name="dialog_create_memo_message">テキストを入力してメモとして保存します。他のメモと同様にAIが解析します。</string>
+    <string name="dialog_create_memo_placeholder">メモ本文</string>
+    <string name="dialog_create_memo_error_empty">テキストを入力してください</string>
+    <string name="fab_close_menu">メニューを閉じる</string>
+    <string name="processtext_label">メモイズに保存</string>
 </resources>
