@@ -1384,16 +1384,6 @@ private fun TutorialDialog(
             description = stringResource(R.string.tutorial_step_overview_body)
         ),
         TutorialStep(
-            imageRes = R.drawable.tutorial_main_ui,
-            title = stringResource(R.string.tutorial_step_main_ui_title),
-            description = stringResource(R.string.tutorial_step_main_ui_body)
-        ),
-        TutorialStep(
-            imageRes = R.drawable.tutorial_side_panel,
-            title = stringResource(R.string.tutorial_step_side_panel_title),
-            description = stringResource(R.string.tutorial_step_side_panel_body)
-        ),
-        TutorialStep(
             imageRes = R.drawable.share_from_browser,
             title = stringResource(R.string.tutorial_step_share_browser_title),
             description = stringResource(R.string.tutorial_step_share_browser_body)
@@ -1404,6 +1394,11 @@ private fun TutorialDialog(
             description = stringResource(R.string.tutorial_step_share_select_body)
         ),
         TutorialStep(
+            imageRes = R.drawable.floating_buttons,
+            title = stringResource(R.string.tutorial_step_fab_title),
+            description = stringResource(R.string.tutorial_step_fab_body)
+        ),
+        TutorialStep(
             imageRes = R.drawable.my_category,
             title = stringResource(R.string.tutorial_step_my_category_title),
             description = stringResource(R.string.tutorial_step_my_category_body)
@@ -1412,6 +1407,16 @@ private fun TutorialDialog(
             imageRes = R.drawable.app_usages,
             title = stringResource(R.string.tutorial_step_usage_permission_title),
             description = stringResource(R.string.tutorial_step_usage_permission_body)
+        ),
+        TutorialStep(
+            imageRes = R.drawable.tutorial_main_ui,
+            title = stringResource(R.string.tutorial_step_main_ui_title),
+            description = stringResource(R.string.tutorial_step_main_ui_body)
+        ),
+        TutorialStep(
+            imageRes = R.drawable.tutorial_side_panel,
+            title = stringResource(R.string.tutorial_step_side_panel_title),
+            description = stringResource(R.string.tutorial_step_side_panel_body)
         )
     )
 
