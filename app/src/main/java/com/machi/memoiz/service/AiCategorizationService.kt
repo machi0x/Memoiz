@@ -22,6 +22,7 @@ class AiCategorizationService(
     private val mlKitCategorizer = MlKitCategorizer(context)
 
     private suspend fun mergeCategory(category: String, subCategory: String?): String {
+        if (customCategories.contains(category)) return category
         if (existingCategories.isEmpty() && customCategories.isEmpty()) return category
         val result = mergeService.merge(
             CategoryMergeService.MergeInput(
