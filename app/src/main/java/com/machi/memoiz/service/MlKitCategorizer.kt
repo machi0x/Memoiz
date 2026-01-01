@@ -23,6 +23,7 @@ import okhttp3.Request
 import org.jsoup.Jsoup
 import com.machi.memoiz.R
 import java.util.Locale
+import org.json.JSONObject
 
 /**
  * Wrapper that calls ML Kit GenAI APIs to generate a short category
@@ -89,9 +90,11 @@ class MlKitCategorizer(private val context: Context) {
             // 1-1: URL
             if (content.startsWith("http")) {
                 val webContent = fetchUrlContent(content) ?: return Triple(webCategoryLabel(), null, null)
-                val subCategory = generateText(buildCategorizationPrompt(webContent, sourceApp))
+                val pair = generateCategoryPair(webContent.take(2000), sourceApp)
+                val localizedMain = localizeText(pair.main)
+                val localizedSub = localizeText(pair.sub)
                 val summary = summarize(webContent)
-                return Triple(webCategoryLabel(), subCategory, summary)
+                return Triple(localizedMain ?: webCategoryLabel(), localizedSub, summary)
             }
 
             // 1-4: Garbage text
@@ -104,11 +107,10 @@ class MlKitCategorizer(private val context: Context) {
                 summarize(content)
             } else null
 
-            val category = generateText(buildCategorizationPrompt(content, sourceApp))
-            val localizedCategory = localizeText(category)
-            val subCategory = generateText(buildSubCategoryPrompt(content, localizedCategory ?: "", sourceApp))
-            val localizedSubCategory = localizeText(subCategory)
-            Triple(localizedCategory, localizedSubCategory, summary)
+            val pair = generateCategoryPair(content.take(2000), sourceApp)
+            val localizedMain = localizeText(pair.main)
+            val localizedSub = localizeText(pair.sub)
+            Triple(localizedMain, localizedSub, summary)
         } catch (e: Exception) {
             e.printStackTrace()
             null
@@ -123,11 +125,10 @@ class MlKitCategorizer(private val context: Context) {
             // If we have a description, categorize based on it like text
             val localizedDescription = localizeDescription(description)
             if (!localizedDescription.isNullOrBlank()) {
-                val category = generateText(buildCategorizationPrompt(localizedDescription, sourceApp))
-                val localizedCategory = localizeText(category)
-                val subCategory = generateText(buildSubCategoryPrompt(localizedDescription, localizedCategory ?: "", sourceApp))
-                val localizedSubCategory = localizeText(subCategory)
-                Triple(localizedCategory, localizedSubCategory, localizedDescription)
+                val pair = generateCategoryPair(localizedDescription.take(2000), sourceApp)
+                val localizedMain = localizeText(pair.main)
+                val localizedSub = localizeText(pair.sub)
+                Triple(localizedMain, localizedSub, localizedDescription)
             } else {
                 // Fallback to image category if description fails
                 Triple(imageCategoryLabel(), null, null)
@@ -175,31 +176,42 @@ class MlKitCategorizer(private val context: Context) {
         }
     }
 
-    private fun buildCategorizationPrompt(content: String, sourceApp: String?): String {
+    private fun buildCategorizationPrompt(content: String, sourceApp: String?) = buildUnifiedPrompt(content, sourceApp)
+
+    private fun buildSubCategoryPrompt(content: String, mainCategory: String, sourceApp: String?) = buildUnifiedPrompt(content, sourceApp)
+
+    private fun buildUnifiedPrompt(content: String, sourceApp: String?): String {
         val sb = StringBuilder()
-        sb.append("Suggest a broad category (1-3 common words) for the following content.\n")
-        sb.append("Think of a general shelf label (e.g., '動物の画像', '金融ニュース', '生活のヒント') rather than a specific proper noun.\n")
+        sb.append("You are a helpful assistant that classifies content into categories.\n")
+        sb.append("For the following content, provide a broad category (1 word in most case; Up to 2 words) and a specific sub-category (1-4 words).\n")
+        sb.append("Sub category must be distinct from its parent category and provide more specific detail.")
         sb.append("Reply in ${getSystemLanguageName()} language.\n")
         if (!sourceApp.isNullOrBlank()) {
             sb.append("Source app: $sourceApp\n")
         }
         sb.append("Content:\n")
         sb.append(content.take(2000))
-        sb.append("\n\nReply with only the broad category name, no explanation.")
+        sb.append("\n\nReply with only the category and sub-category separated by a slash, no explanation.")
         return sb.toString()
     }
 
-    private fun buildSubCategoryPrompt(content: String, mainCategory: String, sourceApp: String?): String {
-        val sb = StringBuilder()
-        sb.append("Provide a specific sub-category (1-4 words) that narrows down the main category.\n")
-        sb.append("Use the same language (${getSystemLanguageName()}) and include concrete nouns or short phrases relevant to the content.\n")
-        sb.append("Main category: $mainCategory\n")
-        if (!sourceApp.isNullOrBlank()) {
-            sb.append("Source app: $sourceApp\n")
+    private fun parseCategoryPair(response: String?): CategoryPair? {
+        if (response.isNullOrBlank()) return null
+        return try {
+            val parts = response.split("/")
+            CategoryPair(parts.getOrNull(0)?.trim(), parts.getOrNull(1)?.trim())
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
         }
-        sb.append("Content:\n")
-        sb.append(content.take(2000))
-        sb.append("\n\nReply with only the sub-category text, no explanation.")
-        return sb.toString()
     }
+
+    private suspend fun generateCategoryPair(content: String, sourceApp: String?): CategoryPair {
+        val instructions = buildUnifiedPrompt(content, sourceApp)
+        val response = generateText(instructions)
+        val pair = parseCategoryPair(response)
+        return pair ?: CategoryPair(null, null)
+    }
+
+    private data class CategoryPair(val main: String?, val sub: String?)
 }
