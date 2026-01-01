@@ -109,4 +109,6 @@
     <string name="tutorial_step_usage_permission_body">権限を許可すると、データを共有した元アプリ名をメモに記録することができ、またAI分析の精度が上がります。この機能はサイドパネル > 設定から有効化できます。</string>
     <string name="settings_tutorial_title">チュートリアルを見る</string>
     <string name="settings_tutorial_description">機能と権限の説明をもう一度表示します。</string>
+    <string name="settings_remerge_all_title">全てのメモを再解析する</string>
+    <string name="settings_remerge_all_description">AIが生成したカテゴリが増えすぎてしまった時に、全体を見直して類似するカテゴリを統合します</string>
 </resources>

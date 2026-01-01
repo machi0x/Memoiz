@@ -134,4 +134,6 @@ Tap the clipboard button or share content to start.</string>
     <string name="tutorial_step_usage_permission_body">Granting usage access lets Memoiz attach the source app and improve the on-device analysis. You can toggle it anytime in Settings &gt; Usage access.</string>
     <string name="settings_tutorial_title">See tutorial</string>
     <string name="settings_tutorial_description">Open the quick tour again to review features and permissions.</string>
+    <string name="settings_remerge_all_title">Re-run memo merges</string>
+    <string name="settings_remerge_all_description">When AI-generated categories get out of hand, review every memo and consolidate similar labels.</string>
 </resources>
