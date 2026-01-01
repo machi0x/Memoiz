@@ -114,6 +114,9 @@ fun MainScreen(
     var manualCategoryMemo by remember { mutableStateOf<Memo?>(null) }
     var manualCategoryInput by remember { mutableStateOf("") }
     var manualCategoryError by remember { mutableStateOf<String?>(null) }
+    var showCreateMemoDialog by remember { mutableStateOf(false) }
+    var createMemoText by remember { mutableStateOf("") }
+    var createMemoError by remember { mutableStateOf<String?>(null) }
     val hasManualOrder = categoryOrder.isNotEmpty()
 
     val clearManualCategoryState: () -> Unit = {
@@ -183,6 +186,9 @@ fun MainScreen(
         MemoType.IMAGE -> stringResource(R.string.memo_type_image)
         else -> null
     }
+    val fabCreateMemoLabel = stringResource(R.string.fab_create_memo)
+    val fabPasteLabel = stringResource(R.string.fab_paste_clipboard)
+
     val selectedCategoryFilter = categoryFilter
     val filterNote = when {
         appliedTypeLabel != null && selectedCategoryFilter != null -> stringResource(
@@ -294,20 +300,30 @@ fun MainScreen(
                 AnimatedVisibility(visible = isFabVisible) {
                     AnimatedContent(targetState = isFabExpanded, label = "fab") { expanded ->
                         if (expanded) {
-                            ExtendedFloatingActionButton(
-                                text = { Text(text = stringResource(R.string.fab_paste_clipboard)) },
-                                icon = { Icon(Icons.Default.ContentPaste, contentDescription = null) },
-                                onClick = {
-                                    val enqueued = ContentProcessingLauncher.enqueueFromClipboard(context)
-                                    if (!enqueued) {
-                                        Toast.makeText(context, R.string.nothing_to_categorize, Toast.LENGTH_SHORT).show()
+                            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                                ExtendedFloatingActionButton(
+                                    icon = { Icon(Icons.Default.Edit, contentDescription = null) },
+                                    text = { Text(text = fabCreateMemoLabel) },
+                                    onClick = {
+                                        showCreateMemoDialog = true
+                                        isFabExpanded = false
                                     }
-                                    isFabExpanded = false
-                                }
-                            )
+                                )
+                                ExtendedFloatingActionButton(
+                                    text = { Text(text = fabPasteLabel) },
+                                    icon = { Icon(Icons.Default.ContentPaste, contentDescription = null) },
+                                    onClick = {
+                                        val enqueued = ContentProcessingLauncher.enqueueFromClipboard(context)
+                                        if (!enqueued) {
+                                            Toast.makeText(context, R.string.nothing_to_categorize, Toast.LENGTH_SHORT).show()
+                                        }
+                                        isFabExpanded = false
+                                    }
+                                )
+                            }
                         } else {
                             FloatingActionButton(onClick = { isFabExpanded = true }) {
-                                Icon(Icons.Default.ContentPaste, contentDescription = stringResource(R.string.fab_paste_clipboard))
+                                Icon(Icons.Default.Add, contentDescription = stringResource(R.string.fab_paste_clipboard))
                             }
                         }
                     }
@@ -563,6 +579,62 @@ fun MainScreen(
             onFinished = {
                 showTutorialDialog = false
                 viewModel.markTutorialSeen()
+            }
+        )
+    }
+
+    if (showCreateMemoDialog) {
+        AlertDialog(
+            onDismissRequest = {
+                showCreateMemoDialog = false
+                createMemoText = ""
+                createMemoError = null
+            },
+            title = { Text(stringResource(R.string.dialog_create_memo_title)) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(stringResource(R.string.dialog_create_memo_message))
+                    OutlinedTextField(
+                        value = createMemoText,
+                        onValueChange = {
+                            createMemoText = it
+                            createMemoError = null
+                        },
+                        label = { Text(stringResource(R.string.dialog_create_memo_placeholder)) },
+                        isError = createMemoError != null,
+                        supportingText = createMemoError?.let { err -> { Text(err) } },
+                        minLines = 3,
+                        maxLines = 6,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    val trimmed = createMemoText.trim()
+                    if (trimmed.isEmpty()) {
+                        createMemoError = context.getString(R.string.dialog_create_memo_error_empty)
+                        return@TextButton
+                    }
+                    val enqueued = ContentProcessingLauncher.enqueueManualMemo(context, trimmed)
+                    if (!enqueued) {
+                        Toast.makeText(context, R.string.nothing_to_categorize, Toast.LENGTH_SHORT).show()
+                    }
+                    showCreateMemoDialog = false
+                    createMemoText = ""
+                    createMemoError = null
+                }) {
+                    Text(stringResource(R.string.dialog_add))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = {
+                    showCreateMemoDialog = false
+                    createMemoText = ""
+                    createMemoError = null
+                }) {
+                    Text(stringResource(R.string.dialog_cancel))
+                }
             }
         )
     }
