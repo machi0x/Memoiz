@@ -49,6 +49,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.vector.ImageVector
 import com.machi.memoiz.R
 import com.machi.memoiz.data.entity.MemoType
 import com.machi.memoiz.domain.model.Memo
@@ -940,7 +941,6 @@ private fun MemoCard(
 ) {
     val context = LocalContext.current
 
-    // Hoist string resources to the composable context
     val reanalyzeString = stringResource(R.string.action_reanalyze)
     val openString = stringResource(R.string.action_open)
     val shareString = stringResource(R.string.action_share)
@@ -949,12 +949,62 @@ private fun MemoCard(
     val errorOpenUrlString = stringResource(R.string.error_open_url)
     var menuExpanded by remember { mutableStateOf(false) }
 
+    fun openImage() {
+        val uri = memo.imageUri ?: return
+        val intent = Intent(Intent.ACTION_VIEW).apply {
+            setDataAndType(Uri.parse(uri), "image/*")
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+        try {
+            context.startActivity(intent)
+        } catch (e: Exception) {
+            Toast.makeText(context, errorOpenImageString, Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    fun openWebsite() {
+        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(memo.content))
+        try {
+            context.startActivity(intent)
+        } catch (e: Exception) {
+            Toast.makeText(context, errorOpenUrlString, Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    fun shareText() {
+        val shareIntent = Intent(Intent.ACTION_SEND).apply {
+            type = "text/plain"
+            putExtra(Intent.EXTRA_TEXT, memo.content)
+        }
+        context.startActivity(Intent.createChooser(shareIntent, shareString))
+    }
+
+    val primaryAction = when (memo.memoType) {
+        MemoType.IMAGE -> PrimaryAction(
+            label = openString,
+            icon = Icons.Default.OpenInNew,
+            enabled = !readOnly && !memo.imageUri.isNullOrBlank(),
+            onInvoke = { openImage() }
+        )
+        MemoType.WEB_SITE -> PrimaryAction(
+            label = openString,
+            icon = Icons.Default.OpenInNew,
+            enabled = !readOnly,
+            onInvoke = { openWebsite() }
+        )
+        else -> PrimaryAction(
+            label = shareString,
+            icon = Icons.Default.Share,
+            enabled = !readOnly,
+            onInvoke = { shareText() }
+        )
+    }
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .padding(16.dp)
     ) {
-        // Memo Type Badge and SubCategory Row
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -980,6 +1030,21 @@ private fun MemoCard(
                         }
                     )
                 }
+            }
+
+            if (primaryAction.enabled) {
+                FilledTonalButton(
+                    onClick = {
+                        primaryAction.onInvoke()
+                        menuExpanded = false
+                    },
+                    enabled = primaryAction.enabled
+                ) {
+                    Icon(primaryAction.icon, contentDescription = null)
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(primaryAction.label)
+                }
+                Spacer(modifier = Modifier.width(8.dp))
             }
 
             Box {
@@ -1014,15 +1079,7 @@ private fun MemoCard(
                                 onClick = {
                                     menuExpanded = false
                                     if (!readOnly && !memo.imageUri.isNullOrBlank()) {
-                                        val intent = Intent(Intent.ACTION_VIEW).apply {
-                                            setDataAndType(Uri.parse(memo.imageUri), "image/*")
-                                            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                                        }
-                                        try {
-                                            context.startActivity(intent)
-                                        } catch (e: Exception) {
-                                            Toast.makeText(context, errorOpenImageString, Toast.LENGTH_SHORT).show()
-                                        }
+                                        openImage()
                                     }
                                 }
                             )
@@ -1035,12 +1092,7 @@ private fun MemoCard(
                                 onClick = {
                                     menuExpanded = false
                                     if (!readOnly) {
-                                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(memo.content))
-                                        try {
-                                            context.startActivity(intent)
-                                        } catch (e: Exception) {
-                                            Toast.makeText(context, errorOpenUrlString, Toast.LENGTH_SHORT).show()
-                                        }
+                                        openWebsite()
                                     }
                                 }
                             )
@@ -1053,11 +1105,7 @@ private fun MemoCard(
                                 onClick = {
                                     menuExpanded = false
                                     if (!readOnly) {
-                                        val shareIntent = Intent(Intent.ACTION_SEND).apply {
-                                            type = "text/plain"
-                                            putExtra(Intent.EXTRA_TEXT, memo.content)
-                                        }
-                                        context.startActivity(Intent.createChooser(shareIntent, shareString))
+                                        shareText()
                                     }
                                 }
                             )
@@ -1575,3 +1623,10 @@ private fun AnalyzingIndicator() {
         )
     }
 }
+
+private data class PrimaryAction(
+    val label: String,
+    val icon: ImageVector,
+    val enabled: Boolean,
+    val onInvoke: () -> Unit
+)
