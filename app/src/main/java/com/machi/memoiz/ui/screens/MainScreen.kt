@@ -868,11 +868,12 @@ private fun MemoCard(
 
             Box {
                 IconButton(onClick = { menuExpanded = true }, enabled = !readOnly) {
-                    Icon(Icons.Default.Menu, contentDescription = stringResource(R.string.cd_sort))
+                    Icon(Icons.Default.MoreVert, contentDescription = stringResource(R.string.cd_open_memo_menu))
                 }
                 DropdownMenu(expanded = menuExpanded, onDismissRequest = { menuExpanded = false }) {
                     DropdownMenuItem(
                         text = { Text(stringResource(R.string.dialog_edit_category_title)) },
+                        leadingIcon = { Icon(Icons.Default.Edit, contentDescription = null) },
                         enabled = !readOnly,
                         onClick = {
                             menuExpanded = false
@@ -881,6 +882,7 @@ private fun MemoCard(
                     )
                     DropdownMenuItem(
                         text = { Text(reanalyzeString) },
+                        leadingIcon = { Icon(Icons.Default.Refresh, contentDescription = null) },
                         enabled = !readOnly,
                         onClick = {
                             menuExpanded = false
@@ -891,6 +893,7 @@ private fun MemoCard(
                         MemoType.IMAGE -> {
                             DropdownMenuItem(
                                 text = { Text(openString) },
+                                leadingIcon = { Icon(Icons.Default.OpenInNew, contentDescription = null) },
                                 enabled = !readOnly && !memo.imageUri.isNullOrBlank(),
                                 onClick = {
                                     menuExpanded = false
@@ -911,6 +914,7 @@ private fun MemoCard(
                         MemoType.WEB_SITE -> {
                             DropdownMenuItem(
                                 text = { Text(openString) },
+                                leadingIcon = { Icon(Icons.Default.OpenInNew, contentDescription = null) },
                                 enabled = !readOnly,
                                 onClick = {
                                     menuExpanded = false
@@ -928,6 +932,7 @@ private fun MemoCard(
                         else -> {
                             DropdownMenuItem(
                                 text = { Text(shareString) },
+                                leadingIcon = { Icon(Icons.Default.Share, contentDescription = null) },
                                 enabled = !readOnly,
                                 onClick = {
                                     menuExpanded = false
@@ -943,7 +948,8 @@ private fun MemoCard(
                         }
                     }
                     DropdownMenuItem(
-                        text = { Text(deleteString) },
+                        text = { Text(stringResource(R.string.memo_menu_delete)) },
+                        leadingIcon = { Icon(Icons.Default.Delete, contentDescription = null) },
                         enabled = !readOnly,
                         onClick = {
                             menuExpanded = false
