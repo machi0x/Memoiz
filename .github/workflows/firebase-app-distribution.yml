@@ -164,7 +164,4 @@ jobs:
           serviceCredentialsFileContent: ${{ secrets.FIREBASE_SERVICE_CREDENTIALS }}
           groups: testers
           file: ${{ steps.debug_apk.outputs.APK_PATH }}
-          releaseNotes: |
-            Automated build from commit ${{ github.sha }}
-            Branch: ${{ github.ref_name }}
-            Author: ${{ github.actor }}
+          releaseNotes: "Automated build from commit ${{ github.sha }} - Branch: ${{ github.ref_name }} - Author: ${{ github.actor }}"
