@@ -88,7 +88,7 @@
     <string name="dialog_save">保存</string>
 
     <!-- tutorial -->
-    <string name="tutorial_title">メモイズ クイックツアー</string>
+    <string name="tutorial_title">メモイズの使い方</string>
     <string name="tutorial_next">次へ</string>
     <string name="tutorial_done">わかりました</string>
     <string name="tutorial_skip">スキップ</string>
@@ -99,6 +99,8 @@
     <string name="tutorial_step_share_browser_body">ブラウザなど他アプリからテキストや画像を共有すると、AIによる解析後、メイン画面に分類されたメモとして表示されます。画像やリンクの場合は、内容の要約も記録されます。 (リンク先の確認にはインターネット接続が必要です)</string>
     <string name="tutorial_step_share_select_title">テキスト選択時に共有</string>
     <string name="tutorial_step_share_select_body">テキストを選択時に表示されるコンテキストメニューで「メモイズに保存」を選択することで解析、保存できます。</string>
+    <string name="tutorial_step_fab_title">メイン画面から追加</string>
+    <string name="tutorial_step_fab_body">メイン画面下部のフローティングボタンから、テキストを直接入力したり、端末内の画像を選択したり、クリップボードから読み取ってメモを作成できます。</string>
     <string name="tutorial_step_main_ui_title">メイン画面の基本</string>
     <string name="tutorial_step_main_ui_body">検索バーを使い、カテゴリヘッダーを展開・ドラッグで並べ替え、各メモの開く/共有/再解析/削除をその場で操作できます。</string>
     <string name="tutorial_step_side_panel_title">サイドパネルで絞り込み</string>
