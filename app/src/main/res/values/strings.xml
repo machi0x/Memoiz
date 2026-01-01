@@ -136,4 +136,9 @@ Tap the clipboard button or share content to start.</string>
     <string name="settings_tutorial_description">Open the quick tour again to review features and permissions.</string>
     <string name="settings_remerge_all_title">Re-run memo merges</string>
     <string name="settings_remerge_all_description">When AI-generated categories get out of hand, review every memo and consolidate similar labels.</string>
+    <string name="fab_create_memo">Type text to create memo</string>
+    <string name="dialog_create_memo_title">Create memo</string>
+    <string name="dialog_create_memo_message">Enter text to save as a memo. AI will analyze it like other items.</string>
+    <string name="dialog_create_memo_placeholder">Memo text</string>
+    <string name="dialog_create_memo_error_empty">Please enter some text</string>
 </resources>

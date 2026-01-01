@@ -115,4 +115,8 @@ object ContentProcessingLauncher {
                 request
             )
     }
+
+    fun enqueueManualMemo(context: Context, text: String): Boolean {
+        return enqueueWork(context, text, null, showDialog = true)
+    }
 }
