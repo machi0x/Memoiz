@@ -819,7 +819,8 @@ private fun MemoCard(
     memo: Memo,
     onDelete: () -> Unit,
     onEditCategory: () -> Unit,
-    onReanalyze: () -> Unit
+    onReanalyze: () -> Unit,
+    readOnly: Boolean = false
 ) {
     val context = LocalContext.current
 
@@ -845,6 +846,7 @@ private fun MemoCard(
             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 AssistChip(
                     onClick = { },
+                    enabled = !readOnly,
                     label = {
                         Text(
                             when (memo.memoType) {
@@ -872,6 +874,7 @@ private fun MemoCard(
                 if (memo.subCategory != null) {
                     AssistChip(
                         onClick = { },
+                        enabled = !readOnly,
                         label = { Text(memo.subCategory) },
                         leadingIcon = {
                             Icon(
@@ -885,10 +888,10 @@ private fun MemoCard(
             }
 
             Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                IconButton(onClick = onEditCategory) {
+                IconButton(onClick = { if (!readOnly) onEditCategory() }, enabled = !readOnly) {
                     Icon(Icons.Default.Edit, stringResource(R.string.dialog_edit_category_title))
                 }
-                IconButton(onClick = onReanalyze) {
+                IconButton(onClick = { if (!readOnly) onReanalyze() }, enabled = !readOnly) {
                     Icon(Icons.Default.Refresh, reanalyzeString)
                 }
                 // Action buttons based on memo type
@@ -896,49 +899,64 @@ private fun MemoCard(
                     MemoType.IMAGE -> {
                         // Image memo - open image
                         if (!memo.imageUri.isNullOrBlank()) {
-                            IconButton(onClick = {
-                                val intent = Intent(Intent.ACTION_VIEW).apply {
-                                    setDataAndType(Uri.parse(memo.imageUri), "image/*")
-                                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                                }
-                                try {
-                                    context.startActivity(intent)
-                                } catch (e: Exception) {
-                                    Toast.makeText(context, errorOpenImageString, Toast.LENGTH_SHORT).show()
-                                }
-                            }) {
+                            IconButton(
+                                onClick = {
+                                    if (!readOnly) {
+                                        val intent = Intent(Intent.ACTION_VIEW).apply {
+                                            setDataAndType(Uri.parse(memo.imageUri), "image/*")
+                                            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                        }
+                                        try {
+                                            context.startActivity(intent)
+                                        } catch (e: Exception) {
+                                            Toast.makeText(context, errorOpenImageString, Toast.LENGTH_SHORT).show()
+                                        }
+                                    }
+                                },
+                                enabled = !readOnly
+                            ) {
                                 Icon(Icons.Default.OpenInNew, stringResource(R.string.action_open))
                             }
                         }
                     }
                     MemoType.WEB_SITE -> {
                         // URL memo - open URL
-                        IconButton(onClick = {
-                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(memo.content))
-                            try {
-                                context.startActivity(intent)
-                            } catch (e: Exception) {
-                                Toast.makeText(context, errorOpenUrlString, Toast.LENGTH_SHORT).show()
-                            }
-                        }) {
+                        IconButton(
+                            onClick = {
+                                if (!readOnly) {
+                                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(memo.content))
+                                    try {
+                                        context.startActivity(intent)
+                                    } catch (e: Exception) {
+                                        Toast.makeText(context, errorOpenUrlString, Toast.LENGTH_SHORT).show()
+                                    }
+                                }
+                            },
+                            enabled = !readOnly
+                        ) {
                             Icon(Icons.Default.OpenInNew, openString)
                         }
                     }
                     else -> {
                         // Text memo - share
-                        IconButton(onClick = {
-                            val shareIntent = Intent(Intent.ACTION_SEND).apply {
-                                type = "text/plain"
-                                putExtra(Intent.EXTRA_TEXT, memo.content)
-                            }
-                            context.startActivity(Intent.createChooser(shareIntent, shareString))
-                        }) {
+                        IconButton(
+                            onClick = {
+                                if (!readOnly) {
+                                    val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                                        type = "text/plain"
+                                        putExtra(Intent.EXTRA_TEXT, memo.content)
+                                    }
+                                    context.startActivity(Intent.createChooser(shareIntent, shareString))
+                                }
+                            },
+                            enabled = !readOnly
+                        ) {
                             Icon(Icons.Default.Share, shareString)
                         }
                     }
                 }
 
-                IconButton(onClick = { onDelete() }) {
+                IconButton(onClick = { if (!readOnly) onDelete() }, enabled = !readOnly) {
                     Icon(Icons.Default.Delete, deleteString)
                 }
             }
@@ -1197,6 +1215,15 @@ private data class TutorialStep(
 private fun TutorialDialog(
     onFinished: () -> Unit
 ) {
+    val uiStepIndex = 1
+    val demoMemo = Memo(
+        content = "https://example.com/demo",
+        memoType = MemoType.WEB_SITE,
+        category = "② memo type / カテゴリ",
+        subCategory = "④ drag to reorder",
+        summary = "⑥ AI summary (generated by AI)",
+        sourceApp = "Demo app"
+    )
     val steps = listOf(
         TutorialStep(
             imageRes = R.drawable.top_banner,
@@ -1242,15 +1269,25 @@ private fun TutorialDialog(
                 verticalArrangement = Arrangement.spacedBy(12.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Image(
-                    painter = painterResource(id = step.imageRes),
-                    contentDescription = null,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(180.dp)
-                        .clip(RoundedCornerShape(12.dp)),
-                    contentScale = ContentScale.Fit
-                )
+                if (currentStep == uiStepIndex) {
+                    MemoCard(
+                        memo = demoMemo,
+                        onDelete = {},
+                        onEditCategory = {},
+                        onReanalyze = {},
+                        readOnly = true
+                    )
+                } else {
+                    Image(
+                        painter = painterResource(id = step.imageRes),
+                        contentDescription = null,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(180.dp)
+                            .clip(RoundedCornerShape(12.dp)),
+                        contentScale = ContentScale.Fit
+                    )
+                }
                 Text(
                     text = step.title,
                     style = MaterialTheme.typography.titleMedium,
