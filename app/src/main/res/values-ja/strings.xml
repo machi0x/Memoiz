@@ -98,7 +98,7 @@
     <string name="tutorial_step_share_browser_title">他アプリやブラウザから共有</string>
     <string name="tutorial_step_share_browser_body">ブラウザなど他アプリからテキストや画像を共有すると、AIによる解析後、メイン画面に分類されたメモとして表示されます。画像やリンクの場合は、内容の要約も記録されます。 (リンク先の確認にはインターネット接続が必要です)</string>
     <string name="tutorial_step_share_select_title">テキスト選択・クリップボードから共有</string>
-    <string name="tutorial_step_share_select_body">テキストを選択時に表示されるコンテキストメニューで「メモイズで分類」を選択することでも解析、保存できます。メイン画面のフローティングボタンで、クリップボードのデータも利用できます。</string>
+    <string name="tutorial_step_share_select_body">テキストを選択時に表示されるコンテキストメニューで「メモイズに保存」を選択することでも解析、保存できます。メイン画面のフローティングボタンで、クリップボードのデータも利用できます。</string>
     <string name="tutorial_step_main_ui_title">メイン画面の基本</string>
     <string name="tutorial_step_main_ui_body">検索バーを使い、カテゴリヘッダーを展開・ドラッグで並べ替え、各メモの開く/共有/再解析/削除をその場で操作できます。</string>
     <string name="tutorial_step_side_panel_title">サイドパネルで絞り込み</string>
@@ -119,4 +119,5 @@
     <string name="dialog_create_memo_placeholder">メモ本文</string>
     <string name="dialog_create_memo_error_empty">テキストを入力してください</string>
     <string name="fab_close_menu">メニューを閉じる</string>
+    <string name="processtext_label">メモイズに保存</string>
 </resources>
