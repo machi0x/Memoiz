@@ -122,8 +122,8 @@ Tap the clipboard button or share content to start.</string>
     <string name="tutorial_step_overview_body">Save text, links, or images and let on-device AI categorize them automatically so you can recall them later.</string>
     <string name="tutorial_step_share_browser_title">Share from apps or browser</string>
     <string name="tutorial_step_share_browser_body">Send text or images directly from apps like your browser. Memoiz queues the item, categorizes it, and shows it in the right category.</string>
-    <string name="tutorial_step_share_select_title">Share from text selection</string>
-    <string name="tutorial_step_share_select_body">Select text in any app and use the Share to Memoiz option. The memo keeps the source app name when available.</string>
+    <string name="tutorial_step_share_select_title">Share while selecting text</string>
+    <string name="tutorial_step_share_select_body">When the context menu appears during text selection, choose “Save to Memoiz” to analyze and store the snippet instantly.</string>
     <string name="tutorial_step_main_ui_title">Main screen basics</string>
     <string name="tutorial_step_main_ui_body">Use the top search bar, expand category headers, drag them to reorder, and run memo actions (open, share, re-analyze, delete) directly from the list.</string>
     <string name="tutorial_step_side_panel_title">Side panel filters</string>
