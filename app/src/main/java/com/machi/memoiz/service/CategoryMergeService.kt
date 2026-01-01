@@ -9,6 +9,7 @@ import com.machi.memoiz.util.FailureCategoryHelper
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.util.Locale
+import androidx.core.text.BidiFormatter
 
 /**
  * Second stage category merging service.
@@ -41,7 +42,8 @@ class CategoryMergeService(private val context: Context) {
         val aiCategory: String,
         val aiSubCategory: String? = null,
         val existingCategories: List<String>,
-        val customCategories: Set<String> = emptySet()
+        val customCategories: Set<String> = emptySet(),
+        val memoSummary: String? = null
     )
 
     data class MergeResult(
@@ -86,6 +88,9 @@ class CategoryMergeService(private val context: Context) {
         val poolText = if (existingPool.isNotEmpty()) {
             "Existing categories include: " + existingPool.joinToString(", ")
         } else ""
+        val summaryText = input.memoSummary?.takeIf { it.isNotBlank() }?.let {
+            "Memo summary: " + it.replace("\n", " ").take(400)
+        } ?: ""
 
         return buildString {
             appendLine("You are a categorization assistant that helps merge similar categories intelligently.")
@@ -93,6 +98,9 @@ class CategoryMergeService(private val context: Context) {
             appendLine()
             appendLine("Original AI suggestion: \"${input.aiCategory}\"")
             input.aiSubCategory?.let { appendLine("Sub-category context: $it") }
+            if (summaryText.isNotBlank()) {
+                appendLine(summaryText)
+            }
             appendLine()
             if (fixed.isNotBlank()) {
                 appendLine(fixed)
