@@ -14,6 +14,7 @@ import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -861,7 +862,11 @@ private fun CategoryAccordion(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clickable { onHeaderClick() }
+                    .clickable(
+                        onClick = onHeaderClick,
+                        indication = null,
+                        interactionSource = remember { MutableInteractionSource() }
+                    )
                     .padding(16.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
@@ -1210,7 +1215,11 @@ private fun SortModeDialog(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clickable { onModeSelected(mode) }
+                            .clickable(
+                                onClick = { onModeSelected(mode) },
+                                indication = null,
+                                interactionSource = remember { MutableInteractionSource() }
+                            )
                             .padding(vertical = 12.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {

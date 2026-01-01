@@ -8,6 +8,7 @@ import android.os.Build
 import android.provider.Settings
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.HorizontalDivider
@@ -234,7 +235,17 @@ private fun PreferenceItem(
     ListItem(
         modifier = Modifier
             .fillMaxWidth()
-            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier),
+            .then(
+                if (onClick != null) {
+                    Modifier.clickable(
+                        onClick = onClick,
+                        indication = null,
+                        interactionSource = remember { MutableInteractionSource() }
+                    )
+                } else {
+                    Modifier
+                }
+            ),
         headlineContent = { Text(title, style = MaterialTheme.typography.titleMedium) },
         supportingContent = supporting,
         leadingContent = leadingIcon?.let { { it() } },
