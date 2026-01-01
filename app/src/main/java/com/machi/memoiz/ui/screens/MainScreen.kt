@@ -4,6 +4,9 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
@@ -187,7 +190,19 @@ fun MainScreen(
         else -> null
     }
     val fabCreateMemoLabel = stringResource(R.string.fab_create_memo)
+    val fabPickImageLabel = stringResource(R.string.fab_pick_image)
     val fabPasteLabel = stringResource(R.string.fab_paste_clipboard)
+
+    val imagePickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.PickVisualMedia()
+    ) { uri: Uri? ->
+        if (uri != null) {
+            val enqueued = ContentProcessingLauncher.enqueueWork(context, null, uri)
+            if (!enqueued) {
+                Toast.makeText(context, R.string.nothing_to_categorize, Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
 
     val selectedCategoryFilter = categoryFilter
     val filterNote = when {
@@ -306,6 +321,16 @@ fun MainScreen(
                                     text = { Text(text = fabCreateMemoLabel) },
                                     onClick = {
                                         showCreateMemoDialog = true
+                                        isFabExpanded = false
+                                    }
+                                )
+                                ExtendedFloatingActionButton(
+                                    text = { Text(text = fabPickImageLabel) },
+                                    icon = { Icon(Icons.Default.Image, contentDescription = null) },
+                                    onClick = {
+                                        imagePickerLauncher.launch(
+                                            PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                                        )
                                         isFabExpanded = false
                                     }
                                 )
