@@ -36,6 +36,7 @@
         <activity
             android:name=".processtext.ProcessTextActivity"
             android:exported="true"
+            android:label="@string/processtext_label"
             android:theme="@style/Theme.Memoiz">
             <intent-filter>
                 <action android:name="android.intent.action.PROCESS_TEXT" />
