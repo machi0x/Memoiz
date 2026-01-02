@@ -28,18 +28,20 @@ class ReanalyzeSingleMemoWorker(
         val memoRepository = MemoRepository(database.memoDao())
         val existingCategories = memoRepository.getDistinctCategories()
         val preferences = PreferencesDataStoreManager(applicationContext).userPreferencesFlow.first()
+        val memoId = inputData.getLong(KEY_MEMO_ID, -1L)
+        if (memoId <= 0L) return Result.failure()
+
+        val memo = memoRepository.getMemoById(memoId) ?: return Result.success()
+        if (memo.isCategoryLocked) return Result.success()
+
         val aiService = AiCategorizationService(
             applicationContext,
             CategoryMergeService(applicationContext),
             existingCategories,
-            preferences.customCategories
+            preferences.customCategories,
+            isCategoryLocked = memo.isCategoryLocked
         )
         try {
-            val memoId = inputData.getLong(KEY_MEMO_ID, -1L)
-            if (memoId <= 0L) return Result.failure()
-
-            val memo = memoRepository.getMemoById(memoId) ?: return Result.success()
-
             val updatedEntity = if (!memo.imageUri.isNullOrBlank()) {
                 val bitmap = aiService.loadBitmapFromUri(memo.imageUri)
                 bitmap?.let { aiService.processImage(it, memo.sourceApp, memo.imageUri) }

@@ -15,5 +15,6 @@ data class Memo(
     val subCategory: String? = null,
     val summary: String? = null,
     val sourceApp: String? = null,
-    val createdAt: Long = System.currentTimeMillis()
+    val createdAt: Long = System.currentTimeMillis(),
+    val isCategoryLocked: Boolean = false
 )

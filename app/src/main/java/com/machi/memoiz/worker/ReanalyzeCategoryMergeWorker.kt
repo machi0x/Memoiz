@@ -39,6 +39,7 @@ class ReanalyzeCategoryMergeWorker(
 
         return try {
             memosToProcess.forEach { memo ->
+                if (memo.isCategoryLocked) return@forEach
                 val input = CategoryMergeService.MergeInput(
                     aiCategory = memo.category,
                     aiSubCategory = memo.subCategory,
@@ -59,4 +60,3 @@ class ReanalyzeCategoryMergeWorker(
         }
     }
 }
-
