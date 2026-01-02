@@ -1,5 +1,6 @@
 package com.machi.memoiz.service
 
+import com.machi.memoiz.R
 import com.machi.memoiz.data.MemoizDatabase
 import com.machi.memoiz.data.repository.MemoRepository
 import com.machi.memoiz.data.datastore.PreferencesDataStoreManager
@@ -8,6 +9,7 @@ import android.graphics.Bitmap
 import android.graphics.ImageDecoder
 import android.net.Uri
 import com.machi.memoiz.data.entity.MemoEntity
+import com.machi.memoiz.util.FailureCategoryHelper
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.first
@@ -22,6 +24,8 @@ class AiCategorizationService(
     private val existingCategories: List<String> = emptyList(),
     private val customCategories: Set<String> = emptySet()
 ) {
+    private val uncategorizableLabel by lazy { context.getString(R.string.category_uncategorizable) }
+
     companion object {
         suspend fun createWithRepository(context: Context): AiCategorizationService {
             val database = MemoizDatabase.getDatabase(context)
@@ -40,7 +44,9 @@ class AiCategorizationService(
     private val mlKitCategorizer = MlKitCategorizer(context)
 
     private suspend fun mergeCategory(category: String, subCategory: String?, summary: String?): String {
-        if (customCategories.contains(category)) return category
+        if (category.isBlank() || shouldSkipMerge(category) || customCategories.contains(category)) {
+            return category
+        }
         if (existingCategories.isEmpty() && customCategories.isEmpty()) return category
         val result = mergeService.merge(
             CategoryMergeService.MergeInput(
@@ -51,7 +57,12 @@ class AiCategorizationService(
                 memoSummary = summary
             )
         )
-        return result.finalCategory
+        return if (shouldSkipMerge(result.finalCategory)) category else result.finalCategory
+    }
+
+    private fun shouldSkipMerge(category: String): Boolean {
+        if (FailureCategoryHelper.isFailureLabel(context, category)) return true
+        return category.equals(uncategorizableLabel, ignoreCase = true)
     }
 
     /**

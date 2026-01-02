@@ -48,6 +48,7 @@ object ContentProcessingLauncher {
         imageUri: Uri?,
         sourceApp: String? = null,
         showDialog: Boolean = true,
+        forceCopyImage: Boolean = false
     ): Boolean {
         if (text.isNullOrBlank() && imageUri == null) {
             return false
@@ -56,7 +57,7 @@ object ContentProcessingLauncher {
         val workData = Data.Builder().apply {
             text?.let { putString(ClipboardProcessingWorker.KEY_CLIPBOARD_CONTENT, it) }
             imageUri?.let { original ->
-                val persistedUri = ImageUriManager.prepareUriForWork(context, original)
+                val persistedUri = ImageUriManager.prepareUriForWork(context, original, forceCopyImage)
                 persistedUri?.let { putString(ClipboardProcessingWorker.KEY_IMAGE_URI, it.toString()) }
             }
             sourceApp?.let { putString(ClipboardProcessingWorker.KEY_SOURCE_APP, it) }
