@@ -1434,6 +1434,7 @@ private fun TutorialDialog(
     var usagePermissionJob by remember { mutableStateOf<Job?>(null) }
     val usagePermissionStepIndex = steps.indexOfFirst { it.imageRes == R.drawable.app_usages }
     val isUsagePermissionStep = currentStep == usagePermissionStepIndex && usagePermissionStepIndex >= 0
+    var usagePermissionGranted by rememberSaveable { mutableStateOf(false) }
 
     AlertDialog(
         modifier = Modifier
@@ -1495,22 +1496,21 @@ private fun TutorialDialog(
                     }
                 }
                 if (isUsagePermissionStep) {
-                    TextButton(
-                        onClick = {
-                            usagePermissionJob?.cancel()
-                            launchUsageAccessSettings(context)
-                            usagePermissionJob = tutorialCoroutineScope.launch {
-                                val helper = UsageStatsHelper(context)
-                                val deadline = System.currentTimeMillis() + 60_000
-                                while (System.currentTimeMillis() < deadline && !helper.hasUsageStatsPermission()) {
-                                    delay(2_000)
-                                }
-                                if (helper.hasUsageStatsPermission()) {
-                                    currentStep = (currentStep + 1).coerceAtMost(steps.lastIndex)
-                                }
+                    TextButton(onClick = {
+                        usagePermissionJob?.cancel()
+                        launchUsageAccessSettings(context)
+                        usagePermissionJob = tutorialCoroutineScope.launch {
+                            val helper = UsageStatsHelper(context)
+                            val deadline = System.currentTimeMillis() + 60_000
+                            while (System.currentTimeMillis() < deadline && !helper.hasUsageStatsPermission()) {
+                                delay(2_000)
+                            }
+                            if (helper.hasUsageStatsPermission()) {
+                                usagePermissionGranted = true
+                                currentStep = (currentStep + 1).coerceAtMost(steps.lastIndex)
                             }
                         }
-                    ) {
+                    }) {
                         Text(stringResource(R.string.tutorial_usage_permission_button))
                     }
                 }
