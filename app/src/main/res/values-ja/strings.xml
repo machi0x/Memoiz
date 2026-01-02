@@ -106,7 +106,7 @@
     <string name="tutorial_step_main_ui_body">検索バーを使い、カテゴリヘッダーを展開・ドラッグで並べ替え、各メモの開く/共有/再解析/削除をその場で操作できます。</string>
     <string name="tutorial_step_side_panel_title">サイドパネルで絞り込み</string>
     <string name="tutorial_step_side_panel_body">メニューアイコンでサイドパネルを開き、タイプやカテゴリで絞り込み、＋でマイカテゴリ管理や設定画面へ移動できます。</string>
-    <string name="tutorial_step_my_category_title">自分のラベルを教える</string>
+    <string name="tutorial_step_my_category_title">自分でカテゴリを作成</string>
     <string name="tutorial_step_my_category_body">メイン画面のサイドパネル等からあなた独自のカテゴリを追加することもできます。AIによるカテゴリ分けの際に考慮されるようになります。</string>
     <string name="tutorial_step_usage_permission_title">アプリの利用状況へのアクセス権限が必要な理由</string>
     <string name="tutorial_step_usage_permission_body">権限を許可すると、データを共有した元アプリ名をメモに記録することができ、またAI分析の精度が上がります。この機能はサイドパネル &gt; 設定から有効化できます。</string>
