@@ -1765,8 +1765,7 @@ private fun MaskingTapeImage(
 ) {
     Box(
         modifier = modifier
-            .padding(16.dp)
-            // Slightly tilt the entire image to blend with the note style (optional)
+            // Slightly rotate the entire image to blend with the note style (optional)
             .graphicsLayer(rotationZ = 1f)
     ) {
         // 1. Original image (no changes applied)
@@ -1774,7 +1773,7 @@ private fun MaskingTapeImage(
             model = Uri.parse(imageUri),
             contentDescription = contentDescription,
             modifier = Modifier
-                .size(200.dp)
+                .fillMaxSize()
                 .shadow(2.dp), // Slight thickness when pasted on note
             contentScale = ContentScale.Crop
         )
@@ -1810,7 +1809,7 @@ private fun MaskingTape(modifier: Modifier = Modifier) {
                 lineTo(x, y)
             }
             
-            // To the right side
+            // Draw to the bottom-right corner
             lineTo(size.width, size.height)
             
             // Bottom side jagged edge
@@ -1859,7 +1858,7 @@ private fun PreviewMaskingTapeImage() {
             MaskingTapeImage(
                 imageUri = "https://picsum.photos/seed/memoizPreview/600",
                 contentDescription = null,
-                modifier = Modifier.width(220.dp)
+                modifier = Modifier.size(120.dp)
             )
         }
     }
