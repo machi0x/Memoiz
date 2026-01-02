@@ -50,15 +50,15 @@ class CategoryMergeService(private val context: Context) {
     )
 
     suspend fun merge(input: MergeInput): MergeResult = withContext(Dispatchers.IO) {
-         val prompt = buildPrompt(input)
+        val prompt = buildPrompt(input)
         val request = generateContentRequest(TextPart(prompt)) { }
         val text = runCatching {
             promptModel.generateContent(request).candidates.firstOrNull()?.text?.trim()
         }.getOrNull()
 
         val raw = text?.takeIf { it.isNotBlank() }
-        val sanitized = raw ?: input.aiCategory
-        val finalCategory = sanitized
+        val sanitized = sanitizeResponse(raw)
+        val finalCategory = sanitized ?: input.aiCategory
         val mergedIntoCustom = input.customCategories.contains(finalCategory)
         MergeResult(finalCategory, mergedIntoCustom, text)
     }
@@ -113,5 +113,26 @@ class CategoryMergeService(private val context: Context) {
             appendLine()
             appendLine("Decision: Return ONLY the final category name to use (either an existing category or the original suggestion). No explanations, no extra text.")
         }
+    }
+
+    private fun sanitizeResponse(raw: String?): String? {
+        raw ?: return null
+        val firstMeaningfulLine = raw
+            .lineSequence()
+            .map { it.trim() }
+            .firstOrNull { it.isNotBlank() }
+            ?: return null
+
+        val separators = listOf(":", "：", "->", "→")
+        var candidate = firstMeaningfulLine
+        separators.forEach { sep ->
+            if (candidate.contains(sep)) {
+                candidate = candidate.substringAfter(sep).trim()
+            }
+        }
+        candidate = candidate.trimStart('-', '•', '*').trim()
+        candidate = candidate.trim('"', '“', '”').trim()
+
+        return candidate.takeIf { it.isNotBlank() }
     }
 }

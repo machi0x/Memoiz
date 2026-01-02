@@ -1068,16 +1068,11 @@ private fun MemoCard(
                 }
 
                 if (primaryAction.enabled) {
-                    FilledTonalButton(
-                        onClick = {
-                            primaryAction.onInvoke()
-                            menuExpanded = false
-                        },
-                        enabled = primaryAction.enabled
-                    ) {
-                        Icon(primaryAction.icon, contentDescription = null)
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(primaryAction.label)
+                    IconButton(onClick = {
+                        primaryAction.onInvoke()
+                        menuExpanded = false
+                    }, enabled = primaryAction.enabled) {
+                        Icon(primaryAction.icon, contentDescription = primaryAction.label)
                     }
                 }
 
@@ -1106,47 +1101,17 @@ private fun MemoCard(
                             if (!readOnly) onReanalyze()
                         }
                     )
-                    when (memo.memoType) {
-                        MemoType.IMAGE -> {
-                            DropdownMenuItem(
-                                text = { Text(openString) },
-                                leadingIcon = { Icon(Icons.Default.OpenInNew, contentDescription = null) },
-                                enabled = !readOnly && !memo.imageUri.isNullOrBlank(),
-                                onClick = {
-                                    menuExpanded = false
-                                    if (!readOnly && !memo.imageUri.isNullOrBlank()) {
-                                        openImage()
-                                    }
-                                }
-                            )
+                    DropdownMenuItem(
+                        text = { Text(shareString) },
+                        leadingIcon = { Icon(Icons.Default.Share, contentDescription = null) },
+                        enabled = !readOnly,
+                        onClick = {
+                            menuExpanded = false
+                            if (!readOnly) {
+                                shareText()
+                            }
                         }
-                        MemoType.WEB_SITE -> {
-                            DropdownMenuItem(
-                                text = { Text(openString) },
-                                leadingIcon = { Icon(Icons.Default.OpenInNew, contentDescription = null) },
-                                enabled = !readOnly,
-                                onClick = {
-                                    menuExpanded = false
-                                    if (!readOnly) {
-                                        openWebsite()
-                                    }
-                                }
-                            )
-                        }
-                        else -> {
-                            DropdownMenuItem(
-                                text = { Text(shareString) },
-                                leadingIcon = { Icon(Icons.Default.Share, contentDescription = null) },
-                                enabled = !readOnly,
-                                onClick = {
-                                    menuExpanded = false
-                                    if (!readOnly) {
-                                        shareText()
-                                    }
-                                }
-                            )
-                        }
-                    }
+                    )
                     DropdownMenuItem(
                         text = { Text(stringResource(R.string.memo_menu_delete)) },
                         leadingIcon = { Icon(Icons.Default.Delete, contentDescription = null) },

@@ -4,8 +4,10 @@ import android.content.Context
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import com.machi.memoiz.data.MemoizDatabase
+import com.machi.memoiz.data.datastore.PreferencesDataStoreManager
 import com.machi.memoiz.data.repository.MemoRepository
 import com.machi.memoiz.service.AiCategorizationService
+import com.machi.memoiz.service.CategoryMergeService
 import com.machi.memoiz.domain.model.Memo
 import com.machi.memoiz.util.UsageStatsHelper
 import com.machi.memoiz.worker.WORK_TAG_MEMO_PROCESSING
@@ -26,7 +28,9 @@ class ClipboardProcessingWorker(
     }
 
     override suspend fun doWork(): Result {
-        val aiService = AiCategorizationService(applicationContext)
+        val database = MemoizDatabase.getDatabase(applicationContext)
+        val memoRepository = MemoRepository(database.memoDao())
+        val aiService = AiCategorizationService.createWithRepository(applicationContext)
         try {
             val content = inputData.getString(KEY_CLIPBOARD_CONTENT)
             val imageUri = inputData.getString(KEY_IMAGE_URI)
@@ -36,11 +40,6 @@ class ClipboardProcessingWorker(
                 return Result.failure()
             }
 
-            // Initialize database and repositories
-            val database = MemoizDatabase.getDatabase(applicationContext)
-            val memoRepository = MemoRepository(database.memoDao())
-
-            // Try to get source app (UsageStats permission is checked inside UsageStatsHelper)
             val sourceApp = providedSourceApp ?: try {
                 UsageStatsHelper(applicationContext).getLastForegroundApp()
             } catch (e: Exception) {
