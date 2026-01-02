@@ -53,12 +53,24 @@ import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.unit.Dp
+import kotlin.random.Random
 import com.machi.memoiz.R
 import com.machi.memoiz.data.entity.MemoType
 import com.machi.memoiz.domain.model.Memo
@@ -1135,14 +1147,30 @@ private fun MemoCard(
         ) {
             // Show image thumbnail if available
             if (!memo.imageUri.isNullOrBlank()) {
-                AsyncImage(
-                    model = Uri.parse(memo.imageUri),
-                    contentDescription = stringResource(R.string.cd_memo_image),
-                    modifier = Modifier
-                        .size(80.dp)
-                        .clip(RoundedCornerShape(8.dp)),
-                    contentScale = ContentScale.Crop
-                )
+                val imageModifier = Modifier.size(96.dp)
+                if (memo.memoType == MemoType.IMAGE) {
+                    StickyNoteSurface(
+                        modifier = imageModifier,
+                        contentPadding = PaddingValues(6.dp)
+                    ) {
+                        AsyncImage(
+                            model = Uri.parse(memo.imageUri),
+                            contentDescription = stringResource(R.string.cd_memo_image),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .aspectRatio(1f)
+                                .clip(RoundedCornerShape(10.dp)),
+                            contentScale = ContentScale.Crop
+                        )
+                    }
+                } else {
+                    AsyncImage(
+                        model = Uri.parse(memo.imageUri),
+                        contentDescription = stringResource(R.string.cd_memo_image),
+                        modifier = imageModifier.clip(RoundedCornerShape(12.dp)),
+                        contentScale = ContentScale.Crop
+                    )
+                }
             }
 
             // Content column
@@ -1150,31 +1178,33 @@ private fun MemoCard(
                 modifier = Modifier.weight(1f)
             ) {
                 when (memo.memoType) {
-                    MemoType.TEXT, MemoType.WEB_SITE -> {
+                    MemoType.TEXT -> {
                         val displayText = remember(memo.content) {
                             val maxChars = 240
                             if (memo.content.length <= maxChars) memo.content else memo.content.take(maxChars) + "\u2026"
                         }
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(16.dp))
-                                .background(MaterialTheme.colorScheme.surfaceVariant)
-                                .border(
-                                    width = 1.dp,
-                                    color = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f),
-                                    shape = RoundedCornerShape(16.dp)
-                                )
-                                .padding(horizontal = 14.dp, vertical = 12.dp)
-                        ) {
-                            Text(
-                                text = displayText,
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurface,
-                                maxLines = 6,
-                                overflow = TextOverflow.Ellipsis
-                            )
+                        CampusNoteTextAligned(
+                            text = displayText,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                         if (memo.content.length > displayText.length) {
+                             Spacer(modifier = Modifier.height(4.dp))
+                             Text(
+                                 text = stringResource(R.string.action_share),
+                                 style = MaterialTheme.typography.labelSmall,
+                                 color = MaterialTheme.colorScheme.onSurfaceVariant
+                             )
+                         }
+                    }
+                    MemoType.WEB_SITE -> {
+                        val displayText = remember(memo.content) {
+                            val maxChars = 240
+                            if (memo.content.length <= maxChars) memo.content else memo.content.take(maxChars) + "\u2026"
                         }
+                        NeutralUrlDisplay(
+                            url = displayText,
+                            modifier = Modifier.fillMaxWidth()
+                        )
                         if (memo.content.length > displayText.length) {
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(
@@ -1187,13 +1217,7 @@ private fun MemoCard(
                     else -> {
                         if (memo.content.isNotBlank()) {
                             val imageDescription = remember(memo.content) { "${AI_ROBOT_PREFIX} ${memo.content}" }
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clip(RoundedCornerShape(16.dp))
-                                    .background(MaterialTheme.colorScheme.surfaceVariant)
-                                    .padding(horizontal = 14.dp, vertical = 12.dp)
-                            ) {
+                            StickyNoteSurface(modifier = Modifier.fillMaxWidth()) {
                                 Text(
                                     text = imageDescription,
                                     style = MaterialTheme.typography.bodyLarge,
@@ -1695,6 +1719,137 @@ private fun AiSummaryBlock(text: String) {
 }
 
 private const val AI_ROBOT_PREFIX = "🤖"
+
+@Composable
+private fun NeutralUrlDisplay(
+    url: String,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(52.dp),
+        shape = RoundedCornerShape(12.dp),
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+        border = BorderStroke(
+            1.dp,
+            MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+        )
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = Icons.Default.Language,
+                contentDescription = stringResource(R.string.memo_type_web_site),
+                modifier = Modifier.size(18.dp),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+            )
+            Spacer(modifier = Modifier.width(12.dp))
+            Text(
+                text = url,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.85f),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f)
+            )
+            Icon(
+                imageVector = Icons.Default.OpenInNew,
+                contentDescription = stringResource(R.string.action_open),
+                modifier = Modifier.size(18.dp),
+                tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f)
+            )
+        }
+    }
+}
+
+@Composable
+private fun CampusNoteTextAligned(
+    text: String,
+    modifier: Modifier = Modifier,
+    lineHeight: androidx.compose.ui.unit.TextUnit = 24.sp
+) {
+    val density = LocalDensity.current
+    val lineHeightPx = with(density) { lineHeight.toPx() }
+    val shape = RoundedCornerShape(12.dp)
+    Text(
+        text = text,
+        style = MaterialTheme.typography.bodyMedium.copy(lineHeight = lineHeight),
+        color = MaterialTheme.colorScheme.onSurface,
+        maxLines = 6,
+        overflow = TextOverflow.Ellipsis,
+        modifier = modifier
+            .shadow(6.dp, shape)
+            .clip(shape)
+            .drawBehind {
+                drawRect(Color(0xFFF9FAFB))
+                val marginX = 28.dp.toPx()
+                drawLine(
+                    color = Color(0xFFFF9AA2),
+                    start = Offset(marginX, 0f),
+                    end = Offset(marginX, size.height),
+                    strokeWidth = 2.dp.toPx()
+                )
+                var y = lineHeightPx
+                while (y < size.height) {
+                    drawLine(
+                        color = Color(0xFFB7D7FF),
+                        start = Offset(0f, y),
+                        end = Offset(size.width, y),
+                        strokeWidth = 1.dp.toPx()
+                    )
+                    y += lineHeightPx
+                }
+            }
+            .padding(start = 44.dp, top = 6.dp, end = 16.dp, bottom = 16.dp))
+}
+
+@Composable
+private fun StickyNoteSurface(
+    modifier: Modifier = Modifier,
+    noteColor: Color = Color(0xFFFFF2A8),
+    corner: Dp = 16.dp,
+    contentPadding: PaddingValues = PaddingValues(18.dp),
+    content: @Composable ColumnScope.() -> Unit
+) {
+    val density = LocalDensity.current
+    val cornerPx = with(density) { corner.toPx() }
+    val shape = RoundedCornerShape(corner)
+    Column(
+        modifier = modifier
+            .shadow(8.dp, shape)
+            .clip(shape)
+            .drawBehind {
+                drawRoundRect(color = noteColor, cornerRadius = CornerRadius(cornerPx, cornerPx))
+                val rnd = Random(0)
+                repeat(300) {
+                    drawCircle(
+                        color = Color.Black.copy(alpha = 0.05f),
+                        radius = rnd.nextFloat() * 1.4f,
+                        center = Offset(rnd.nextFloat() * size.width, rnd.nextFloat() * size.height)
+                    )
+                }
+                val foldW = size.minDimension * 0.18f
+                val foldPath = Path().apply {
+                    moveTo(size.width - foldW, 0f)
+                    lineTo(size.width, 0f)
+                    lineTo(size.width, foldW)
+                    close()
+                }
+                drawPath(foldPath, color = Color.White.copy(alpha = 0.35f))
+                drawLine(
+                    color = Color.Black.copy(alpha = 0.12f),
+                    start = Offset(size.width - foldW, 0f),
+                    end = Offset(size.width, foldW),
+                    strokeWidth = 2.dp.toPx()
+                )
+            }
+            .padding(contentPadding),
+        content = content
+    )
+}
 
 private data class PrimaryAction(
     val label: String,
