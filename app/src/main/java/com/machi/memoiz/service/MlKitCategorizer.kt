@@ -22,6 +22,7 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.jsoup.Jsoup
 import com.machi.memoiz.R
+import com.machi.memoiz.util.FailureCategoryHelper
 import java.util.Locale
 import org.json.JSONObject
 
@@ -33,7 +34,8 @@ class MlKitCategorizer(private val context: Context) {
     private fun webCategoryLabel(): String = context.getString(R.string.category_web_site)
     private fun imageCategoryLabel(): String = context.getString(R.string.category_image)
     private fun uncategorizableLabel(): String = context.getString(R.string.category_uncategorizable)
-    
+    private fun failureCategoryLabel(): String = FailureCategoryHelper.currentLabel(context)
+
     private fun getSystemLanguageName(): String {
         return if (Locale.getDefault().language == "ja") "Japanese" else "English"
     }
@@ -89,12 +91,18 @@ class MlKitCategorizer(private val context: Context) {
         return try {
             // 1-1: URL
             if (content.startsWith("http")) {
-                val webContent = fetchUrlContent(content) ?: return Triple(webCategoryLabel(), null, null)
+                val webContent = fetchUrlContent(content)
+                if (webContent.isNullOrBlank()) {
+                    return Triple(failureCategoryLabel(), null, null)
+                }
                 val pair = generateCategoryPair(webContent.take(2000), sourceApp)
                 val localizedMain = localizeText(pair.main)
                 val localizedSub = localizeText(pair.sub)
                 val summary = summarize(webContent)
-                return Triple(localizedMain ?: webCategoryLabel(), localizedSub, summary)
+                if (localizedMain.isNullOrBlank()) {
+                    return Triple(failureCategoryLabel(), null, summary)
+                }
+                return Triple(localizedMain, localizedSub, summary)
             }
 
             // 1-2 & 1-3: Long and short text
@@ -105,10 +113,14 @@ class MlKitCategorizer(private val context: Context) {
             val pair = generateCategoryPair(content.take(2000), sourceApp)
             val localizedMain = localizeText(pair.main)
             val localizedSub = localizeText(pair.sub)
-            Triple(localizedMain, localizedSub, summary)
+            if (localizedMain.isNullOrBlank()) {
+                Triple(failureCategoryLabel(), null, summary)
+            } else {
+                Triple(localizedMain, localizedSub, summary)
+            }
         } catch (e: Exception) {
             e.printStackTrace()
-            null
+            Triple(failureCategoryLabel(), null, null)
         }
     }
 
@@ -123,14 +135,17 @@ class MlKitCategorizer(private val context: Context) {
                 val pair = generateCategoryPair(localizedDescription.take(2000), sourceApp)
                 val localizedMain = localizeText(pair.main)
                 val localizedSub = localizeText(pair.sub)
-                Triple(localizedMain, localizedSub, localizedDescription)
+                if (localizedMain.isNullOrBlank()) {
+                    Triple(failureCategoryLabel(), null, localizedDescription)
+                } else {
+                    Triple(localizedMain, localizedSub, localizedDescription)
+                }
             } else {
-                // Fallback to image category if description fails
-                Triple(imageCategoryLabel(), null, null)
+                Triple(failureCategoryLabel(), null, null)
             }
         } catch (e: Exception) {
             e.printStackTrace()
-            null
+            Triple(failureCategoryLabel(), null, null)
         }
     }
 

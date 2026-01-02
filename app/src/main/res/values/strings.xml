@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources xmlns:tools="http://schemas.android.com/tools" tools:locale="en">
     <string name="app_name">Memoiz</string>
-    <string name="failure_category">Analysis failure</string>
+    <string name="failure_category">Analysis failure - will re-analyze automatically</string>
     <string name="failure_category_en" translatable="false">FAILURE</string>
     <string name="failure_category_ja" translatable="false">分類失敗</string>
-    <string name="failure_category_canonical">Analysis failure</string>
+    <string name="failure_category_canonical">Analysis failure - will re-analyze automatically</string>
     <string name="category_web_site">Web site</string>
     <string name="category_image">Image</string>
     <string name="category_uncategorizable">Uncategorizable</string>
