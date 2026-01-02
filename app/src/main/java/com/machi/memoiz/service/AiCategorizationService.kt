@@ -128,7 +128,16 @@ class AiCategorizationService(
         return try {
             val uri = Uri.parse(imageUri)
             val source = ImageDecoder.createSource(context.contentResolver, uri)
-            ImageDecoder.decodeBitmap(source)
+            ImageDecoder.decodeBitmap(source) { decoder, info, _ ->
+                decoder.isMutableRequired = false
+                decoder.allocator = ImageDecoder.ALLOCATOR_SOFTWARE
+                val maxDimension = maxOf(info.size.width, info.size.height)
+                val maxAllowed = 2048
+                if (maxDimension > maxAllowed) {
+                    val sampleSize = (maxDimension + maxAllowed - 1) / maxAllowed
+                    decoder.setTargetSampleSize(sampleSize)
+                }
+            }
         } catch (e: Exception) {
             e.printStackTrace()
             null
