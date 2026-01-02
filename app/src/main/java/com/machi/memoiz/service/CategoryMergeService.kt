@@ -5,7 +5,6 @@ import com.google.mlkit.genai.prompt.Generation
 import com.google.mlkit.genai.prompt.GenerationConfig
 import com.google.mlkit.genai.prompt.TextPart
 import com.google.mlkit.genai.prompt.generateContentRequest
-import com.machi.memoiz.util.FailureCategoryHelper
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.util.Locale
@@ -23,8 +22,6 @@ class CategoryMergeService(private val context: Context) {
         Generation.getClient(GenerationConfig.Builder().build())
     }
 
-    private fun isFailureLabel(value: String?): Boolean = FailureCategoryHelper.isFailureLabel(context, value)
-    
     private fun getSystemLanguageName(): String {
         return when (Locale.getDefault().language) {
             "ja" -> "Japanese"
@@ -53,22 +50,14 @@ class CategoryMergeService(private val context: Context) {
     )
 
     suspend fun merge(input: MergeInput): MergeResult = withContext(Dispatchers.IO) {
-        if (isFailureLabel(input.aiCategory)) {
-            val canonical = FailureCategoryHelper.currentLabel(context)
-            return@withContext MergeResult(canonical, mergedIntoCustom = false, description = canonical)
-        }
-        val prompt = buildPrompt(input)
+         val prompt = buildPrompt(input)
         val request = generateContentRequest(TextPart(prompt)) { }
         val text = runCatching {
             promptModel.generateContent(request).candidates.firstOrNull()?.text?.trim()
         }.getOrNull()
 
         val raw = text?.takeIf { it.isNotBlank() }
-        val sanitized = when {
-            raw == null -> input.aiCategory
-            isFailureLabel(raw) -> input.aiCategory
-            else -> raw
-        }
+        val sanitized = raw ?: input.aiCategory
         val finalCategory = sanitized
         val mergedIntoCustom = input.customCategories.contains(finalCategory)
         MergeResult(finalCategory, mergedIntoCustom, text)
@@ -121,8 +110,6 @@ class CategoryMergeService(private val context: Context) {
             appendLine("3. Prioritize user-created categories (marked as FIXED) when semantically related.")
             appendLine("4. Only merge if there's a clear semantic relationship. When in doubt, keep the suggestion separate.")
             appendLine("5. Match exact names, synonyms, or clear parent-child relationships.")
-            appendLine()
-            appendLine("Do not map anything into the special failure label \"" + FailureCategoryHelper.currentLabel(context) + "\" unless the suggestion already equals it, and never merge that label into other names.")
             appendLine()
             appendLine("Decision: Return ONLY the final category name to use (either an existing category or the original suggestion). No explanations, no extra text.")
         }
