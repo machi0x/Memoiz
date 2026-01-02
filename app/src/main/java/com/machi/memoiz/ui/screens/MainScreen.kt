@@ -27,7 +27,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.rounded.Star
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.rememberUpdatedState
@@ -1713,38 +1713,44 @@ private fun ChromeStyleUrlBar(
     Surface(
         modifier = modifier
             .fillMaxWidth()
-            .height(52.dp),
-        shape = RoundedCornerShape(12.dp),
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
-        border = BorderStroke(
-            1.dp,
-            MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-        )
+            .height(52.dp)
+            .padding(vertical = 4.dp),
+        shape = RoundedCornerShape(26.dp),
+        color = Color.White,
+        tonalElevation = 2.dp,
+        border = BorderStroke(1.dp, Color(0xFFE0E0E0))
     ) {
         Row(
             modifier = Modifier.padding(horizontal = 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(
-                imageVector = Icons.Default.Language,
-                contentDescription = stringResource(R.string.memo_type_web_site),
-                modifier = Modifier.size(18.dp),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
-            )
-            Spacer(modifier = Modifier.width(12.dp))
+            Surface(
+                color = MaterialTheme.colorScheme.primaryContainer,
+                shape = RoundedCornerShape(12.dp),
+                modifier = Modifier.padding(end = 8.dp)
+            ) {
+                Text(
+                    text = "URL",
+                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
+                )
+            }
             Text(
                 text = url,
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.85f),
+                color = Color(0xFF202124),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.weight(1f)
             )
             Icon(
-                imageVector = Icons.Default.OpenInNew,
-                contentDescription = stringResource(R.string.action_open),
-                modifier = Modifier.size(18.dp),
-                tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f)
+                imageVector = Icons.Rounded.Star,
+                contentDescription = null,
+                modifier = Modifier
+                    .size(24.dp)
+                    .padding(4.dp),
+                tint = Color(0xFFFFD700)
             )
         }
     }
@@ -1757,19 +1763,26 @@ private fun FramedThumbnail(
     modifier: Modifier = Modifier,
     frameRadius: Dp = 18.dp
 ) {
-    val outerShape = RoundedCornerShape(frameRadius)
+    val frameShape = RoundedCornerShape(frameRadius)
     Box(
         modifier
-            .shadow(12.dp, outerShape)
-            .clip(outerShape)
-            .background(Color(0xFF2B2B2B))
-            .padding(10.dp)
+            .clip(frameShape)
+            .background(
+                brush = Brush.linearGradient(
+                    colors = listOf(
+                        Color(0xFFF5E7D5),
+                        Color(0xFFE3F0FF)
+                    )
+                )
+            )
+            .border(1.dp, Color(0x66FFFFFF), frameShape)
+            .padding(8.dp)
     ) {
         Box(
             Modifier
-                .clip(RoundedCornerShape(frameRadius - 6.dp))
-                .background(Color(0xFFF7F3EA))
-                .padding(10.dp)
+                .clip(frameShape)
+                .background(Color.White.copy(alpha = 0.65f))
+                .padding(6.dp)
         ) {
             AsyncImage(
                 model = Uri.parse(imageUri),
@@ -1777,20 +1790,8 @@ private fun FramedThumbnail(
                 contentScale = ContentScale.Crop,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .aspectRatio(1.2f)
-                    .clip(RoundedCornerShape(12.dp))
-                    .shadow(6.dp, RoundedCornerShape(12.dp))
-            )
-            Box(
-                Modifier
-                    .matchParentSize()
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(
-                        Brush.verticalGradient(
-                            0f to Color.White.copy(alpha = 0.18f),
-                            0.35f to Color.Transparent
-                        )
-                    )
+                    .aspectRatio(1.1f)
+                    .clip(RoundedCornerShape(frameRadius - 6.dp))
             )
         }
     }
