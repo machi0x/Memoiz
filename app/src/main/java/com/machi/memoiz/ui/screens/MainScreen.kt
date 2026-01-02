@@ -14,6 +14,7 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.Indication
 import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.clickable
@@ -26,7 +27,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.filled.SwapVert
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.rememberUpdatedState
@@ -1148,24 +1149,71 @@ private fun MemoCard(
             Column(
                 modifier = Modifier.weight(1f)
             ) {
-                if (memo.content.isNotBlank()) {
-                    Text(
-                        text = memo.content,
-                        style = MaterialTheme.typography.bodyLarge,
-                        maxLines = 5,
-                        overflow = TextOverflow.Ellipsis
-                    )
+                when (memo.memoType) {
+                    MemoType.TEXT, MemoType.WEB_SITE -> {
+                        val displayText = remember(memo.content) {
+                            val maxChars = 240
+                            if (memo.content.length <= maxChars) memo.content else memo.content.take(maxChars) + "\u2026"
+                        }
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(16.dp))
+                                .background(MaterialTheme.colorScheme.surfaceVariant)
+                                .border(
+                                    width = 1.dp,
+                                    color = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f),
+                                    shape = RoundedCornerShape(16.dp)
+                                )
+                                .padding(horizontal = 14.dp, vertical = 12.dp)
+                        ) {
+                            Text(
+                                text = displayText,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurface,
+                                maxLines = 6,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                        if (memo.content.length > displayText.length) {
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = stringResource(R.string.action_share),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                    else -> {
+                        if (memo.content.isNotBlank()) {
+                            val imageDescription = remember(memo.content) { "${AI_ROBOT_PREFIX} ${memo.content}" }
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(16.dp))
+                                    .background(MaterialTheme.colorScheme.surfaceVariant)
+                                    .padding(horizontal = 14.dp, vertical = 12.dp)
+                            ) {
+                                Text(
+                                    text = imageDescription,
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    maxLines = 5,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
+                        }
+                    }
                 }
 
-                if (memo.summary != null && (memo.memoType != MemoType.IMAGE || memo.summary != memo.content)) {
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = memo.summary,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 3,
-                        overflow = TextOverflow.Ellipsis
-                    )
+                if (!memo.summary.isNullOrBlank() && memo.memoType != MemoType.IMAGE) {
+                    val displaySummary = remember(memo.summary) { cleanSummary(memo.summary) }
+                    val prefixedSummary = remember(displaySummary, memo.memoType) {
+                        val needsPrefix = memo.memoType == MemoType.IMAGE || memo.memoType == MemoType.WEB_SITE
+                        if (needsPrefix) "${AI_ROBOT_PREFIX} $displaySummary" else displaySummary
+                    }
+                    Spacer(modifier = Modifier.height(12.dp))
+                    AiSummaryBlock(prefixedSummary)
                 }
             }
         }
@@ -1177,13 +1225,23 @@ private fun MemoCard(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            if (memo.sourceApp != null) {
-                Text(
-                    text = stringResource(R.string.label_source_app, memo.sourceApp),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+            Column(modifier = Modifier.weight(1f)) {
+                memo.sourceApp?.let {
+                    Text(
+                        text = stringResource(R.string.label_source_app, it),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                if (memo.isCategoryLocked) {
+                    Text(
+                        text = stringResource(R.string.manual_category_indicator),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
             }
+            Spacer(modifier = Modifier.width(12.dp))
             Text(
                 text = formatTimestamp(memo.createdAt),
                 style = MaterialTheme.typography.labelSmall,
@@ -1609,46 +1667,34 @@ private fun launchUsageAccessSettings(context: Context) {
     })
 }
 
-@Composable
-private fun MemoTypeIcon(memoType: String) {
-    val (icon, tint, background) = when (memoType) {
-        MemoType.TEXT -> Triple(
-            Icons.Default.Notes,
-            MaterialTheme.colorScheme.primary,
-            MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
-        )
-        MemoType.WEB_SITE -> Triple(
-            Icons.Default.Language,
-            MaterialTheme.colorScheme.tertiary,
-            MaterialTheme.colorScheme.tertiary.copy(alpha = 0.12f)
-        )
-        MemoType.IMAGE -> Triple(
-            Icons.Default.Image,
-            MaterialTheme.colorScheme.secondary,
-            MaterialTheme.colorScheme.secondary.copy(alpha = 0.12f)
-        )
-        else -> Triple(
-            Icons.Default.Notes,
-            MaterialTheme.colorScheme.primary,
-            MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
-        )
-    }
+private fun cleanSummary(raw: String?): String {
+    raw ?: return ""
+    val trimmed = raw.trimStart()
+    val prefixes = listOf("* ", "- ", "• ")
+    val matching = prefixes.firstOrNull { trimmed.startsWith(it) }
+    return matching?.let { trimmed.removePrefix(it) } ?: raw
+}
 
+@Composable
+private fun AiSummaryBlock(text: String) {
     Box(
         modifier = Modifier
-            .size(36.dp)
-            .clip(RoundedCornerShape(12.dp))
-            .background(background),
-        contentAlignment = Alignment.Center
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
+            .background(MaterialTheme.colorScheme.inverseOnSurface.copy(alpha = 0.08f))
+            .padding(horizontal = 14.dp, vertical = 12.dp)
     ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            tint = tint,
-            modifier = Modifier.size(20.dp)
+        Text(
+            text = text,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 4,
+            overflow = TextOverflow.Ellipsis
         )
     }
 }
+
+private const val AI_ROBOT_PREFIX = "🤖"
 
 private data class PrimaryAction(
     val label: String,
@@ -1656,3 +1702,16 @@ private data class PrimaryAction(
     val enabled: Boolean,
     val onInvoke: () -> Unit
 )
+
+@Composable
+private fun MemoTypeIcon(memoType: String?) {
+    val (icon, tint) = when (memoType) {
+        MemoType.TEXT -> Icons.Default.Notes to MaterialTheme.colorScheme.primary
+        MemoType.WEB_SITE -> Icons.Default.Language to MaterialTheme.colorScheme.secondary
+        MemoType.IMAGE -> Icons.Default.Image to MaterialTheme.colorScheme.tertiary
+        else -> Icons.Default.InsertDriveFile to MaterialTheme.colorScheme.onSurfaceVariant
+    }
+    Box(Modifier.size(36.dp), contentAlignment = Alignment.Center) {
+        Icon(icon, contentDescription = null, tint = tint)
+    }
+}
