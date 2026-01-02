@@ -1783,6 +1783,46 @@ private fun FramedThumbnail(
     }
 }
 
+@Preview(name = "Text Frame", showBackground = true)
+@Composable
+private fun PreviewCampusNoteFrame() {
+    MemoizTheme {
+        Surface(modifier = Modifier.fillMaxWidth()) {
+            CampusNoteTextAligned(
+                text = "買い忘れ防止メモ\n・牛乳\n・卵\n・朝食用のパン",
+                modifier = Modifier.padding(16.dp)
+            )
+        }
+    }
+}
+
+@Preview(name = "Web URL Frame", showBackground = true)
+@Composable
+private fun PreviewChromeStyleUrlBar() {
+    MemoizTheme {
+        Surface(modifier = Modifier.fillMaxWidth()) {
+            ChromeStyleUrlBar(
+                url = "https://news.example.com/articles/awesome-updates",
+                modifier = Modifier.padding(16.dp)
+            )
+        }
+    }
+}
+
+@Preview(name = "Image Frame", showBackground = true)
+@Composable
+private fun PreviewFramedThumbnail() {
+    MemoizTheme {
+        Surface(modifier = Modifier.padding(16.dp)) {
+            FramedThumbnail(
+                imageUri = "https://picsum.photos/seed/memoizPreview/600",
+                contentDescription = null,
+                modifier = Modifier.width(220.dp)
+            )
+        }
+    }
+}
+
 @Composable
 private fun CampusNoteTextAligned(
     text: String,
