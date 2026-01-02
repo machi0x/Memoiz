@@ -1767,33 +1767,19 @@ private fun FramedThumbnail(
     Box(
         modifier
             .clip(frameShape)
-            .background(
-                brush = Brush.linearGradient(
-                    colors = listOf(
-                        Color(0xFFF5E7D5),
-                        Color(0xFFE3F0FF)
-                    )
-                )
-            )
-            .border(1.dp, Color(0x66FFFFFF), frameShape)
-            .padding(8.dp)
+            .border(1.dp, Color(0xFF7EC8E3), frameShape)
+            .background(Color.White.copy(alpha = 0.4f))
+            .padding(4.dp)
     ) {
-        Box(
-            Modifier
-                .clip(frameShape)
-                .background(Color.White.copy(alpha = 0.65f))
-                .padding(6.dp)
-        ) {
-            AsyncImage(
-                model = Uri.parse(imageUri),
-                contentDescription = contentDescription,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .aspectRatio(1.1f)
-                    .clip(RoundedCornerShape(frameRadius - 6.dp))
-            )
-        }
+        AsyncImage(
+            model = Uri.parse(imageUri),
+            contentDescription = contentDescription,
+            contentScale = ContentScale.Crop,
+            modifier = Modifier
+                .fillMaxWidth()
+                .aspectRatio(1.05f)
+                .clip(RoundedCornerShape(frameRadius - 4.dp))
+        )
     }
 }
 
