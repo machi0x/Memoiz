@@ -45,6 +45,7 @@ Tap the clipboard button or share content to start.</string>
     <!-- General actions -->
     <string name="action_delete">Delete</string>
     <string name="memo_menu_delete">Delete memo</string>
+    <string name="manual_category_indicator">(Manually categorized)</string>
 
     <!-- Category actions -->
     <string name="action_delete_category">Delete category</string>
