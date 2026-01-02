@@ -1115,17 +1115,6 @@ private fun MemoCard(
                         }
                     )
                     DropdownMenuItem(
-                        text = { Text(shareString) },
-                        leadingIcon = { Icon(Icons.Default.Share, contentDescription = null) },
-                        enabled = !readOnly,
-                        onClick = {
-                            menuExpanded = false
-                            if (!readOnly) {
-                                shareText()
-                            }
-                        }
-                    )
-                    DropdownMenuItem(
                         text = { Text(stringResource(R.string.memo_menu_delete)) },
                         leadingIcon = { Icon(Icons.Default.Delete, contentDescription = null) },
                         enabled = !readOnly,
