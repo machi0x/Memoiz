@@ -43,6 +43,7 @@
     <string name="action_reanalyze">再解析</string>
     <string name="action_reanalyze_failures">失敗を再解析</string>
     <string name="action_delete">削除</string>
+    <string name="action_copy">クリップボードにコピー</string>
     <string name="memo_menu_delete">メモの削除</string>
     <string name="dialog_add_category_title">マイカテゴリを追加</string>
     <string name="dialog_add_category_message">分類に使用したいカテゴリ名を入力してください。AIがメモをカテゴリ分けする時に参考にします。</string>
@@ -108,7 +109,7 @@
     <string name="tutorial_step_my_category_title">自分のラベルを教える</string>
     <string name="tutorial_step_my_category_body">メイン画面のサイドパネル等からあなた独自のカテゴリを追加することもできます。AIによるカテゴリ分けの際に考慮されるようになります。</string>
     <string name="tutorial_step_usage_permission_title">アプリの利用状況へのアクセス権限が必要な理由</string>
-    <string name="tutorial_step_usage_permission_body">権限を許可すると、データを共有した元アプリ名をメモに記録することができ、またAI分析の精度が上がります。この機能はサイドパネル > 設定から有効化できます。</string>
+    <string name="tutorial_step_usage_permission_body">権限を許可すると、データを共有した元アプリ名をメモに記録することができ、またAI分析の精度が上がります。この機能はサイドパネル &gt; 設定から有効化できます。</string>
     <string name="settings_tutorial_title">チュートリアルを見る</string>
     <string name="settings_tutorial_description">機能と権限の説明をもう一度表示します。</string>
     <string name="settings_remerge_all_title">全てのメモを再解析する</string>
@@ -122,4 +123,6 @@
     <string name="dialog_create_memo_error_empty">テキストを入力してください</string>
     <string name="fab_close_menu">メニューを閉じる</string>
     <string name="processtext_label">メモイズに保存</string>
+    <string name="toast_copy_to_clipboard">クリップボードにコピーしました。</string>
+    <string name="cd_copy_memo">メモをコピー</string>
 </resources>
