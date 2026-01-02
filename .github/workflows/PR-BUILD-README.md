@@ -69,11 +69,10 @@ See the main [Firebase App Distribution README](./README.md) for detailed setup 
 
 The workflow requires the following GitHub token permissions:
 - `contents: read` - To checkout code
-- `issues: write` - To comment on PRs
+- `issues: write` - To comment on PRs and create reactions
 - `pull-requests: write` - To access PR information
-- `actions: read` - To generate artifact links
 
-These are automatically provided by GitHub Actions default token.
+These permissions are explicitly defined in the workflow file to ensure proper access.
 
 ## Example Workflow
 
