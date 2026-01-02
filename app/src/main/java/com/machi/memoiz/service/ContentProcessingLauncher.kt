@@ -4,16 +4,18 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.net.Uri
+import androidx.work.Constraints
 import androidx.work.Data
-import androidx.work.OneTimeWorkRequestBuilder
-import androidx.work.WorkManager
 import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.NetworkType
+import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.PeriodicWorkRequestBuilder
+import androidx.work.WorkManager
 import com.machi.memoiz.ui.ProcessingDialogActivity
 import com.machi.memoiz.worker.ClipboardProcessingWorker
-import com.machi.memoiz.worker.ReanalyzeSingleMemoWorker
-import com.machi.memoiz.worker.ReanalyzeFailedMemosWorker
 import com.machi.memoiz.worker.ReanalyzeCategoryMergeWorker
+import com.machi.memoiz.worker.ReanalyzeFailedMemosWorker
+import com.machi.memoiz.worker.ReanalyzeSingleMemoWorker
 import com.machi.memoiz.worker.WORK_TAG_MEMO_PROCESSING
 import java.util.concurrent.TimeUnit
 
@@ -86,8 +88,14 @@ object ContentProcessingLauncher {
         WorkManager.getInstance(context.applicationContext).enqueue(request)
     }
 
+    private fun failureReanalyzeConstraints(): Constraints =
+        Constraints.Builder()
+            .setRequiredNetworkType(NetworkType.CONNECTED)
+            .build()
+
     fun enqueueFailureBatchReanalyze(context: Context) {
         val request = OneTimeWorkRequestBuilder<ReanalyzeFailedMemosWorker>()
+            .setConstraints(failureReanalyzeConstraints())
             .addTag(WORK_TAG_MEMO_PROCESSING)
             .build()
         WorkManager.getInstance(context.applicationContext).enqueue(request)
@@ -106,6 +114,7 @@ object ContentProcessingLauncher {
 
     fun scheduleDailyFailureReanalyze(context: Context) {
         val request = PeriodicWorkRequestBuilder<ReanalyzeFailedMemosWorker>(1, TimeUnit.DAYS)
+            .setConstraints(failureReanalyzeConstraints())
             .addTag(WORK_TAG_MEMO_PROCESSING)
             .build()
         WorkManager.getInstance(context.applicationContext)
