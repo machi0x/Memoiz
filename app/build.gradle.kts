@@ -42,7 +42,7 @@ android {
         targetSdk = 36
         // versionCodeとversionNameを動的に設定
         versionCode = getGitCommitCount()
-        versionName = "0.0.${getGitCommitCount()}"
+        versionName = "0.0 (${getGitCommitCount()})"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
