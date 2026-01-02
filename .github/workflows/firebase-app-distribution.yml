@@ -144,24 +144,24 @@ jobs:
           echo "Release APKs:"
           ls -la app/build/outputs/apk/release/
       
-      # Get the debug APK name
-      - name: Get Debug APK Path
-        id: debug_apk
+      # Get the release APK name
+      - name: Get Release APK Path
+        id: release_apk
         run: |
-          APK_PATH=$(find app/build/outputs/apk/debug -name "*.apk" | head -n 1)
+          APK_PATH=$(find app/build/outputs/apk/release -name "*.apk" | head -n 1)
           echo "APK_PATH=$APK_PATH" >> $GITHUB_OUTPUT
           echo "Found APK: $APK_PATH"
           if [ ! -f "$APK_PATH" ]; then
-            echo "Error: APK file not found!"
+            echo "Error: Release APK file not found!"
             exit 1
           fi
       
-      # Deploy to Firebase App Distribution
+      # Deploy release build to Firebase App Distribution
       - name: Deploy to Firebase App Distribution
         uses: wzieba/Firebase-Distribution-Github-Action@v1.7.0
         with:
           appId: ${{ secrets.FIREBASE_APP_ID }}
           serviceCredentialsFileContent: ${{ secrets.FIREBASE_SERVICE_CREDENTIALS }}
           groups: memoiz-testers
-          file: ${{ steps.debug_apk.outputs.APK_PATH }}
+          file: ${{ steps.release_apk.outputs.APK_PATH }}
           releaseNotes: "Automated build from github workflow"
