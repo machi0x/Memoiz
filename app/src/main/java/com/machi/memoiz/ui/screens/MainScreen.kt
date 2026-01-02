@@ -3,6 +3,7 @@ package com.machi.memoiz.ui.screens
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.provider.Settings
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
@@ -44,6 +45,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.annotation.DrawableRes
+import androidx.annotation.StringRes
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -52,6 +54,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.AnnotatedString
@@ -61,9 +64,12 @@ import com.machi.memoiz.domain.model.Memo
 import com.machi.memoiz.service.ContentProcessingLauncher
 import com.machi.memoiz.ui.theme.MemoizTheme
 import com.machi.memoiz.util.FailureCategoryHelper
+import com.machi.memoiz.util.UsageStatsHelper
 import coil.compose.AsyncImage
 import java.text.DateFormat
 import java.util.*
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.burnoutcrew.reorderable.ReorderableItem
 import org.burnoutcrew.reorderable.detectReorder
@@ -1402,60 +1408,67 @@ private fun ManualCategoryDialog(
 
 private data class TutorialStep(
     @DrawableRes val imageRes: Int,
-    val title: String,
-    val description: String
+    @StringRes val titleRes: Int,
+    @StringRes val descriptionRes: Int
 )
 
 @Composable
 private fun TutorialDialog(
     onFinished: () -> Unit
 ) {
+    val context = LocalContext.current
     val steps = listOf(
         TutorialStep(
             imageRes = R.drawable.top_banner,
-            title = stringResource(R.string.tutorial_step_overview_title),
-            description = stringResource(R.string.tutorial_step_overview_body)
+            titleRes = R.string.tutorial_step_overview_title,
+            descriptionRes = R.string.tutorial_step_overview_body
         ),
         TutorialStep(
             imageRes = R.drawable.share_from_browser,
-            title = stringResource(R.string.tutorial_step_share_browser_title),
-            description = stringResource(R.string.tutorial_step_share_browser_body)
+            titleRes = R.string.tutorial_step_share_browser_title,
+            descriptionRes = R.string.tutorial_step_share_browser_body
         ),
         TutorialStep(
             imageRes = R.drawable.share_from_select,
-            title = stringResource(R.string.tutorial_step_share_select_title),
-            description = stringResource(R.string.tutorial_step_share_select_body)
+            titleRes = R.string.tutorial_step_share_select_title,
+            descriptionRes = R.string.tutorial_step_share_select_body
         ),
         TutorialStep(
             imageRes = R.drawable.floating_buttons,
-            title = stringResource(R.string.tutorial_step_fab_title),
-            description = stringResource(R.string.tutorial_step_fab_body)
+            titleRes = R.string.tutorial_step_fab_title,
+            descriptionRes = R.string.tutorial_step_fab_body
         ),
         TutorialStep(
             imageRes = R.drawable.my_category,
-            title = stringResource(R.string.tutorial_step_my_category_title),
-            description = stringResource(R.string.tutorial_step_my_category_body)
+            titleRes = R.string.tutorial_step_my_category_title,
+            descriptionRes = R.string.tutorial_step_my_category_body
         ),
         TutorialStep(
             imageRes = R.drawable.app_usages,
-            title = stringResource(R.string.tutorial_step_usage_permission_title),
-            description = stringResource(R.string.tutorial_step_usage_permission_body)
+            titleRes = R.string.tutorial_step_usage_permission_title,
+            descriptionRes = R.string.tutorial_step_usage_permission_body
         ),
         TutorialStep(
             imageRes = R.drawable.tutorial_main_ui,
-            title = stringResource(R.string.tutorial_step_main_ui_title),
-            description = stringResource(R.string.tutorial_step_main_ui_body)
+            titleRes = R.string.tutorial_step_main_ui_title,
+            descriptionRes = R.string.tutorial_step_main_ui_body
         ),
         TutorialStep(
             imageRes = R.drawable.tutorial_side_panel,
-            title = stringResource(R.string.tutorial_step_side_panel_title),
-            description = stringResource(R.string.tutorial_step_side_panel_body)
+            titleRes = R.string.tutorial_step_side_panel_title,
+            descriptionRes = R.string.tutorial_step_side_panel_body
         )
     )
 
     var currentStep by rememberSaveable { mutableStateOf(0) }
     val isLastStep = currentStep == steps.lastIndex
     val step = steps[currentStep]
+    val stepTitle = stringResource(step.titleRes)
+    val stepDescription = stringResource(step.descriptionRes)
+    val tutorialCoroutineScope = rememberCoroutineScope()
+    var usagePermissionJob by remember { mutableStateOf<Job?>(null) }
+    val usagePermissionStepIndex = steps.indexOfFirst { it.imageRes == R.drawable.app_usages }
+    val isUsagePermissionStep = currentStep == usagePermissionStepIndex && usagePermissionStepIndex >= 0
 
     AlertDialog(
         modifier = Modifier
@@ -1485,13 +1498,13 @@ private fun TutorialDialog(
                     )
                 }
                 Text(
-                    text = step.title,
+                    text = stepTitle,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     textAlign = TextAlign.Center
                 )
                 Text(
-                    text = step.description,
+                    text = stepDescription,
                     style = MaterialTheme.typography.bodyMedium,
                     textAlign = TextAlign.Center
                 )
@@ -1514,6 +1527,26 @@ private fun TutorialDialog(
                                 .clip(CircleShape)
                                 .background(color)
                         )
+                    }
+                }
+                if (isUsagePermissionStep) {
+                    TextButton(
+                        onClick = {
+                            usagePermissionJob?.cancel()
+                            launchUsageAccessSettings(context)
+                            usagePermissionJob = tutorialCoroutineScope.launch {
+                                val helper = UsageStatsHelper(context)
+                                val deadline = System.currentTimeMillis() + 60_000
+                                while (System.currentTimeMillis() < deadline && !helper.hasUsageStatsPermission()) {
+                                    delay(2_000)
+                                }
+                                if (helper.hasUsageStatsPermission()) {
+                                    currentStep = (currentStep + 1).coerceAtMost(steps.lastIndex)
+                                }
+                            }
+                        }
+                    ) {
+                        Text(stringResource(R.string.tutorial_usage_permission_button))
                     }
                 }
             }
@@ -1555,79 +1588,10 @@ private fun TutorialDialog(
     )
 }
 
-private fun formatTimestamp(timestamp: Long): String {
-    val locale = Locale.getDefault()
-    val formatter = DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT, locale)
-    return formatter.format(Date(timestamp))
-}
-
-@Preview(showBackground = true)
-@Composable
-fun MainScreenPreview() {
-    val sampleMemos = listOf(
-        Memo(id = 1, content = "Buy groceries", memoType = MemoType.TEXT, category = "Personal", subCategory = "To-Do", createdAt = System.currentTimeMillis()),
-        Memo(id = 2, content = "Prepare slides for meeting", memoType = MemoType.TEXT, category = "Work", subCategory = "Presentation", summary = "Finish the slides for the Q3 financial review.", createdAt = System.currentTimeMillis()),
-        Memo(id = 3, content = "App idea: smart notebook", memoType = MemoType.TEXT, category = "Ideas", subCategory = "Mobile App", createdAt = System.currentTimeMillis())
-    )
-    val sampleMemoGroups = sampleMemos.groupBy { it.category }.map { (category, memos) -> MemoGroup(category, memos) }
-
-    MemoizTheme {
-        LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            items(sampleMemoGroups) { group ->
-                Column {
-                    Text(
-                        text = group.category,
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    group.memos.forEach { memo ->
-                        MemoCard(
-                            memo = memo,
-                            onDelete = { },
-                            onEditCategory = { },
-                            onReanalyze = { }
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun MemoTypeIcon(memoType: String) {
-    val (icon, tint, background) = when (memoType) {
-        MemoType.TEXT -> Triple(Icons.Default.Notes, MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.primary.copy(alpha = 0.12f))
-        MemoType.WEB_SITE -> Triple(Icons.Default.Language, MaterialTheme.colorScheme.tertiary, MaterialTheme.colorScheme.tertiary.copy(alpha = 0.12f))
-        MemoType.IMAGE -> Triple(Icons.Default.Image, MaterialTheme.colorScheme.secondary, MaterialTheme.colorScheme.secondary.copy(alpha = 0.12f))
-        else -> Triple(Icons.Default.Notes, MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.primary.copy(alpha = 0.12f))
-    }
-
-    Box(
-        modifier = Modifier.size(36.dp)
-            .clip(RoundedCornerShape(12.dp))
-            .background(background),
-        contentAlignment = Alignment.Center
-    ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            tint = tint,
-            modifier = Modifier.size(20.dp)
-        )
-    }
-}
-
 @Composable
 private fun AnalyzingIndicator() {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        val infiniteTransition = rememberInfiniteTransition(label = "rainbow")
+        val infiniteTransition = rememberInfiniteTransition(label = "analyzing")
         val sweep by infiniteTransition.animateFloat(
             initialValue = 0f,
             targetValue = 360f,
@@ -1635,13 +1599,7 @@ private fun AnalyzingIndicator() {
                 animation = tween(durationMillis = 1200, easing = LinearEasing),
                 repeatMode = RepeatMode.Restart
             ),
-            label = "sweep"
-        )
-        val colors = listOf(
-            MaterialTheme.colorScheme.primary,
-            MaterialTheme.colorScheme.tertiary,
-            MaterialTheme.colorScheme.secondary,
-            MaterialTheme.colorScheme.primary
+            label = "analyzing_rotation"
         )
         Box(
             modifier = Modifier
@@ -1653,7 +1611,9 @@ private fun AnalyzingIndicator() {
             CircularProgressIndicator(
                 strokeWidth = 3.dp,
                 strokeCap = StrokeCap.Round,
-                modifier = Modifier.size(40.dp),
+                modifier = Modifier
+                    .size(40.dp)
+                    .graphicsLayer { rotationZ = sweep },
                 trackColor = MaterialTheme.colorScheme.surfaceVariant,
                 color = MaterialTheme.colorScheme.primary
             )
@@ -1668,6 +1628,59 @@ private fun AnalyzingIndicator() {
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.primary,
             modifier = Modifier.padding(top = 4.dp)
+        )
+    }
+}
+
+private fun formatTimestamp(timestamp: Long): String {
+    val locale = Locale.getDefault()
+    val formatter = DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT, locale)
+    return formatter.format(Date(timestamp))
+}
+
+private fun launchUsageAccessSettings(context: Context) {
+    context.startActivity(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS).apply {
+        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+    })
+}
+
+@Composable
+private fun MemoTypeIcon(memoType: String) {
+    val (icon, tint, background) = when (memoType) {
+        MemoType.TEXT -> Triple(
+            Icons.Default.Notes,
+            MaterialTheme.colorScheme.primary,
+            MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
+        )
+        MemoType.WEB_SITE -> Triple(
+            Icons.Default.Language,
+            MaterialTheme.colorScheme.tertiary,
+            MaterialTheme.colorScheme.tertiary.copy(alpha = 0.12f)
+        )
+        MemoType.IMAGE -> Triple(
+            Icons.Default.Image,
+            MaterialTheme.colorScheme.secondary,
+            MaterialTheme.colorScheme.secondary.copy(alpha = 0.12f)
+        )
+        else -> Triple(
+            Icons.Default.Notes,
+            MaterialTheme.colorScheme.primary,
+            MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
+        )
+    }
+
+    Box(
+        modifier = Modifier
+            .size(36.dp)
+            .clip(RoundedCornerShape(12.dp))
+            .background(background),
+        contentAlignment = Alignment.Center
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = tint,
+            modifier = Modifier.size(20.dp)
         )
     }
 }
