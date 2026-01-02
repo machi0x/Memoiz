@@ -108,8 +108,8 @@
     <string name="tutorial_step_side_panel_body">メニューアイコンでサイドパネルを開き、タイプやカテゴリで絞り込み、＋でマイカテゴリ管理や設定画面へ移動できます。</string>
     <string name="tutorial_step_my_category_title">自分でカテゴリを作成</string>
     <string name="tutorial_step_my_category_body">メイン画面のサイドパネル等からあなた独自のカテゴリを追加することもできます。AIによるカテゴリ分けの際に考慮されるようになります。</string>
-    <string name="tutorial_step_usage_permission_title">アプリの利用状況へのアクセス権限が必要な理由</string>
-    <string name="tutorial_step_usage_permission_body">権限を許可すると、共有したアプリ名をメモに記録でき、AI解析の精度も向上します。「権限を許可 ↗」をタップして今すぐ使用履歴アクセス設定を開き、戻ってチュートリアルを続けてください。</string>
+    <string name="tutorial_step_usage_permission_title">アプリの利用状況へのアクセス権限について</string>
+    <string name="tutorial_step_usage_permission_body">権限を許可すると、共有したアプリ名をメモに記録でき、AI解析の精度も向上します。「権限を許可 ↗」をタップしてメモイズに権限を許可するか、あとメモイズの設定から許可してください。</string>
     <string name="tutorial_usage_permission_button">権限を許可 ↗</string>
 
     <string name="settings_tutorial_title">チュートリアルを見る</string>
