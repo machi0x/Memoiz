@@ -100,7 +100,7 @@ class MlKitCategorizer(private val context: Context) {
                 val localizedSub = localizeText(pair.sub)
                 val summary = summarize(webContent)
                 if (localizedMain.isNullOrBlank()) {
-                    return Triple(failureCategoryLabel(), null, summary)
+                    return Triple(uncategorizableLabel(), localizedSub, summary)
                 }
                 return Triple(localizedMain, localizedSub, summary)
             }
@@ -114,7 +114,7 @@ class MlKitCategorizer(private val context: Context) {
             val localizedMain = localizeText(pair.main)
             val localizedSub = localizeText(pair.sub)
             if (localizedMain.isNullOrBlank()) {
-                Triple(failureCategoryLabel(), null, summary)
+                Triple(uncategorizableLabel(), localizedSub, summary)
             } else {
                 Triple(localizedMain, localizedSub, summary)
             }
@@ -136,7 +136,7 @@ class MlKitCategorizer(private val context: Context) {
                 val localizedMain = localizeText(pair.main)
                 val localizedSub = localizeText(pair.sub)
                 if (localizedMain.isNullOrBlank()) {
-                    Triple(failureCategoryLabel(), null, localizedDescription)
+                    Triple(uncategorizableLabel(), localizedSub, localizedDescription)
                 } else {
                     Triple(localizedMain, localizedSub, localizedDescription)
                 }
@@ -207,13 +207,33 @@ class MlKitCategorizer(private val context: Context) {
 
     private fun parseCategoryPair(response: String?): CategoryPair? {
         if (response.isNullOrBlank()) return null
-        return try {
-            val parts = response.split("/")
-            CategoryPair(parts.getOrNull(0)?.trim(), parts.getOrNull(1)?.trim())
-        } catch (e: Exception) {
-            e.printStackTrace()
-            null
+        val sanitized = response.trim()
+        if (sanitized.contains("/")) {
+            val parts = sanitized.split("/")
+            return CategoryPair(parts.getOrNull(0)?.trim(), parts.getOrNull(1)?.trim())
         }
+
+        var main: String? = null
+        var sub: String? = null
+        val lines = sanitized.lines().map { it.trim() }.filter { it.isNotBlank() }
+        for (line in lines) {
+            val colonIndex = line.indexOf(":")
+            if (colonIndex >= 0) {
+                val key = line.substring(0, colonIndex).trim().lowercase(Locale.getDefault())
+                val value = line.substring(colonIndex + 1).trim().ifEmpty { null }
+                when {
+                    key.contains("sub") || key.contains("detail") || key.contains("副") -> sub = value
+                    key.contains("category") || key.contains("main") || key.contains("親") -> main = value
+                }
+            }
+        }
+
+        if (main == null && lines.isNotEmpty()) {
+            main = lines[0]
+            sub = lines.getOrNull(1)
+        }
+
+        return if (main != null || sub != null) CategoryPair(main, sub) else null
     }
 
     private suspend fun generateCategoryPair(content: String, sourceApp: String?): CategoryPair {

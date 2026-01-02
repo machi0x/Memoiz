@@ -1,5 +1,8 @@
 package com.machi.memoiz.service
 
+import com.machi.memoiz.data.MemoizDatabase
+import com.machi.memoiz.data.repository.MemoRepository
+import com.machi.memoiz.data.datastore.PreferencesDataStoreManager
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.ImageDecoder
@@ -7,6 +10,7 @@ import android.net.Uri
 import com.machi.memoiz.data.entity.MemoEntity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.flow.first
 
 /**
  * AI Categorization Service.
@@ -18,6 +22,20 @@ class AiCategorizationService(
     private val existingCategories: List<String> = emptyList(),
     private val customCategories: Set<String> = emptySet()
 ) {
+    companion object {
+        suspend fun createWithRepository(context: Context): AiCategorizationService {
+            val database = MemoizDatabase.getDatabase(context)
+            val memoRepository = MemoRepository(database.memoDao())
+            val preferences = PreferencesDataStoreManager(context).userPreferencesFlow.first()
+            val existing = memoRepository.getDistinctCategories()
+            return AiCategorizationService(
+                context,
+                CategoryMergeService(context),
+                existing,
+                preferences.customCategories
+            )
+        }
+    }
 
     private val mlKitCategorizer = MlKitCategorizer(context)
 
