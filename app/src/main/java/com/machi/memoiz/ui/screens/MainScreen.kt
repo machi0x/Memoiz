@@ -1768,7 +1768,7 @@ private fun MaskingTapeImage(
             // Slightly rotate the entire image to blend with the note style (optional)
             .graphicsLayer(rotationZ = 1f)
     ) {
-        // 1. Original image (no changes applied)
+        // 1. Original image with shadow (no border, no frame, no background)
         AsyncImage(
             model = Uri.parse(imageUri),
             contentDescription = contentDescription,
