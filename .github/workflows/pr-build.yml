@@ -1,0 +1,331 @@
+name: PR Build Release APK
+
+on:
+  # Trigger on PR events
+  pull_request:
+    types: [opened, synchronize, reopened]
+  
+  # Trigger on PR comments containing specific keywords
+  issue_comment:
+    types: [created]
+
+jobs:
+  build-pr:
+    # Build automatically on PR events
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    
+    steps:
+      # Checkout PR code
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      # Set up JDK 17
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: gradle
+      
+      # Grant execute permission for gradlew
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+      
+      # Create google-services.json from secrets
+      - name: Create google-services.json
+        env:
+          GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
+        run: |
+          echo "$GOOGLE_SERVICES_JSON" > app/google-services.json
+      
+      # Decode keystore for release signing
+      - name: Decode Keystore
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+        run: |
+          printf '%s' "$KEYSTORE_BASE64" | base64 --decode > app/release.keystore
+      
+      # Build signed release APK
+      - name: Build Signed Release APK
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          KEYSTORE_PATH="$GITHUB_WORKSPACE/app/release.keystore"
+          ./gradlew assembleRelease \
+            -Pandroid.injected.signing.store.file=$KEYSTORE_PATH \
+            -Pandroid.injected.signing.store.password=$KEYSTORE_PASSWORD \
+            -Pandroid.injected.signing.key.alias=$KEY_ALIAS \
+            -Pandroid.injected.signing.key.password=$KEY_PASSWORD \
+            --stacktrace --no-daemon
+      
+      # Get version information
+      - name: Get version information
+        id: version_info
+        run: |
+          VERSION_NAME=$(./gradlew -q printVersionName | tail -n 1)
+          VERSION_CODE=$(./gradlew -q printVersionCode | tail -n 1)
+          echo "VERSION_NAME=${VERSION_NAME}" >> $GITHUB_OUTPUT
+          echo "VERSION_CODE=${VERSION_CODE}" >> $GITHUB_OUTPUT
+          echo "Version: ${VERSION_NAME} (${VERSION_CODE})"
+      
+      # Upload Release APK as artifact
+      - name: Upload Release APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: PR-${{ github.event.pull_request.number }}-release-apk
+          path: app/build/outputs/apk/release/*.apk
+          retention-days: 30
+      
+      # Comment on PR with build results
+      - name: Comment on PR
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prNumber = context.payload.pull_request.number;
+            const versionName = '${{ steps.version_info.outputs.VERSION_NAME }}';
+            const versionCode = '${{ steps.version_info.outputs.VERSION_CODE }}';
+            const runId = context.runId;
+            const sha = context.sha;
+            
+            const comment = `### ✅ Release APK Build Successful!
+            
+            **Version:** ${versionName} (${versionCode})
+            **Commit:** ${sha.substring(0, 7)}
+            
+            📦 **Download APK:**
+            You can download the release APK from the [workflow artifacts](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${runId}).
+            
+            > Built by [PR Build workflow](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${runId})`;
+            
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+              body: comment
+            });
+      
+      # Handle build failure
+      - name: Comment on PR (failure)
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prNumber = context.payload.pull_request.number;
+            const runId = context.runId;
+            
+            const comment = `### ❌ Release APK Build Failed
+            
+            The build encountered an error. Please check the [workflow logs](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${runId}) for details.`;
+            
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+              body: comment
+            });
+  
+  build-comment:
+    # Build on PR comment trigger
+    if: github.event_name == 'issue_comment' && github.event.issue.pull_request
+    runs-on: ubuntu-latest
+    
+    steps:
+      # Check if comment contains build trigger
+      - name: Check comment for build trigger
+        id: check_trigger
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const comment = context.payload.comment.body.toLowerCase();
+            const shouldBuild = (
+              comment.includes('/build') || 
+              comment.includes('build apk') || 
+              comment.includes('build release')
+            );
+            
+            core.setOutput('should_build', shouldBuild);
+            
+            if (shouldBuild) {
+              // React with eyes emoji
+              await github.rest.reactions.createForIssueComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: context.payload.comment.id,
+                content: 'eyes'
+              });
+            } else {
+              core.notice('Comment does not contain build trigger keywords');
+            }
+            
+            return shouldBuild;
+      
+      # Get PR details
+      - name: Get PR details
+        if: steps.check_trigger.outputs.should_build == 'true'
+        id: pr_details
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pr = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.payload.issue.number
+            });
+            
+            core.setOutput('pr_number', context.payload.issue.number);
+            core.setOutput('pr_sha', pr.data.head.sha);
+            core.setOutput('pr_ref', pr.data.head.ref);
+      
+      # Checkout PR code
+      - name: Checkout code
+        if: steps.check_trigger.outputs.should_build == 'true'
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.pr_details.outputs.pr_sha }}
+          fetch-depth: 0
+      
+      # Set up JDK 17
+      - name: Set up JDK 17
+        if: steps.check_trigger.outputs.should_build == 'true'
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: gradle
+      
+      # Grant execute permission for gradlew
+      - name: Grant execute permission for gradlew
+        if: steps.check_trigger.outputs.should_build == 'true'
+        run: chmod +x gradlew
+      
+      # Create google-services.json from secrets
+      - name: Create google-services.json
+        if: steps.check_trigger.outputs.should_build == 'true'
+        env:
+          GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
+        run: |
+          echo "$GOOGLE_SERVICES_JSON" > app/google-services.json
+      
+      # Decode keystore for release signing
+      - name: Decode Keystore
+        if: steps.check_trigger.outputs.should_build == 'true'
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+        run: |
+          printf '%s' "$KEYSTORE_BASE64" | base64 --decode > app/release.keystore
+      
+      # Build signed release APK
+      - name: Build Signed Release APK
+        if: steps.check_trigger.outputs.should_build == 'true'
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          KEYSTORE_PATH="$GITHUB_WORKSPACE/app/release.keystore"
+          ./gradlew assembleRelease \
+            -Pandroid.injected.signing.store.file=$KEYSTORE_PATH \
+            -Pandroid.injected.signing.store.password=$KEYSTORE_PASSWORD \
+            -Pandroid.injected.signing.key.alias=$KEY_ALIAS \
+            -Pandroid.injected.signing.key.password=$KEY_PASSWORD \
+            --stacktrace --no-daemon
+      
+      # Get version information
+      - name: Get version information
+        if: steps.check_trigger.outputs.should_build == 'true'
+        id: version_info
+        run: |
+          VERSION_NAME=$(./gradlew -q printVersionName | tail -n 1)
+          VERSION_CODE=$(./gradlew -q printVersionCode | tail -n 1)
+          echo "VERSION_NAME=${VERSION_NAME}" >> $GITHUB_OUTPUT
+          echo "VERSION_CODE=${VERSION_CODE}" >> $GITHUB_OUTPUT
+          echo "Version: ${VERSION_NAME} (${VERSION_CODE})"
+      
+      # Upload Release APK as artifact
+      - name: Upload Release APK
+        if: steps.check_trigger.outputs.should_build == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: PR-${{ steps.pr_details.outputs.pr_number }}-release-apk-comment
+          path: app/build/outputs/apk/release/*.apk
+          retention-days: 30
+      
+      # Comment on PR with build results
+      - name: Comment on PR
+        if: steps.check_trigger.outputs.should_build == 'true' && success()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prNumber = parseInt('${{ steps.pr_details.outputs.pr_number }}', 10);
+            const versionName = '${{ steps.version_info.outputs.VERSION_NAME }}';
+            const versionCode = '${{ steps.version_info.outputs.VERSION_CODE }}';
+            const runId = context.runId;
+            const sha = '${{ steps.pr_details.outputs.pr_sha }}';
+            
+            const comment = `### ✅ Release APK Build Successful!
+            
+            **Version:** ${versionName} (${versionCode})
+            **Commit:** ${sha.substring(0, 7)}
+            
+            📦 **Download APK:**
+            You can download the release APK from the [workflow artifacts](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${runId}).
+            
+            > Built by [PR Build workflow](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${runId}) in response to comment`;
+            
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+              body: comment
+            });
+      
+      # React with success
+      - name: React with success
+        if: steps.check_trigger.outputs.should_build == 'true' && success()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.reactions.createForIssueComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              comment_id: context.payload.comment.id,
+              content: 'rocket'
+            });
+      
+      # Handle build failure
+      - name: Comment on PR (failure)
+        if: steps.check_trigger.outputs.should_build == 'true' && failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prNumber = parseInt('${{ steps.pr_details.outputs.pr_number }}', 10);
+            const runId = context.runId;
+            
+            const comment = `### ❌ Release APK Build Failed
+            
+            The build encountered an error. Please check the [workflow logs](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${runId}) for details.`;
+            
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+              body: comment
+            });
+      
+      # React with failure
+      - name: React with failure
+        if: steps.check_trigger.outputs.should_build == 'true' && failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.reactions.createForIssueComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              comment_id: context.payload.comment.id,
+              content: 'confused'
+            });
