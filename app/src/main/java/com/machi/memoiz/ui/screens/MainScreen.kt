@@ -1138,20 +1138,11 @@ private fun MemoCard(
             if (!memo.imageUri.isNullOrBlank()) {
                 val imageModifier = Modifier.size(96.dp)
                 if (memo.memoType == MemoType.IMAGE) {
-                    StickyNoteSurface(
-                        modifier = imageModifier,
-                        contentPadding = PaddingValues(6.dp)
-                    ) {
-                        AsyncImage(
-                            model = Uri.parse(memo.imageUri),
-                            contentDescription = stringResource(R.string.cd_memo_image),
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .aspectRatio(1f)
-                                .clip(RoundedCornerShape(10.dp)),
-                            contentScale = ContentScale.Crop
-                        )
-                    }
+                    FramedThumbnail(
+                        imageUri = memo.imageUri,
+                        contentDescription = stringResource(R.string.cd_memo_image),
+                        modifier = imageModifier
+                    )
                 } else {
                     AsyncImage(
                         model = Uri.parse(memo.imageUri),
@@ -1190,7 +1181,7 @@ private fun MemoCard(
                             val maxChars = 240
                             if (memo.content.length <= maxChars) memo.content else memo.content.take(maxChars) + "\u2026"
                         }
-                        NeutralUrlDisplay(
+                        ChromeStyleUrlBar(
                             url = displayText,
                             modifier = Modifier.fillMaxWidth()
                         )
@@ -1206,13 +1197,18 @@ private fun MemoCard(
                     else -> {
                         if (memo.content.isNotBlank()) {
                             val imageDescription = remember(memo.content) { "${AI_ROBOT_PREFIX} ${memo.content}" }
-                            StickyNoteSurface(modifier = Modifier.fillMaxWidth()) {
+                            Surface(
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(16.dp),
+                                color = MaterialTheme.colorScheme.surfaceVariant
+                            ) {
                                 Text(
                                     text = imageDescription,
                                     style = MaterialTheme.typography.bodyLarge,
                                     color = MaterialTheme.colorScheme.onSurface,
                                     maxLines = 5,
-                                    overflow = TextOverflow.Ellipsis
+                                    overflow = TextOverflow.Ellipsis,
+                                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp)
                                 )
                             }
                         }
@@ -1710,7 +1706,7 @@ private fun AiSummaryBlock(text: String) {
 private const val AI_ROBOT_PREFIX = "🤖"
 
 @Composable
-private fun NeutralUrlDisplay(
+private fun ChromeStyleUrlBar(
     url: String,
     modifier: Modifier = Modifier
 ) {
@@ -1755,6 +1751,52 @@ private fun NeutralUrlDisplay(
 }
 
 @Composable
+private fun FramedThumbnail(
+    imageUri: String,
+    contentDescription: String?,
+    modifier: Modifier = Modifier,
+    frameRadius: Dp = 18.dp
+) {
+    val outerShape = RoundedCornerShape(frameRadius)
+    Box(
+        modifier
+            .shadow(12.dp, outerShape)
+            .clip(outerShape)
+            .background(Color(0xFF2B2B2B))
+            .padding(10.dp)
+    ) {
+        Box(
+            Modifier
+                .clip(RoundedCornerShape(frameRadius - 6.dp))
+                .background(Color(0xFFF7F3EA))
+                .padding(10.dp)
+        ) {
+            AsyncImage(
+                model = Uri.parse(imageUri),
+                contentDescription = contentDescription,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .aspectRatio(1.2f)
+                    .clip(RoundedCornerShape(12.dp))
+                    .shadow(6.dp, RoundedCornerShape(12.dp))
+            )
+            Box(
+                Modifier
+                    .matchParentSize()
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(
+                        Brush.verticalGradient(
+                            0f to Color.White.copy(alpha = 0.18f),
+                            0.35f to Color.Transparent
+                        )
+                    )
+            )
+        }
+    }
+}
+
+@Composable
 private fun CampusNoteTextAligned(
     text: String,
     modifier: Modifier = Modifier,
@@ -1793,51 +1835,6 @@ private fun CampusNoteTextAligned(
                 }
             }
             .padding(start = 44.dp, top = 6.dp, end = 16.dp, bottom = 16.dp))
-}
-
-@Composable
-private fun StickyNoteSurface(
-    modifier: Modifier = Modifier,
-    noteColor: Color = Color(0xFFFFF2A8),
-    corner: Dp = 16.dp,
-    contentPadding: PaddingValues = PaddingValues(18.dp),
-    content: @Composable ColumnScope.() -> Unit
-) {
-    val density = LocalDensity.current
-    val cornerPx = with(density) { corner.toPx() }
-    val shape = RoundedCornerShape(corner)
-    Column(
-        modifier = modifier
-            .shadow(8.dp, shape)
-            .clip(shape)
-            .drawBehind {
-                drawRoundRect(color = noteColor, cornerRadius = CornerRadius(cornerPx, cornerPx))
-                val rnd = Random(0)
-                repeat(300) {
-                    drawCircle(
-                        color = Color.Black.copy(alpha = 0.05f),
-                        radius = rnd.nextFloat() * 1.4f,
-                        center = Offset(rnd.nextFloat() * size.width, rnd.nextFloat() * size.height)
-                    )
-                }
-                val foldW = size.minDimension * 0.18f
-                val foldPath = Path().apply {
-                    moveTo(size.width - foldW, 0f)
-                    lineTo(size.width, 0f)
-                    lineTo(size.width, foldW)
-                    close()
-                }
-                drawPath(foldPath, color = Color.White.copy(alpha = 0.35f))
-                drawLine(
-                    color = Color.Black.copy(alpha = 0.12f),
-                    start = Offset(size.width - foldW, 0f),
-                    end = Offset(size.width, foldW),
-                    strokeWidth = 2.dp.toPx()
-                )
-            }
-            .padding(contentPadding),
-        content = content
-    )
 }
 
 private data class PrimaryAction(
