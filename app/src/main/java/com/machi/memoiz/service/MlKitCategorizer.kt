@@ -97,11 +97,6 @@ class MlKitCategorizer(private val context: Context) {
                 return Triple(localizedMain ?: webCategoryLabel(), localizedSub, summary)
             }
 
-            // 1-4: Garbage text
-            if (content.length < 4) {
-                return Triple(uncategorizableLabel(), null, null)
-            }
-
             // 1-2 & 1-3: Long and short text
             val summary = if (content.length > 800) {
                 summarize(content)
