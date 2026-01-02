@@ -15,6 +15,7 @@ import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Indication
 import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.clickable
@@ -1136,14 +1137,14 @@ private fun MemoCard(
         ) {
             // Show image thumbnail if available
             if (!memo.imageUri.isNullOrBlank()) {
-                val imageModifier = Modifier.size(96.dp)
                 if (memo.memoType == MemoType.IMAGE) {
-                    FramedThumbnail(
+                    MaskingTapeImage(
                         imageUri = memo.imageUri,
                         contentDescription = stringResource(R.string.cd_memo_image),
-                        modifier = imageModifier
+                        modifier = Modifier.size(120.dp)
                     )
                 } else {
+                    val imageModifier = Modifier.size(96.dp)
                     AsyncImage(
                         model = Uri.parse(memo.imageUri),
                         contentDescription = stringResource(R.string.cd_memo_image),
@@ -1757,29 +1758,70 @@ private fun ChromeStyleUrlBar(
 }
 
 @Composable
-private fun FramedThumbnail(
+private fun MaskingTapeImage(
     imageUri: String,
     contentDescription: String?,
-    modifier: Modifier = Modifier,
-    frameRadius: Dp = 18.dp
+    modifier: Modifier = Modifier
 ) {
-    val frameShape = RoundedCornerShape(frameRadius)
     Box(
-        modifier
-            .clip(frameShape)
-            .border(1.dp, Color(0xFF7EC8E3), frameShape)
-            .background(Color.White.copy(alpha = 0.4f))
-            .padding(4.dp)
+        modifier = modifier
+            .padding(16.dp)
+            // Slightly tilt the entire image to blend with the note style (optional)
+            .graphicsLayer(rotationZ = 1f)
     ) {
+        // 1. Original image (no changes applied)
         AsyncImage(
             model = Uri.parse(imageUri),
             contentDescription = contentDescription,
-            contentScale = ContentScale.Crop,
             modifier = Modifier
-                .fillMaxWidth()
-                .aspectRatio(1.05f)
-                .clip(RoundedCornerShape(frameRadius - 4.dp))
+                .size(200.dp)
+                .shadow(2.dp), // Slight thickness when pasted on note
+            contentScale = ContentScale.Crop
         )
+
+        // 2. Masking tape section
+        MaskingTape(
+            modifier = Modifier
+                .align(Alignment.TopCenter) // Position at the top
+                .offset(y = (-8).dp)        // Slightly overhang from the image
+        )
+    }
+}
+
+@Composable
+private fun MaskingTape(modifier: Modifier = Modifier) {
+    val tapeColor = Color(0xFFD1E9FF).copy(alpha = 0.7f) // Pastel blue (semi-transparent)
+
+    Canvas(
+        modifier = modifier
+            .width(80.dp)
+            .height(24.dp)
+            .graphicsLayer(rotationZ = -3f) // Paste tape at a slight angle
+    ) {
+        val path = Path().apply {
+            val steps = 8
+            val stepWidth = size.width / steps
+            
+            // Left side jagged edge
+            moveTo(0f, 0f)
+            for (i in 1..steps) {
+                val x = i * stepWidth
+                val y = if (i % 2 == 0) 0f else 4f // Jagged depth
+                lineTo(x, y)
+            }
+            
+            // To the right side
+            lineTo(size.width, size.height)
+            
+            // Bottom side jagged edge
+            for (i in steps downTo 0) {
+                val x = i * stepWidth
+                val y = size.height + if (i % 2 == 0) 0f else -4f
+                lineTo(x, y)
+            }
+            close()
+        }
+        drawPath(path, color = tapeColor)
     }
 }
 
@@ -1811,10 +1853,10 @@ private fun PreviewChromeStyleUrlBar() {
 
 @Preview(name = "Image Frame", showBackground = true)
 @Composable
-private fun PreviewFramedThumbnail() {
+private fun PreviewMaskingTapeImage() {
     MemoizTheme {
         Surface(modifier = Modifier.padding(16.dp)) {
-            FramedThumbnail(
+            MaskingTapeImage(
                 imageUri = "https://picsum.photos/seed/memoizPreview/600",
                 contentDescription = null,
                 modifier = Modifier.width(220.dp)
