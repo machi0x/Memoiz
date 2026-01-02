@@ -209,7 +209,7 @@ fun MainScreen(
         contract = ActivityResultContracts.PickVisualMedia()
     ) { uri: Uri? ->
         if (uri != null) {
-            val enqueued = ContentProcessingLauncher.enqueueWork(context, null, uri)
+            val enqueued = ContentProcessingLauncher.enqueueWork(context, null, uri, forceCopyImage = true)
             if (!enqueued) {
                 Toast.makeText(context, R.string.nothing_to_categorize, Toast.LENGTH_SHORT).show()
             }

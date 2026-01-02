@@ -16,8 +16,8 @@ import java.io.FileOutputStream
 object ImageUriManager {
     private const val IMAGE_DIR = "shared_images"
 
-    fun prepareUriForWork(context: Context, uri: Uri): Uri? {
-        if (uri.scheme == ContentResolver.SCHEME_CONTENT && persistPermission(context, uri)) {
+    fun prepareUriForWork(context: Context, uri: Uri, forceCopy: Boolean = false): Uri? {
+        if (!forceCopy && uri.scheme == ContentResolver.SCHEME_CONTENT && persistPermission(context, uri)) {
             return uri
         }
         return copyToInternalStorage(context, uri)
