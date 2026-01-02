@@ -22,12 +22,13 @@ class AiCategorizationService(
     private val context: Context,
     private val mergeService: CategoryMergeService = CategoryMergeService(context),
     private val existingCategories: List<String> = emptyList(),
-    private val customCategories: Set<String> = emptySet()
+    private val customCategories: Set<String> = emptySet(),
+    private val isCategoryLocked: Boolean = false
 ) {
     private val uncategorizableLabel by lazy { context.getString(R.string.category_uncategorizable) }
 
     companion object {
-        suspend fun createWithRepository(context: Context): AiCategorizationService {
+        suspend fun createWithRepository(context: Context, isCategoryLocked: Boolean = false): AiCategorizationService {
             val database = MemoizDatabase.getDatabase(context)
             val memoRepository = MemoRepository(database.memoDao())
             val preferences = PreferencesDataStoreManager(context).userPreferencesFlow.first()
@@ -36,7 +37,8 @@ class AiCategorizationService(
                 context,
                 CategoryMergeService(context),
                 existing,
-                preferences.customCategories
+                preferences.customCategories,
+                isCategoryLocked
             )
         }
     }
@@ -44,7 +46,7 @@ class AiCategorizationService(
     private val mlKitCategorizer = MlKitCategorizer(context)
 
     private suspend fun mergeCategory(category: String, subCategory: String?, summary: String?): String {
-        if (category.isBlank() || shouldSkipMerge(category) || customCategories.contains(category)) {
+        if (isCategoryLocked || category.isBlank() || shouldSkipMerge(category) || customCategories.contains(category)) {
             return category
         }
         if (existingCategories.isEmpty() && customCategories.isEmpty()) return category

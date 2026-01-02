@@ -62,7 +62,8 @@ class MemoRepository(private val memoDao: MemoDao) {
             subCategory = subCategory,
             summary = summary,
             sourceApp = sourceApp,
-            createdAt = createdAt
+            createdAt = createdAt,
+            isCategoryLocked = isCategoryLocked
         )
     }
 
@@ -76,7 +77,8 @@ class MemoRepository(private val memoDao: MemoDao) {
             subCategory = subCategory,
             summary = summary,
             sourceApp = sourceApp,
-            createdAt = createdAt
+            createdAt = createdAt,
+            isCategoryLocked = isCategoryLocked
         )
     }
 }

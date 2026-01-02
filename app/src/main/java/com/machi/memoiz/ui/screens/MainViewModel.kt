@@ -298,7 +298,8 @@ class MainViewModel(
             memoRepository.updateMemo(
                 memo.copy(
                     category = newCategory,
-                    subCategory = newSubCategory
+                    subCategory = newSubCategory,
+                    isCategoryLocked = true
                 )
             )
         }

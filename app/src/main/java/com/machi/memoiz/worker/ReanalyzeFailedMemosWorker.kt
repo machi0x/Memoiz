@@ -26,12 +26,6 @@ class ReanalyzeFailedMemosWorker(
         val memoRepository = MemoRepository(database.memoDao())
         val existingCategories = memoRepository.getDistinctCategories()
         val preferences = PreferencesDataStoreManager(applicationContext).userPreferencesFlow.first()
-        val aiService = AiCategorizationService(
-            applicationContext,
-            CategoryMergeService(applicationContext),
-            existingCategories,
-            preferences.customCategories
-        )
         val failureAliases = FailureCategoryHelper.aliases(applicationContext)
         try {
             val failedMemos = memoRepository.getMemosByCategories(failureAliases)
@@ -39,6 +33,14 @@ class ReanalyzeFailedMemosWorker(
             if (failedMemos.isEmpty()) return Result.success()
 
             for (memo in failedMemos) {
+                if (memo.isCategoryLocked) continue
+                val aiService = AiCategorizationService(
+                    applicationContext,
+                    CategoryMergeService(applicationContext),
+                    existingCategories,
+                    preferences.customCategories,
+                    memo.isCategoryLocked
+                )
                 try {
                     val updatedEntity = if (!memo.imageUri.isNullOrBlank()) {
                         val bitmap = aiService.loadBitmapFromUri(memo.imageUri)
@@ -61,6 +63,8 @@ class ReanalyzeFailedMemosWorker(
                 } catch (e: Exception) {
                     e.printStackTrace()
                     // continue with next memo
+                } finally {
+                    aiService.close()
                 }
             }
 
@@ -69,8 +73,6 @@ class ReanalyzeFailedMemosWorker(
         } catch (e: Exception) {
             e.printStackTrace()
             return Result.retry()
-        } finally {
-            aiService.close()
         }
     }
 }
