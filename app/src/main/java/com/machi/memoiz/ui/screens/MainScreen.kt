@@ -1458,9 +1458,12 @@ private fun TutorialDialog(
     val step = steps[currentStep]
 
     AlertDialog(
-        onDismissRequest = onFinished,
-        title = { Text(stringResource(R.string.tutorial_title)) },
-        text = {
+        modifier = Modifier
+            .fillMaxWidth(0.95f)
+            .widthIn(max = 640.dp),
+         onDismissRequest = onFinished,
+         title = { Text(stringResource(R.string.tutorial_title)) },
+         text = {
             Column(
                 verticalArrangement = Arrangement.spacedBy(12.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
@@ -1468,14 +1471,17 @@ private fun TutorialDialog(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(200.dp)
+                        .heightIn(min = 180.dp, max = 320.dp)
                         .clip(RoundedCornerShape(12.dp))
+                        .background(MaterialTheme.colorScheme.surfaceVariant)
                 ) {
                     Image(
                         painter = painterResource(id = step.imageRes),
                         contentDescription = null,
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(8.dp),
+                        contentScale = ContentScale.Fit
                     )
                 }
                 Text(
