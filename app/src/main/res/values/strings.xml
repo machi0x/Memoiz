@@ -38,6 +38,9 @@ Tap the clipboard button or share content to start.</string>
     <string name="action_open">Open</string>
     <string name="action_reanalyze">Re-analyze</string>
     <string name="action_reanalyze_failures">Re-analyze failures</string>
+    <string name="action_copy">Copy to clipboard</string>
+    <string name="toast_copy_to_clipboard">Copied to clipboard.</string>
+    <string name="cd_copy_memo">Copy memo content</string>
 
     <!-- General actions -->
     <string name="action_delete">Delete</string>
@@ -126,6 +129,14 @@ Tap the clipboard button or share content to start.</string>
     <string name="tutorial_step_share_select_body">When the context menu appears during text selection, choose “Save to Memoiz” to analyze and store the snippet instantly.</string>
     <string name="tutorial_step_fab_title">Add from main screen</string>
     <string name="tutorial_step_fab_body">Use the floating button at the bottom of the main screen to type text, pick an image from your device, or read from the clipboard to create a memo.</string>
+    <string name="tutorial_step_my_category_title">Teach Memoiz your labels</string>
+    <string name="tutorial_step_my_category_body">Add My Category names so the AI can sort your memos using your own language. You can merge or delete them later without losing memos.</string>
+    <string name="tutorial_step_usage_permission_title">Why usage access helps</string>
+    <string name="tutorial_step_usage_permission_body">Granting usage access lets Memoiz attach the source app and improve the on-device analysis. You can toggle it anytime in Settings &gt; Usage access.</string>
+    <string name="tutorial_step_main_ui_title">Main screen basics</string>
+    <string name="tutorial_step_main_ui_body">Use the top search bar, expand category headers, drag them to reorder, and run memo actions (open, share, re-analyze, delete) directly from the list.</string>
+    <string name="tutorial_step_side_panel_title">Side panel filters</string>
+    <string name="tutorial_step_side_panel_body">Open the menu icon to access the side panel, filter by memo type or category, manage your My Categories with “+”, and jump to Settings.</string>
 
     <string name="settings_tutorial_title">See tutorial</string>
     <string name="settings_tutorial_description">Open the quick tour again to review features and permissions.</string>

@@ -53,6 +53,8 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.text.AnnotatedString
 import com.machi.memoiz.R
 import com.machi.memoiz.data.entity.MemoType
 import com.machi.memoiz.domain.model.Memo
@@ -946,13 +948,15 @@ private fun MemoCard(
     readOnly: Boolean = false
 ) {
     val context = LocalContext.current
+    val clipboardManager = LocalClipboardManager.current
 
     val reanalyzeString = stringResource(R.string.action_reanalyze)
     val openString = stringResource(R.string.action_open)
     val shareString = stringResource(R.string.action_share)
-    val deleteString = stringResource(R.string.action_delete)
     val errorOpenImageString = stringResource(R.string.error_open_image)
     val errorOpenUrlString = stringResource(R.string.error_open_url)
+    val copiedToast = stringResource(R.string.toast_copy_to_clipboard)
+    val copyContentDescription = stringResource(R.string.cd_copy_memo)
     var menuExpanded by remember { mutableStateOf(false) }
 
     fun openImage() {
@@ -1038,25 +1042,45 @@ private fun MemoCard(
                 }
             }
 
-            if (primaryAction.enabled) {
-                FilledTonalButton(
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                IconButton(
                     onClick = {
-                        primaryAction.onInvoke()
-                        menuExpanded = false
+                        val textToCopy = when {
+                            memo.memoType == MemoType.IMAGE && !memo.imageUri.isNullOrBlank() -> memo.imageUri
+                            memo.content.isNotBlank() -> memo.content
+                            !memo.summary.isNullOrBlank() -> memo.summary
+                            else -> null
+                        }
+                        textToCopy?.let {
+                            clipboardManager.setText(AnnotatedString(it))
+                            Toast.makeText(context, copiedToast, Toast.LENGTH_SHORT).show()
+                        }
                     },
-                    enabled = primaryAction.enabled
+                    enabled = !readOnly
                 ) {
-                    Icon(primaryAction.icon, contentDescription = null)
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(primaryAction.label)
+                    Icon(Icons.Default.ContentCopy, contentDescription = copyContentDescription)
                 }
-                Spacer(modifier = Modifier.width(8.dp))
-            }
 
-            Box {
+                if (primaryAction.enabled) {
+                    FilledTonalButton(
+                        onClick = {
+                            primaryAction.onInvoke()
+                            menuExpanded = false
+                        },
+                        enabled = primaryAction.enabled
+                    ) {
+                        Icon(primaryAction.icon, contentDescription = null)
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(primaryAction.label)
+                    }
+                }
+
                 IconButton(onClick = { menuExpanded = true }, enabled = !readOnly) {
                     Icon(Icons.Default.MoreVert, contentDescription = stringResource(R.string.cd_open_memo_menu))
                 }
+            }
+
+            Box {
                 DropdownMenu(expanded = menuExpanded, onDismissRequest = { menuExpanded = false }) {
                     DropdownMenuItem(
                         text = { Text(stringResource(R.string.dialog_edit_category_title)) },
