@@ -152,11 +152,5 @@ Tap the clipboard button or share content to start.</string>
     <string name="dialog_create_memo_error_empty">Please enter some text</string>
     <string name="fab_close_menu">Close menu</string>
     <string name="processtext_label">Save to Memoiz</string>
-    <string name="error_image_analysis_failed">Cannot analyze this memo. (Error: %1$d)</string>
-    <string name="error_image_analysis_reason_request_too_small">Cannot analyze this memo: image is too small.</string>
-    <string name="error_image_analysis_reason_request_too_large">Cannot analyze this memo: image is too large.</string>
-    <string name="error_image_analysis_reason_invalid_input_image">Cannot analyze this memo: invalid image.</string>
-    <string name="error_image_analysis_reason_response_processing_error">Cannot analyze this memo: response processing failed.</string>
-    <string name="error_image_analysis_reason_response_generation_error">Cannot analyze this memo: response generation failed.</string>
-    <string name="error_image_analysis_reason_request_processing_error">Cannot analyze this memo: request processing failed.</string>
+    <string name="error_image_analysis_permanent_with_code">Cannot analyze this memo. Error code: %1$s</string>
 </resources>
