@@ -128,7 +128,6 @@
     <string name="dialog_create_memo_error_empty">テキストを入力してください</string>
     <string name="fab_close_menu">メニューを閉じる</string>
     <string name="processtext_label">メモイズに保存</string>
-    <string name="error_image_analysis_failed">このメモは解析できません。 (エラー: %1$d)</string>
     <string name="toast_copy_to_clipboard">クリップボードにコピーしました。</string>
     <string name="cd_copy_memo">メモをコピー</string>
     <string name="error_image_analysis_permanent_with_code">このメモは解析できません。エラーコード: (%1$s)</string>
