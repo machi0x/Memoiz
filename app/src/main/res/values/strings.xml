@@ -12,8 +12,8 @@
     <string name="memo_type_image">Image</string>
     
     <string name="fab_paste_clipboard">Paste from clipboard</string>
-    <string name="empty_state_message">No memos yet.
-Tap the clipboard button or share content to start.</string>
+    <string name="empty_state_message">You don\'t have any memos yet.
+Try sharing text or images from other apps, or use the + button at the bottom of this screen to add your first memo.</string>
     <string name="nothing_to_categorize">No text or image in clipboard to categorize.</string>
     <string name="categorization_started">Saved to Memoiz and started AI categorization in background.</string>
     
