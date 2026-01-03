@@ -22,4 +22,7 @@
     
     <!-- Splash Screen Color -->
     <color name="splash_background">#E8F5E9</color>
+
+    <!-- Memo Card Color -->
+    <color name="memo_card_background">#E1E2ED</color>
 </resources>

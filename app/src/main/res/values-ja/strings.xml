@@ -2,7 +2,6 @@
 <resources>
     <string name="app_name">メモイズ</string>
     <string name="failure_category">分類失敗 - 後で自動で再解析します</string>
-    <string name="failure_category_canonical">分類失敗 - 後で自動で再解析します</string>
     <string name="settings_about_title">このアプリについて</string>
     <string name="settings_about_description">メモイズはテキストや画像をスマホ内のAIでカテゴリ分けして保存し、後で参照・再利用できる備忘録です。 データは端末内で処理され外部には送信されません。</string>
     <string name="settings_about_button">このアプリについて</string>
@@ -43,6 +42,7 @@
     <string name="action_reanalyze">再解析</string>
     <string name="action_reanalyze_failures">失敗を再解析</string>
     <string name="action_delete">削除</string>
+    <string name="action_delete_category">カテゴリを削除</string>
     <string name="action_copy">クリップボードにコピー</string>
     <string name="memo_menu_delete">メモを削除</string>
     <string name="manual_category_indicator">(手動で分類済み)</string>
@@ -59,7 +59,7 @@
     <string name="nothing_to_categorize">クリップボードに分類するテキストや画像がありません</string>
     <string name="empty_state_message">メモがまだありません。
 テキストや画像を他のアプリから共有したり、クリップボードから貼り付けて始めましょう。</string>
-    <string name="categorization_started">メモイズに保存し、分類を開始しました。</string>
+    <string name="categorization_started">メモイズに保存し、AIで解析を開始しました。</string>
     <string name="drawer_filter_by_type">タイプで絞り込み</string>
     <string name="drawer_filter_by_category">カテゴリで絞り込み</string>
     <string name="memo_type_text">テキスト</string>
@@ -77,6 +77,7 @@
     <string name="cd_remove_custom_category">このマイカテゴリを削除</string>
     <string name="cd_category_drag_handle">ドラッグしてカテゴリを並べ替え</string>
     <string name="toast_category_order_saved">カテゴリの順序を更新しました</string>
+    <string name="toast_merge_enqueued">バックグラウンドで再解析を予定しました。</string>
     <string name="dialog_reanalyze_title">再解析しますか？</string>
     <string name="dialog_reanalyze_message">再解析するとカテゴリや要約が変わる場合がありますが、メモタイプは維持されます。</string>
     <string name="dialog_reanalyze_confirm">再解析</string>
@@ -129,10 +130,6 @@
     <string name="error_image_analysis_failed">このメモは解析できません。 (エラー: %1$d)</string>
     <string name="toast_copy_to_clipboard">クリップボードにコピーしました。</string>
     <string name="cd_copy_memo">メモをコピー</string>
-    <string name="error_image_analysis_reason_request_too_small">画像が小さすぎるため解析できません。</string>
-    <string name="error_image_analysis_reason_request_too_large">画像が大きすぎるため解析できません。</string>
-    <string name="error_image_analysis_reason_invalid_input_image">画像が不正なため解析できません。</string>
-    <string name="error_image_analysis_reason_response_processing_error">レスポンス処理に失敗したため解析できません。</string>
-    <string name="error_image_analysis_reason_response_generation_error">レスポンス生成に失敗したため解析できません。</string>
-    <string name="error_image_analysis_reason_request_processing_error">リクエスト処理に失敗したため解析できません。</string>
+    <string name="error_image_analysis_permanent_with_code">このメモは解析できません。エラーコード: (%1$s)</string>
+    <!-- 詳細理由の個別文言はユーザー混乱防止のため統合 -->
 </resources>

@@ -15,6 +15,7 @@ import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Indication
 import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.clickable
@@ -40,6 +41,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -59,6 +61,7 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
@@ -878,7 +881,8 @@ private fun CategoryAccordion(
     val reanalyzeFailuresString = stringResource(R.string.action_reanalyze_failures)
     val deleteCategoryString = stringResource(R.string.action_delete_category)
     Card(
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = colorResource(id = R.color.memo_card_background))
     ) {
         Column {
             // Category header (always visible)
@@ -1136,14 +1140,14 @@ private fun MemoCard(
         ) {
             // Show image thumbnail if available
             if (!memo.imageUri.isNullOrBlank()) {
-                val imageModifier = Modifier.size(96.dp)
                 if (memo.memoType == MemoType.IMAGE) {
-                    FramedThumbnail(
+                    ImageThumbnailFrame(
                         imageUri = memo.imageUri,
                         contentDescription = stringResource(R.string.cd_memo_image),
-                        modifier = imageModifier
+                        modifier = Modifier.size(140.dp)
                     )
                 } else {
+                    val imageModifier = Modifier.size(96.dp)
                     AsyncImage(
                         model = Uri.parse(memo.imageUri),
                         contentDescription = stringResource(R.string.cd_memo_image),
@@ -1757,28 +1761,101 @@ private fun ChromeStyleUrlBar(
 }
 
 @Composable
-private fun FramedThumbnail(
+private fun ImageThumbnailFrame(
     imageUri: String,
     contentDescription: String?,
-    modifier: Modifier = Modifier,
-    frameRadius: Dp = 18.dp
+    modifier: Modifier = Modifier
 ) {
-    val frameShape = RoundedCornerShape(frameRadius)
+    val outerShape = RoundedCornerShape(10.dp)
+    val innerShape = RoundedCornerShape(8.dp)
     Box(
-        modifier
-            .clip(frameShape)
-            .border(1.dp, Color(0xFF7EC8E3), frameShape)
-            .background(Color.White.copy(alpha = 0.4f))
-            .padding(4.dp)
+        modifier = modifier
+            .graphicsLayer(rotationZ = 2.5f)
+            .shadow(
+                elevation = 10.dp,
+                ambientColor = Color.Black.copy(alpha = 0.12f),
+                spotColor = Color.Black.copy(alpha = 0.18f),
+                shape = outerShape
+            )
     ) {
-        AsyncImage(
-            model = Uri.parse(imageUri),
-            contentDescription = contentDescription,
-            contentScale = ContentScale.Crop,
+        Box(
             modifier = Modifier
-                .fillMaxWidth()
-                .aspectRatio(1.05f)
-                .clip(RoundedCornerShape(frameRadius - 4.dp))
+                .matchParentSize()
+                .background(colorResource(id = R.color.memo_card_background), shape = outerShape)
+                .padding(18.dp) // wider outer frame for more clearance
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color(0xFFF7F7F7), shape = innerShape)
+                    .padding(6.dp)
+            ) {
+                AsyncImage(
+                    model = Uri.parse(imageUri),
+                    contentDescription = contentDescription,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .clip(RoundedCornerShape(6.dp)),
+                    contentScale = ContentScale.Crop
+                )
+            }
+        }
+
+        PinThumbtack(
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .offset(y = 4.dp) // move pin down further
+        )
+    }
+}
+
+@Composable
+private fun PinThumbtack(modifier: Modifier = Modifier) {
+    Canvas(
+        modifier = modifier
+            .size(width = 11.dp, height = 17.dp) // slightly smaller pin
+            .graphicsLayer(rotationX = 26f, rotationZ = -18f)
+    ) {
+        val pinColor = Color(0xFF2E7D32)
+        val shadowColor = Color.Black.copy(alpha = 0.26f)
+        val centerX = size.width / 2f
+        val headRadius = size.width * 0.34f
+        val needleWidth = size.width * 0.18f
+        val needleHeight = size.height * 0.62f
+        val needleTopY = headRadius * 1.25f
+
+        drawRoundRect(
+            color = shadowColor,
+            topLeft = Offset(centerX - needleWidth * 1.1f, needleTopY + 2.2f),
+            size = Size(needleWidth * 2.2f, needleHeight + headRadius * 1.3f),
+            cornerRadius = CornerRadius(needleWidth * 1.2f),
+            alpha = 0.25f
+        )
+
+        drawRoundRect(
+            color = shadowColor,
+            topLeft = Offset(centerX - needleWidth / 2f + 1.0f, needleTopY + 1.6f),
+            size = Size(needleWidth, needleHeight),
+            cornerRadius = CornerRadius(needleWidth)
+        )
+
+        drawRoundRect(
+            color = Color(0xFF7A5D48),
+            topLeft = Offset(centerX - needleWidth / 2f, needleTopY),
+            size = Size(needleWidth, needleHeight),
+            cornerRadius = CornerRadius(needleWidth)
+        )
+
+        drawCircle(
+            color = pinColor.copy(alpha = 0.25f),
+            radius = headRadius * 1.08f,
+            center = Offset(centerX - headRadius * 0.16f, headRadius * 0.9f)
+        )
+
+        drawCircle(
+            color = pinColor,
+            radius = headRadius,
+            center = Offset(centerX, headRadius)
         )
     }
 }
@@ -1811,13 +1888,13 @@ private fun PreviewChromeStyleUrlBar() {
 
 @Preview(name = "Image Frame", showBackground = true)
 @Composable
-private fun PreviewFramedThumbnail() {
+private fun PreviewPinnedPhotoFrame() {
     MemoizTheme {
         Surface(modifier = Modifier.padding(16.dp)) {
-            FramedThumbnail(
+            ImageThumbnailFrame(
                 imageUri = "https://picsum.photos/seed/memoizPreview/600",
                 contentDescription = null,
-                modifier = Modifier.width(220.dp)
+                modifier = Modifier.size(160.dp)
             )
         }
     }
@@ -1827,7 +1904,7 @@ private fun PreviewFramedThumbnail() {
 private fun CampusNoteTextAligned(
     text: String,
     modifier: Modifier = Modifier,
-    lineHeight: androidx.compose.ui.unit.TextUnit = 24.sp
+    lineHeight: androidx.compose.ui.unit.TextUnit = 20.sp // smaller line spacing
 ) {
     val density = LocalDensity.current
     val lineHeightPx = with(density) { lineHeight.toPx() }
@@ -1835,7 +1912,7 @@ private fun CampusNoteTextAligned(
     Text(
         text = text,
         style = MaterialTheme.typography.bodyMedium.copy(lineHeight = lineHeight),
-        color = MaterialTheme.colorScheme.onSurface,
+        color = Color(0xFF111111),
         maxLines = 6,
         overflow = TextOverflow.Ellipsis,
         modifier = modifier
@@ -1850,7 +1927,8 @@ private fun CampusNoteTextAligned(
                     end = Offset(marginX, size.height),
                     strokeWidth = 2.dp.toPx()
                 )
-                var y = lineHeightPx
+                val lineOffset = 2.dp.toPx() // nudge lines upward for better baseline alignment
+                var y = lineHeightPx - lineOffset
                 while (y < size.height) {
                     drawLine(
                         color = Color(0xFFB7D7FF),
@@ -1861,7 +1939,7 @@ private fun CampusNoteTextAligned(
                     y += lineHeightPx
                 }
             }
-            .padding(start = 44.dp, top = 6.dp, end = 16.dp, bottom = 16.dp))
+            .padding(start = 44.dp, top = 2.dp, end = 16.dp, bottom = 16.dp))
 }
 
 private data class PrimaryAction(

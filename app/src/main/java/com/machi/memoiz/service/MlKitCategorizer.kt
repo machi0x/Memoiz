@@ -33,8 +33,6 @@ import com.google.mlkit.genai.common.GenAiException
  * and optional sub-category from clipboard content.
  */
 class MlKitCategorizer(private val context: Context) {
-    private fun webCategoryLabel(): String = context.getString(R.string.category_web_site)
-    private fun imageCategoryLabel(): String = context.getString(R.string.category_image)
     private fun uncategorizableLabel(): String = context.getString(R.string.category_uncategorizable)
     private fun failureCategoryLabel(): String = FailureCategoryHelper.currentLabel(context)
 
@@ -203,15 +201,8 @@ class MlKitCategorizer(private val context: Context) {
         else -> false
     }
 
-    private fun mapPermanentErrorMessage(errorCode: Int): String = when (errorCode) {
-        GenAiException.ErrorCode.REQUEST_TOO_SMALL -> context.getString(R.string.error_image_analysis_reason_request_too_small)
-        GenAiException.ErrorCode.REQUEST_TOO_LARGE -> context.getString(R.string.error_image_analysis_reason_request_too_large)
-        GenAiException.ErrorCode.INVALID_INPUT_IMAGE -> context.getString(R.string.error_image_analysis_reason_invalid_input_image)
-        GenAiException.ErrorCode.RESPONSE_PROCESSING_ERROR -> context.getString(R.string.error_image_analysis_reason_response_processing_error)
-        GenAiException.ErrorCode.RESPONSE_GENERATION_ERROR -> context.getString(R.string.error_image_analysis_reason_response_generation_error)
-        GenAiException.ErrorCode.REQUEST_PROCESSING_ERROR -> context.getString(R.string.error_image_analysis_reason_request_processing_error)
-        else -> context.getString(R.string.error_image_analysis_failed, errorCode)
-    }
+    private fun mapPermanentErrorMessage(errorCode: Int): String =
+        context.getString(R.string.error_image_analysis_permanent_with_code, errorCode)
 
     private suspend fun summarize(text: String): String? = withContext(Dispatchers.IO) {
         runCatching {
