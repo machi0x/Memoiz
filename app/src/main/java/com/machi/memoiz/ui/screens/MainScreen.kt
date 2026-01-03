@@ -1528,7 +1528,7 @@ private fun TutorialDialog(
                             .onSizeChanged { viewportHeightPx = it.height.toFloat() }
                         isLargeShot -> baseBoxModifier
                             .weight(0.55f, fill = true)
-                            .heightIn(max = 360.dp)
+                            .heightIn(max = 250.dp)
                             .onSizeChanged { viewportHeightPx = it.height.toFloat() }
                         else -> baseBoxModifier
                             .heightIn(max = 280.dp)
