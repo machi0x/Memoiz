@@ -113,19 +113,6 @@ object ContentProcessingLauncher {
         WorkManager.getInstance(context.applicationContext).enqueue(request)
     }
 
-    fun scheduleDailyFailureReanalyze(context: Context) {
-        val request = PeriodicWorkRequestBuilder<ReanalyzeFailedMemosWorker>(1, TimeUnit.DAYS)
-            .setConstraints(failureReanalyzeConstraints())
-            .addTag(WORK_TAG_MEMO_PROCESSING)
-            .build()
-        WorkManager.getInstance(context.applicationContext)
-            .enqueueUniquePeriodicWork(
-                "daily_failure_reanalyze",
-                ExistingPeriodicWorkPolicy.UPDATE,
-                request
-            )
-    }
-
     fun enqueueManualMemo(context: Context, text: String): Boolean {
         return enqueueWork(context, text, null, showDialog = true)
     }

@@ -228,10 +228,6 @@ class MainViewModel(
         ContentProcessingLauncher.enqueueFailureBatchReanalyze(context)
     }
 
-    fun scheduleDailyFailureReanalyze(context: Context) {
-        ContentProcessingLauncher.scheduleDailyFailureReanalyze(context)
-    }
-
     fun addCustomCategoryWithMerge(context: Context, categoryName: String) {
         viewModelScope.launch {
             val trimmed = categoryName.trim()

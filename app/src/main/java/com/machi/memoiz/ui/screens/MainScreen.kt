@@ -129,9 +129,6 @@ fun MainScreen(
         }
     }
 
-    LaunchedEffect(Unit) {
-        viewModel.scheduleDailyFailureReanalyze(context)
-    }
 
     LaunchedEffect(shouldShowTutorial) {
         if (shouldShowTutorial) {
