@@ -98,11 +98,17 @@ class MlKitCategorizer(private val context: Context) {
                 val pair = generateCategoryPair(webContent.body.take(2000), sourceApp)
                 val localizedMain = localizeText(pair.main)
                 val localizedSub = localizeText(pair.sub)
-                val summary = summarizeWebContent(webContent.title, webContent.body)
-                if (localizedMain.isNullOrBlank()) {
-                    return Triple(uncategorizableLabel(), localizedSub, summary)
+                val summaryText = summarizeWebContent(webContent.title, webContent.body)
+                val localizedSummaryOnly = localizeText(summaryText)
+                val combinedSummary = when {
+                    !webContent.title.isNullOrBlank() && !localizedSummaryOnly.isNullOrBlank() -> "${webContent.title}\n${localizedSummaryOnly.trim()}"
+                    !webContent.title.isNullOrBlank() -> webContent.title
+                    else -> localizedSummaryOnly
                 }
-                return Triple(localizedMain, localizedSub, summary)
+                if (localizedMain.isNullOrBlank()) {
+                    return Triple(uncategorizableLabel(), localizedSub, combinedSummary)
+                }
+                return Triple(localizedMain, localizedSub, combinedSummary)
             }
 
             // 1-2 & 1-3: Long and short text
@@ -213,14 +219,18 @@ class MlKitCategorizer(private val context: Context) {
 
     private suspend fun fetchUrlContent(url: String): WebPageContent? = withContext(Dispatchers.IO) {
         try {
-            val client = OkHttpClient()
-            val request = Request.Builder().url(url).build()
+            val client = OkHttpClient() // default redirects
+            val request = Request.Builder()
+                .url(url)
+                .build()
             val response = client.newCall(request).execute()
             val html = response.body?.string() ?: return@withContext null
+            response.close()
             val document = Jsoup.parse(html)
             val bodyText = document.body()?.text().orEmpty()
             val titleText = document.title()?.takeIf { it.isNotBlank() }
-            if (bodyText.isBlank()) null else WebPageContent(bodyText, titleText)
+            val contentText = if (bodyText.isNotBlank()) bodyText else titleText
+            if (contentText.isNullOrBlank()) null else WebPageContent(contentText, titleText)
         } catch (e: Exception) {
             e.printStackTrace()
             null
@@ -231,8 +241,9 @@ class MlKitCategorizer(private val context: Context) {
         val instruction = buildString {
             appendLine("You are summarizing a web page. Reply in ${getSystemLanguageName()} language.")
             appendLine("Keep the tone neutral and informative.")
+            appendLine("Do not generate section headings or titles; respond with 1-2 concise sentences only.")
             if (!title.isNullOrBlank()) {
-                appendLine("Page title: $title")
+                appendLine("Page title (context only, do NOT restate): $title")
             }
             appendLine("Page content:")
             append(body.take(3000))
