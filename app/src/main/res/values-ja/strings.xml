@@ -58,7 +58,7 @@
     <string name="fab_paste_clipboard">クリップボードから貼り付け</string>
     <string name="nothing_to_categorize">クリップボードに分類するテキストや画像がありません</string>
     <string name="empty_state_message">メモがまだありません。
-テキストや画像を他のアプリから共有したり、クリップボードから貼り付けて始めましょう。</string>
+テキストや画像を他のアプリから共有したり、この画面の下の＋ボタンから追加して始めましょう。</string>
     <string name="categorization_started">メモイズに保存し、AIで解析を開始しました。</string>
     <string name="drawer_filter_by_type">タイプで絞り込み</string>
     <string name="drawer_filter_by_category">カテゴリで絞り込み</string>
