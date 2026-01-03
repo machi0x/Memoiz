@@ -1876,7 +1876,7 @@ private fun CampusNoteTextAligned(
     Text(
         text = text,
         style = MaterialTheme.typography.bodyMedium.copy(lineHeight = lineHeight),
-        color = MaterialTheme.colorScheme.onSurface,
+        color = Color(0xFF111111),
         maxLines = 6,
         overflow = TextOverflow.Ellipsis,
         modifier = modifier

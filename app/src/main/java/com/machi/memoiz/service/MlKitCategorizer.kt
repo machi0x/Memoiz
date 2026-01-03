@@ -33,8 +33,6 @@ import com.google.mlkit.genai.common.GenAiException
  * and optional sub-category from clipboard content.
  */
 class MlKitCategorizer(private val context: Context) {
-    private fun webCategoryLabel(): String = context.getString(R.string.category_web_site)
-    private fun imageCategoryLabel(): String = context.getString(R.string.category_image)
     private fun uncategorizableLabel(): String = context.getString(R.string.category_uncategorizable)
     private fun failureCategoryLabel(): String = FailureCategoryHelper.currentLabel(context)
 
