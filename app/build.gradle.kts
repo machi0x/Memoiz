@@ -41,8 +41,9 @@ android {
         minSdk = 29
         targetSdk = 36
         // versionCodeとversionNameを動的に設定
-        versionCode = getGitCommitCount()
-        versionName = "0.0 (${getGitCommitCount()})"
+        val gitCount = getGitCommitCount()
+        versionCode = gitCount
+        versionName = "1.0.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
