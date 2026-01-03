@@ -42,6 +42,7 @@
     <string name="action_reanalyze">再解析</string>
     <string name="action_reanalyze_failures">失敗を再解析</string>
     <string name="action_delete">削除</string>
+    <string name="action_delete_category">カテゴリを削除</string>
     <string name="action_copy">クリップボードにコピー</string>
     <string name="memo_menu_delete">メモを削除</string>
     <string name="manual_category_indicator">(手動で分類済み)</string>
@@ -76,6 +77,7 @@
     <string name="cd_remove_custom_category">このマイカテゴリを削除</string>
     <string name="cd_category_drag_handle">ドラッグしてカテゴリを並べ替え</string>
     <string name="toast_category_order_saved">カテゴリの順序を更新しました</string>
+    <string name="toast_merge_enqueued">バックグラウンドで再解析を予定しました。</string>
     <string name="dialog_reanalyze_title">再解析しますか？</string>
     <string name="dialog_reanalyze_message">再解析するとカテゴリや要約が変わる場合がありますが、メモタイプは維持されます。</string>
     <string name="dialog_reanalyze_confirm">再解析</string>
