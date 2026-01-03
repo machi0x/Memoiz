@@ -92,6 +92,24 @@ fun SettingsScreen(
             ) {
                 item {
                     PreferenceItem(
+                        title = stringResource(R.string.settings_tutorial_title),
+                        subtitle = stringResource(R.string.settings_tutorial_description),
+                        leadingIcon = {
+                            Icon(Icons.Default.School, contentDescription = null)
+                        },
+                        onClick = {
+                            viewModel.requestTutorial()
+                            onNavigateBack()
+                        }
+                    )
+                }
+
+                item {
+                    HorizontalDivider(modifier = Modifier.padding(start = 72.dp))
+                }
+
+                item {
+                    PreferenceItem(
                         title = stringResource(R.string.settings_usage_title),
                         subtitle = stringResource(R.string.settings_usage_description),
                         leadingIcon = {
@@ -124,29 +142,10 @@ fun SettingsScreen(
 
                 item {
                     PreferenceItem(
-                        title = stringResource(R.string.settings_tutorial_title),
-                        subtitle = stringResource(R.string.settings_tutorial_description),
-                        leadingIcon = {
-                            Icon(Icons.Default.School, contentDescription = null)
-                        },
-                        onClick = {
-                            viewModel.requestTutorial()
-                            onNavigateBack()
-                        }
-                    )
-                }
-
-                item {
-                    HorizontalDivider(modifier = Modifier.padding(start = 72.dp))
-                }
-
-                item {
-                    PreferenceItem(
-                        title = stringResource(R.string.settings_about_button),
-                        leadingIcon = {
-                            Icon(Icons.Default.Info, contentDescription = null)
-                        },
-                        onClick = { showAboutDialog = true }
+                        title = stringResource(R.string.settings_remerge_all_title),
+                        subtitle = stringResource(R.string.settings_remerge_all_description),
+                        leadingIcon = { Icon(Icons.Default.Refresh, contentDescription = null) },
+                        onClick = { showReMergeConfirm = true }
                     )
                 }
 
@@ -171,10 +170,11 @@ fun SettingsScreen(
 
                 item {
                     PreferenceItem(
-                        title = stringResource(R.string.settings_remerge_all_title),
-                        subtitle = stringResource(R.string.settings_remerge_all_description),
-                        leadingIcon = { Icon(Icons.Default.Refresh, contentDescription = null) },
-                        onClick = { showReMergeConfirm = true }
+                        title = stringResource(R.string.settings_about_button),
+                        leadingIcon = {
+                            Icon(Icons.Default.Info, contentDescription = null)
+                        },
+                        onClick = { showAboutDialog = true }
                     )
                 }
             }
