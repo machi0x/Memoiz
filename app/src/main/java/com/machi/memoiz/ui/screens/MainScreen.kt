@@ -46,6 +46,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.unit.dp
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
@@ -56,7 +57,9 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.CornerRadius
@@ -68,6 +71,7 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.AnnotatedString
@@ -1462,53 +1466,22 @@ private data class TutorialStep(
 
 @Composable
 private fun TutorialDialog(
-    onFinished: () -> Unit
+    onFinished: () -> Unit,
+    initialStep: Int = 0
 ) {
     val context = LocalContext.current
     val steps = listOf(
-        TutorialStep(
-            imageRes = R.drawable.top_banner,
-            titleRes = R.string.tutorial_step_overview_title,
-            descriptionRes = R.string.tutorial_step_overview_body
-        ),
-        TutorialStep(
-            imageRes = R.drawable.share_from_browser,
-            titleRes = R.string.tutorial_step_share_browser_title,
-            descriptionRes = R.string.tutorial_step_share_browser_body
-        ),
-        TutorialStep(
-            imageRes = R.drawable.share_from_select,
-            titleRes = R.string.tutorial_step_share_select_title,
-            descriptionRes = R.string.tutorial_step_share_select_body
-        ),
-        TutorialStep(
-            imageRes = R.drawable.floating_buttons,
-            titleRes = R.string.tutorial_step_fab_title,
-            descriptionRes = R.string.tutorial_step_fab_body
-        ),
-        TutorialStep(
-            imageRes = R.drawable.my_category,
-            titleRes = R.string.tutorial_step_my_category_title,
-            descriptionRes = R.string.tutorial_step_my_category_body
-        ),
-        TutorialStep(
-            imageRes = R.drawable.app_usages,
-            titleRes = R.string.tutorial_step_usage_permission_title,
-            descriptionRes = R.string.tutorial_step_usage_permission_body
-        ),
-        TutorialStep(
-            imageRes = R.drawable.tutorial_main_ui,
-            titleRes = R.string.tutorial_step_main_ui_title,
-            descriptionRes = R.string.tutorial_step_main_ui_body
-        ),
-        TutorialStep(
-            imageRes = R.drawable.tutorial_side_panel,
-            titleRes = R.string.tutorial_step_side_panel_title,
-            descriptionRes = R.string.tutorial_step_side_panel_body
-        )
+        TutorialStep(R.drawable.top_banner, R.string.tutorial_step_overview_title, R.string.tutorial_step_overview_body),
+        TutorialStep(R.drawable.share_from_browser, R.string.tutorial_step_share_browser_title, R.string.tutorial_step_share_browser_body),
+        TutorialStep(R.drawable.share_from_select, R.string.tutorial_step_share_select_title, R.string.tutorial_step_share_select_body),
+        TutorialStep(R.drawable.floating_buttons, R.string.tutorial_step_fab_title, R.string.tutorial_step_fab_body),
+        TutorialStep(R.drawable.my_category, R.string.tutorial_step_my_category_title, R.string.tutorial_step_my_category_body),
+        TutorialStep(R.drawable.app_usages, R.string.tutorial_step_usage_permission_title, R.string.tutorial_step_usage_permission_body),
+        TutorialStep(R.drawable.main_ui, R.string.tutorial_step_main_ui_title, R.string.tutorial_step_main_ui_body),
+        TutorialStep(R.drawable.side_panel, R.string.tutorial_step_side_panel_title, R.string.tutorial_step_side_panel_body)
     )
 
-    var currentStep by rememberSaveable { mutableStateOf(0) }
+    var currentStep by rememberSaveable { mutableStateOf(initialStep.coerceIn(0, steps.lastIndex)) }
     val isLastStep = currentStep == steps.lastIndex
     val step = steps[currentStep]
     val stepTitle = stringResource(step.titleRes)
@@ -1517,34 +1490,84 @@ private fun TutorialDialog(
     var usagePermissionJob by remember { mutableStateOf<Job?>(null) }
     val usagePermissionStepIndex = steps.indexOfFirst { it.imageRes == R.drawable.app_usages }
     val isUsagePermissionStep = currentStep == usagePermissionStepIndex && usagePermissionStepIndex >= 0
-    var usagePermissionGranted by rememberSaveable { mutableStateOf(false) }
+    var usagePermissionGranted by rememberSaveable { mutableStateOf(UsageStatsHelper(context).hasUsageStatsPermission()) }
+    LaunchedEffect(isUsagePermissionStep) {
+        if (isUsagePermissionStep) {
+            usagePermissionGranted = UsageStatsHelper(context).hasUsageStatsPermission()
+        }
+    }
 
     AlertDialog(
         modifier = Modifier
-            .fillMaxWidth(0.95f)
-            .widthIn(max = 640.dp),
-         onDismissRequest = onFinished,
-         title = { Text(stringResource(R.string.tutorial_title)) },
-         text = {
+            .fillMaxWidth(0.98f)
+            .widthIn(min = 600.dp, max = 760.dp)
+            .height(720.dp),
+        onDismissRequest = onFinished,
+        title = { Text(stringResource(R.string.tutorial_title)) },
+        text = {
             Column(
+                modifier = Modifier.fillMaxHeight(),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
+                val imageScrollState = rememberScrollState()
+                var viewportHeightPx by remember { mutableStateOf(1f) }
+                val isLargeShot = step.imageRes == R.drawable.main_ui || step.imageRes == R.drawable.side_panel || step.imageRes == R.drawable.app_usages
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .heightIn(min = 180.dp, max = 320.dp)
+                        .weight(if (isLargeShot) 0.82f else 0.45f, fill = true)
+                        .heightIn(max = if (isLargeShot) 500.dp else 260.dp)
                         .clip(RoundedCornerShape(12.dp))
                         .background(MaterialTheme.colorScheme.surfaceVariant)
+                        .onSizeChanged { viewportHeightPx = it.height.toFloat() }
                 ) {
-                    Image(
-                        painter = painterResource(id = step.imageRes),
-                        contentDescription = null,
+                    Column(
                         modifier = Modifier
                             .fillMaxSize()
-                            .padding(8.dp),
-                        contentScale = ContentScale.Fit
-                    )
+                            .verticalScroll(imageScrollState)
+                            .padding(horizontal = 8.dp, vertical = 8.dp)
+                    ) {
+                        Image(
+                            painter = painterResource(id = step.imageRes),
+                            contentDescription = null,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .let { base -> if (isLargeShot) base else base.heightIn(max = 220.dp) }
+                                .wrapContentHeight(),
+                            contentScale = if (isLargeShot) ContentScale.FillWidth else ContentScale.Fit
+                        )
+                    }
+                    if (imageScrollState.maxValue > 0) {
+                        val contentHeightPx = viewportHeightPx + imageScrollState.maxValue.toFloat()
+                        val thumbHeightFraction = (viewportHeightPx / contentHeightPx).coerceIn(0.1f, 1f)
+                        val thumbOffsetFraction = (imageScrollState.value.toFloat() / imageScrollState.maxValue.toFloat()).coerceIn(0f, 1f)
+                        val thumbHeight = thumbHeightFraction * viewportHeightPx
+                        val thumbOffset = thumbOffsetFraction * (viewportHeightPx - thumbHeight)
+                        Box(
+                            modifier = Modifier
+                                .fillMaxHeight()
+                                .padding(vertical = 8.dp, horizontal = 6.dp)
+                                .align(Alignment.CenterEnd)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxHeight()
+                                    .width(4.dp)
+                                    .clip(RoundedCornerShape(2.dp))
+                                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f))
+                            )
+                            Box(
+                                modifier = Modifier
+                                    .width(6.dp)
+                                    .height(with(LocalDensity.current) { thumbHeight.toDp() })
+                                    .offset(y = with(LocalDensity.current) { thumbOffset.toDp() })
+                                    .align(Alignment.TopEnd)
+                                    .clip(RoundedCornerShape(3.dp))
+                                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.8f))
+                            )
+                        }
+                    }
                 }
                 Text(
                     text = stepTitle,
@@ -1552,51 +1575,65 @@ private fun TutorialDialog(
                     fontWeight = FontWeight.Bold,
                     textAlign = TextAlign.Center
                 )
-                Text(
-                    text = stepDescription,
-                    style = MaterialTheme.typography.bodyMedium,
-                    textAlign = TextAlign.Center
-                )
-                val activeIndicatorSize = 10.dp
-                val inactiveIndicatorSize = 8.dp
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.Center
-                ) {
-                    steps.forEachIndexed { index, _ ->
-                        val color = if (index == currentStep) {
-                            MaterialTheme.colorScheme.primary
-                        } else {
-                            MaterialTheme.colorScheme.outline
-                        }
-                        Box(
-                            modifier = Modifier
-                                .padding(horizontal = 4.dp)
-                                .size(if (index == currentStep) activeIndicatorSize else inactiveIndicatorSize)
-                                .clip(CircleShape)
-                                .background(color)
-                        )
+                val usageDescriptionForGranted = when {
+                    isUsagePermissionStep && usagePermissionGranted -> {
+                        // Only keep header part when permission is already granted
+                        stringResource(R.string.tutorial_step_usage_permission_body_header)
                     }
-                }
-                if (isUsagePermissionStep) {
-                    TextButton(onClick = {
-                        usagePermissionJob?.cancel()
-                        launchUsageAccessSettings(context)
-                        usagePermissionJob = tutorialCoroutineScope.launch {
-                            val helper = UsageStatsHelper(context)
-                            val deadline = System.currentTimeMillis() + 60_000
-                            while (System.currentTimeMillis() < deadline && !helper.hasUsageStatsPermission()) {
-                                delay(2_000)
-                            }
-                            if (helper.hasUsageStatsPermission()) {
-                                usagePermissionGranted = true
-                                currentStep = (currentStep + 1).coerceAtMost(steps.lastIndex)
-                            }
-                        }
-                    }) {
-                        Text(stringResource(R.string.tutorial_usage_permission_button))
+                    isUsagePermissionStep -> {
+                        // Show full text (header + hint) when not granted
+                        stringResource(R.string.tutorial_step_usage_permission_body)
                     }
+                    else -> stepDescription
                 }
+                val descriptionToShow = if (usageDescriptionForGranted.isNotBlank()) usageDescriptionForGranted else null
+                descriptionToShow?.let {
+                    Text(
+                        text = it,
+                        style = MaterialTheme.typography.bodyMedium,
+                        textAlign = TextAlign.Center
+                    )
+                }
+                 val activeIndicatorSize = 10.dp
+                 val inactiveIndicatorSize = 8.dp
+                 Row(
+                     modifier = Modifier.fillMaxWidth(),
+                     horizontalArrangement = Arrangement.Center
+                 ) {
+                     steps.forEachIndexed { index, _ ->
+                         val color = if (index == currentStep) {
+                             MaterialTheme.colorScheme.primary
+                         } else {
+                             MaterialTheme.colorScheme.outline
+                         }
+                         Box(
+                             modifier = Modifier
+                                 .padding(horizontal = 4.dp)
+                                 .size(if (index == currentStep) activeIndicatorSize else inactiveIndicatorSize)
+                                 .clip(CircleShape)
+                                 .background(color)
+                         )
+                     }
+                 }
+                if (isUsagePermissionStep && !usagePermissionGranted) {
+                     TextButton(onClick = {
+                         usagePermissionJob?.cancel()
+                         launchUsageAccessSettings(context)
+                         usagePermissionJob = tutorialCoroutineScope.launch {
+                             val helper = UsageStatsHelper(context)
+                             val deadline = System.currentTimeMillis() + 60_000
+                             while (System.currentTimeMillis() < deadline && !helper.hasUsageStatsPermission()) {
+                                 delay(2_000)
+                             }
+                             if (helper.hasUsageStatsPermission()) {
+                                 usagePermissionGranted = true
+                                 currentStep = (currentStep + 1).coerceAtMost(steps.lastIndex)
+                             }
+                         }
+                     }) {
+                         Text(stringResource(R.string.tutorial_usage_permission_button))
+                     }
+                 }
             }
         },
         confirmButton = {
@@ -1608,11 +1645,7 @@ private fun TutorialDialog(
                 }
             }) {
                 Text(
-                    if (isLastStep) {
-                        stringResource(R.string.tutorial_done)
-                    } else {
-                        stringResource(R.string.tutorial_next)
-                    }
+                    if (isLastStep) stringResource(R.string.tutorial_done) else stringResource(R.string.tutorial_next)
                 )
             }
         },
@@ -1625,11 +1658,7 @@ private fun TutorialDialog(
                 }
             }) {
                 Text(
-                    if (currentStep > 0) {
-                        stringResource(R.string.tutorial_back)
-                    } else {
-                        stringResource(R.string.tutorial_skip)
-                    }
+                    if (currentStep > 0) stringResource(R.string.tutorial_back) else stringResource(R.string.tutorial_skip)
                 )
             }
         }
@@ -1965,6 +1994,55 @@ private fun PreviewPinnedPhotoFrame() {
             )
         }
     }
+}
+
+@Preview(name = "Tutorial Main UI - Pixel 9", widthDp = 411, heightDp = 915, showBackground = true)
+@Composable
+private fun PreviewTutorialMainUiPixel9() {
+    MemoizTheme {
+        Surface {
+            val start = listOf(
+                R.drawable.main_ui,
+                R.drawable.side_panel
+            )
+            TutorialDialog(
+                onFinished = {},
+                initialStep = stepsIndexForPreview(start, R.drawable.main_ui)
+            )
+        }
+    }
+}
+
+@Preview(name = "Tutorial Main UI - Nexus 5", device = Devices.NEXUS_5, showBackground = true)
+@Composable
+private fun PreviewTutorialMainUiNexus5() {
+    MemoizTheme {
+        Surface {
+            TutorialDialog(
+                onFinished = {},
+                initialStep = stepsIndexForPreview(emptyList(), R.drawable.main_ui)
+            )
+        }
+    }
+}
+
+@Composable
+private fun stepsIndexForPreview(priority: List<Int>, target: Int): Int {
+    val steps = listOf(
+        R.drawable.top_banner,
+        R.drawable.share_from_browser,
+        R.drawable.share_from_select,
+        R.drawable.floating_buttons,
+        R.drawable.my_category,
+        R.drawable.app_usages,
+        R.drawable.main_ui,
+        R.drawable.side_panel
+    )
+    priority.forEach { preferred ->
+        val idx = steps.indexOf(preferred)
+        if (idx >= 0) return idx
+    }
+    return steps.indexOf(target).coerceAtLeast(0)
 }
 
 @Composable

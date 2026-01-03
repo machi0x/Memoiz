@@ -110,9 +110,10 @@
     <string name="tutorial_step_side_panel_body">メニューアイコンでサイドパネルを開き、タイプやカテゴリで絞り込み、＋でマイカテゴリ管理や設定画面へ移動できます。</string>
     <string name="tutorial_step_my_category_title">自分でカテゴリを作成</string>
     <string name="tutorial_step_my_category_body">メイン画面のサイドパネル等からあなた独自のカテゴリを追加することもできます。AIによるカテゴリ分けの際に考慮されるようになります。</string>
-    <string name="tutorial_step_usage_permission_title">アプリの利用状況へのアクセス権限について</string>
-    <string name="tutorial_step_usage_permission_body">権限を許可すると、共有したアプリ名をメモに記録でき、AI解析の精度も向上します。「権限を許可 ↗」をタップしてメモイズに権限を許可するか、あとメモイズの設定から許可してください。</string>
+    <string name="tutorial_step_usage_permission_title">権限について</string>
     <string name="tutorial_usage_permission_button">権限を許可 ↗</string>
+    <string name="tutorial_step_usage_permission_body_header">いくつかの権限をメモイズに許可すると、より便利に使えます。例えば「アプリの利用状況へのアクセス」権限を許可すると、共有元のアプリ名をメモに記録できます。</string>
+    <string name="tutorial_step_usage_permission_body">いくつかの権限をメモイズに許可すると、より便利に使えます。例えば「アプリの使用状況データ」権限を許可すると、共有元のアプリ名をメモに記録できます。下のボタンから許可するか、後でメモイズの設定から許可してください。</string>
 
     <string name="settings_tutorial_title">チュートリアルを見る</string>
     <string name="settings_tutorial_description">機能と権限の説明をもう一度表示します。</string>

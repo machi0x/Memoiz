@@ -126,8 +126,9 @@ Tap the clipboard button or share content to start.</string>
     <string name="tutorial_step_my_category_title">Teach Memoiz your category</string>
     <string name="tutorial_step_my_category_body">Add My Category names so the AI can sort your memos using your own language. You can merge or delete them later without losing memos.</string>
     <string name="tutorial_step_usage_permission_title">Why usage access helps</string>
-    <string name="tutorial_step_usage_permission_body">Granting usage access lets Memoiz record the source app for each memo and improves on-device analysis accuracy. Tap “Grant permission ↗” to open Usage Access now, or allow it later from Memoiz settings.</string>
     <string name="tutorial_usage_permission_button">Grant permission ↗</string>
+    <string name="tutorial_step_usage_permission_body_header">Granting usage access lets Memoiz record the source app for each memo and improves on-device analysis accuracy.</string>
+    <string name="tutorial_step_usage_permission_body">Granting usage access lets Memoiz record the source app for each memo and improves on-device analysis accuracy. Tap "Grant permission ↗" to open Usage Access now, or allow it later from Memoiz settings.</string>
     <string name="tutorial_step_main_ui_title">Main screen basics</string>
     <string name="tutorial_step_main_ui_body">Use the top search bar, expand category headers, drag them to reorder, and run memo actions (open, share, re-analyze, delete) directly from the list.</string>
     <string name="tutorial_step_side_panel_title">Side panel filters</string>
