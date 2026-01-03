@@ -1512,20 +1512,31 @@ private fun TutorialDialog(
             ) {
                 val imageScrollState = rememberScrollState()
                 var viewportHeightPx by remember { mutableStateOf(1f) }
-                val isLargeShot = step.imageRes == R.drawable.main_ui || step.imageRes == R.drawable.side_panel || step.imageRes == R.drawable.app_usages
+                val isUsageStep = step.imageRes == R.drawable.app_usages
+                val isLargeShot = step.imageRes == R.drawable.main_ui || step.imageRes == R.drawable.side_panel
+                val isSmallStep = !isUsageStep && !isLargeShot
+                val baseBoxModifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(MaterialTheme.colorScheme.surfaceVariant)
                 Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(if (isLargeShot) 0.82f else 0.45f, fill = true)
-                        .heightIn(max = if (isLargeShot) 500.dp else 260.dp)
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(MaterialTheme.colorScheme.surfaceVariant)
-                        .onSizeChanged { viewportHeightPx = it.height.toFloat() }
+                    modifier = when {
+                        isUsageStep -> baseBoxModifier
+                            .heightIn(max = 280.dp)
+                            .onSizeChanged { viewportHeightPx = it.height.toFloat() }
+                        isLargeShot -> baseBoxModifier
+                            .weight(0.55f, fill = true)
+                            .heightIn(max = 360.dp)
+                            .onSizeChanged { viewportHeightPx = it.height.toFloat() }
+                        else -> baseBoxModifier
+                            .heightIn(max = 280.dp)
+                            .onSizeChanged { viewportHeightPx = it.height.toFloat() }
+                    }
                 ) {
                     Column(
                         modifier = Modifier
                             .fillMaxSize()
-                            .verticalScroll(imageScrollState)
+                            .let { m -> if (isSmallStep) m.verticalScroll(imageScrollState) else m.verticalScroll(imageScrollState) }
                             .padding(horizontal = 8.dp, vertical = 8.dp)
                     ) {
                         Image(
@@ -1533,7 +1544,6 @@ private fun TutorialDialog(
                             contentDescription = null,
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .let { base -> if (isLargeShot) base else base.heightIn(max = 220.dp) }
                                 .wrapContentHeight(),
                             contentScale = if (isLargeShot) ContentScale.FillWidth else ContentScale.Fit
                         )
@@ -1569,6 +1579,7 @@ private fun TutorialDialog(
                         }
                     }
                 }
+
                 Text(
                     text = stepTitle,
                     style = MaterialTheme.typography.titleMedium,
