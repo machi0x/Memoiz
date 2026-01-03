@@ -175,7 +175,8 @@ class MlKitCategorizer(private val context: Context) {
      * @return Pair<String?, String?> where:
      *   - first: the image description if successful, null otherwise
      *   - second: error details if failed, null otherwise
-     *   Only one element of the pair will be non-null.
+     *   When successful, first will be non-null and second will be null.
+     *   When failed, first will be null and second will contain error details.
      */
     private suspend fun describeImageWithErrorDetails(bitmap: Bitmap): Pair<String?, String?> = withContext(Dispatchers.IO) {
         try {
