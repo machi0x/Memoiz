@@ -127,7 +127,12 @@ class MlKitCategorizer(private val context: Context) {
     suspend fun categorizeImage(bitmap: Bitmap, sourceApp: String?): Triple<String?, String?, String?>? {
         return try {
             // Get image description first
-            val description = describeImage(bitmap)
+            val (description, errorDetails) = describeImageWithErrorDetails(bitmap)
+            
+            // If we have error details, store them in the summary for debugging
+            if (errorDetails != null) {
+                return Triple(failureCategoryLabel(), null, "DEBUG: Image description failed - $errorDetails")
+            }
             
             // If we have a description, categorize based on it like text
             val localizedDescription = localizeDescription(description)
@@ -141,11 +146,12 @@ class MlKitCategorizer(private val context: Context) {
                     Triple(localizedMain, localizedSub, localizedDescription)
                 }
             } else {
-                Triple(failureCategoryLabel(), null, null)
+                Triple(failureCategoryLabel(), null, "DEBUG: Image description returned null or empty")
             }
         } catch (e: Exception) {
             e.printStackTrace()
-            Triple(failureCategoryLabel(), null, null)
+            val errorMsg = "DEBUG: Exception in categorizeImage - ${e.javaClass.simpleName}: ${e.message}"
+            Triple(failureCategoryLabel(), null, errorMsg)
         }
     }
 
@@ -164,6 +170,25 @@ class MlKitCategorizer(private val context: Context) {
                  .await()
              result.description
         }.onFailure { it.printStackTrace() }.getOrNull()
+    }
+    
+    private suspend fun describeImageWithErrorDetails(bitmap: Bitmap): Pair<String?, String?> = withContext(Dispatchers.IO) {
+        try {
+            val request = ImageDescriptionRequest.builder(bitmap).build()
+            val result = imageDescriber
+                .runInference(request)
+                .await()
+            
+            val description = result.description
+            if (description == null) {
+                return@withContext Pair(null, "API returned null description")
+            }
+            return@withContext Pair(description, null)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            val errorMsg = "${e.javaClass.simpleName}: ${e.message ?: "no message"}"
+            return@withContext Pair(null, errorMsg)
+        }
     }
 
     private suspend fun summarize(text: String): String? = withContext(Dispatchers.IO) {
