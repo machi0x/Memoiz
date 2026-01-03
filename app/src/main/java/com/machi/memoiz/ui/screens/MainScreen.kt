@@ -1627,6 +1627,11 @@ private fun TutorialDialog(
                              }
                              if (helper.hasUsageStatsPermission()) {
                                  usagePermissionGranted = true
+                                 // Bring the main UI to foreground once permission is granted.
+                                 context.packageManager.getLaunchIntentForPackage(context.packageName)?.let { intent ->
+                                     intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+                                     context.startActivity(intent)
+                                 }
                                  currentStep = (currentStep + 1).coerceAtMost(steps.lastIndex)
                              }
                          }
