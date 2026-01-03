@@ -78,13 +78,27 @@ jobs:
           echo "VERSION_CODE=${VERSION_CODE}" >> $GITHUB_OUTPUT
           echo "Version: ${VERSION_NAME} (${VERSION_CODE})"
       
-      # Upload Release APK as artifact
-      - name: Upload Release APK
-        uses: actions/upload-artifact@v4
+      # Get the release APK name
+      - name: Get Release APK Path
+        id: release_apk
+        run: |
+          APK_PATH=$(find app/build/outputs/apk/release -name "*.apk" | head -n 1)
+          echo "APK_PATH=$APK_PATH" >> $GITHUB_OUTPUT
+          echo "Found APK: $APK_PATH"
+          if [ ! -f "$APK_PATH" ]; then
+            echo "Error: Release APK file not found!"
+            exit 1
+          fi
+      
+      # Deploy release build to Firebase App Distribution
+      - name: Deploy to Firebase App Distribution
+        uses: wzieba/Firebase-Distribution-Github-Action@v1.7.0
         with:
-          name: PR-${{ github.event.pull_request.number }}-release-apk
-          path: app/build/outputs/apk/release/*.apk
-          retention-days: 30
+          appId: ${{ secrets.FIREBASE_APP_ID }}
+          serviceCredentialsFileContent: ${{ secrets.FIREBASE_SERVICE_CREDENTIALS }}
+          groups: memoiz-testers
+          file: ${{ steps.release_apk.outputs.APK_PATH }}
+          releaseNotes: "PR #${{ github.event.pull_request.number }} - Automated build from PR workflow"
       
       # Comment on PR with build results
       - name: Comment on PR
@@ -102,8 +116,8 @@ jobs:
             **Version:** ${versionName} (${versionCode})
             **Commit:** ${sha.substring(0, 7)}
             
-            📦 **Download APK:**
-            You can download the release APK from the [workflow artifacts](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${runId}).
+            🚀 **Firebase App Distribution:**
+            The APK has been deployed to Firebase App Distribution for the **memoiz-testers** group.
             
             > Built by [PR Build workflow](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${runId})`;
             
@@ -251,14 +265,29 @@ jobs:
           echo "VERSION_CODE=${VERSION_CODE}" >> $GITHUB_OUTPUT
           echo "Version: ${VERSION_NAME} (${VERSION_CODE})"
       
-      # Upload Release APK as artifact
-      - name: Upload Release APK
+      # Get the release APK name
+      - name: Get Release APK Path
         if: steps.check_trigger.outputs.should_build == 'true'
-        uses: actions/upload-artifact@v4
+        id: release_apk
+        run: |
+          APK_PATH=$(find app/build/outputs/apk/release -name "*.apk" | head -n 1)
+          echo "APK_PATH=$APK_PATH" >> $GITHUB_OUTPUT
+          echo "Found APK: $APK_PATH"
+          if [ ! -f "$APK_PATH" ]; then
+            echo "Error: Release APK file not found!"
+            exit 1
+          fi
+      
+      # Deploy release build to Firebase App Distribution
+      - name: Deploy to Firebase App Distribution
+        if: steps.check_trigger.outputs.should_build == 'true'
+        uses: wzieba/Firebase-Distribution-Github-Action@v1.7.0
         with:
-          name: PR-${{ steps.pr_details.outputs.pr_number }}-release-apk-comment
-          path: app/build/outputs/apk/release/*.apk
-          retention-days: 30
+          appId: ${{ secrets.FIREBASE_APP_ID }}
+          serviceCredentialsFileContent: ${{ secrets.FIREBASE_SERVICE_CREDENTIALS }}
+          groups: memoiz-testers
+          file: ${{ steps.release_apk.outputs.APK_PATH }}
+          releaseNotes: "PR #${{ steps.pr_details.outputs.pr_number }} - Automated build from PR workflow (comment trigger)"
       
       # Comment on PR with build results
       - name: Comment on PR
@@ -277,8 +306,8 @@ jobs:
             **Version:** ${versionName} (${versionCode})
             **Commit:** ${sha.substring(0, 7)}
             
-            📦 **Download APK:**
-            You can download the release APK from the [workflow artifacts](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${runId}).
+            🚀 **Firebase App Distribution:**
+            The APK has been deployed to Firebase App Distribution for the **memoiz-testers** group.
             
             > Built by [PR Build workflow](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${runId}) in response to comment`;
             
