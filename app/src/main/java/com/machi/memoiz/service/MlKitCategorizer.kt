@@ -6,6 +6,7 @@ import com.google.mlkit.genai.imagedescription.ImageDescription
 import com.google.mlkit.genai.imagedescription.ImageDescriptionRequest
 import com.google.mlkit.genai.imagedescription.ImageDescriber
 import com.google.mlkit.genai.imagedescription.ImageDescriberOptions
+import com.google.mlkit.common.MlKitException
 import com.google.mlkit.genai.prompt.GenerativeModel
 import com.google.mlkit.genai.prompt.Generation
 import com.google.mlkit.genai.prompt.GenerationConfig
@@ -25,6 +26,7 @@ import com.machi.memoiz.R
 import com.machi.memoiz.util.FailureCategoryHelper
 import java.util.Locale
 import org.json.JSONObject
+import com.google.mlkit.genai.common.GenAiException
 
 /**
  * Wrapper that calls ML Kit GenAI APIs to generate a short category
@@ -143,6 +145,11 @@ class MlKitCategorizer(private val context: Context) {
             } else {
                 Triple(failureCategoryLabel(), null, null)
             }
+        } catch (e: PermanentCategorizationException) {
+            e.printStackTrace()
+            // Return uncategorizable for permanent errors with error code
+            val errorMessage = mapPermanentErrorMessage(e.errorCode)
+            Triple(uncategorizableLabel(), null, errorMessage)
         } catch (e: Exception) {
             e.printStackTrace()
             Triple(failureCategoryLabel(), null, null)
@@ -157,13 +164,53 @@ class MlKitCategorizer(private val context: Context) {
     }
 
     private suspend fun describeImage(bitmap: Bitmap): String? = withContext(Dispatchers.IO) {
-        runCatching {
+        try {
             val request = ImageDescriptionRequest.builder(bitmap).build()
-             val result = imageDescriber
-                 .runInference(request)
-                 .await()
-             result.description
-        }.onFailure { it.printStackTrace() }.getOrNull()
+            val result = imageDescriber
+                .runInference(request)
+                .await()
+            result.description
+        } catch (e: GenAiException) {
+            e.printStackTrace()
+            if (isPermanentGenAiError(e.errorCode)) {
+                throw PermanentCategorizationException(e.errorCode)
+            }
+            null
+        } catch (e: MlKitException) {
+            e.printStackTrace()
+            // Prefer GenAiException codes if present as cause; otherwise treat MlKit codes as transient.
+            val genAiError = (e.cause as? GenAiException)?.errorCode
+            if (genAiError != null && isPermanentGenAiError(genAiError)) {
+                throw PermanentCategorizationException(genAiError)
+            }
+            null
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
+    }
+    
+    // Custom exception to mark permanent categorization failures
+    private class PermanentCategorizationException(val errorCode: Int) : Exception("Permanent error: $errorCode")
+
+    private fun isPermanentGenAiError(errorCode: Int): Boolean = when (errorCode) {
+        GenAiException.ErrorCode.RESPONSE_PROCESSING_ERROR,
+        GenAiException.ErrorCode.RESPONSE_GENERATION_ERROR,
+        GenAiException.ErrorCode.REQUEST_TOO_SMALL,
+        GenAiException.ErrorCode.REQUEST_TOO_LARGE,
+        GenAiException.ErrorCode.REQUEST_PROCESSING_ERROR,
+        GenAiException.ErrorCode.INVALID_INPUT_IMAGE -> true
+        else -> false
+    }
+
+    private fun mapPermanentErrorMessage(errorCode: Int): String = when (errorCode) {
+        GenAiException.ErrorCode.REQUEST_TOO_SMALL -> context.getString(R.string.error_image_analysis_reason_request_too_small)
+        GenAiException.ErrorCode.REQUEST_TOO_LARGE -> context.getString(R.string.error_image_analysis_reason_request_too_large)
+        GenAiException.ErrorCode.INVALID_INPUT_IMAGE -> context.getString(R.string.error_image_analysis_reason_invalid_input_image)
+        GenAiException.ErrorCode.RESPONSE_PROCESSING_ERROR -> context.getString(R.string.error_image_analysis_reason_response_processing_error)
+        GenAiException.ErrorCode.RESPONSE_GENERATION_ERROR -> context.getString(R.string.error_image_analysis_reason_response_generation_error)
+        GenAiException.ErrorCode.REQUEST_PROCESSING_ERROR -> context.getString(R.string.error_image_analysis_reason_request_processing_error)
+        else -> context.getString(R.string.error_image_analysis_failed, errorCode)
     }
 
     private suspend fun summarize(text: String): String? = withContext(Dispatchers.IO) {
