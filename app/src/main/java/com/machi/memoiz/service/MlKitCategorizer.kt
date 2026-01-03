@@ -162,10 +162,21 @@ class MlKitCategorizer(private val context: Context) {
         }.onFailure { it.printStackTrace() }.getOrNull()
     }
 
+    /**
+     * Describes an image using ML Kit's image description API.
+     * This is a convenience wrapper that calls describeImageWithErrorDetails and returns only the description.
+     */
     private suspend fun describeImage(bitmap: Bitmap): String? {
         return describeImageWithErrorDetails(bitmap).first
     }
     
+    /**
+     * Describes an image and captures detailed error information.
+     * @return Pair<String?, String?> where:
+     *   - first: the image description if successful, null otherwise
+     *   - second: error details if failed, null otherwise
+     *   Only one element of the pair will be non-null.
+     */
     private suspend fun describeImageWithErrorDetails(bitmap: Bitmap): Pair<String?, String?> = withContext(Dispatchers.IO) {
         try {
             val request = ImageDescriptionRequest.builder(bitmap).build()
@@ -180,7 +191,7 @@ class MlKitCategorizer(private val context: Context) {
             return@withContext Pair(description, null)
         } catch (e: Exception) {
             e.printStackTrace()
-            val errorMsg = "${e.javaClass.simpleName}: ${e.message ?: "no message"}"
+            val errorMsg = "${e.javaClass.simpleName}: ${e.message ?: "Unknown error - no details available"}"
             return@withContext Pair(null, errorMsg)
         }
     }
