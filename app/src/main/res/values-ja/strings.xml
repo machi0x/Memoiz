@@ -129,10 +129,6 @@
     <string name="error_image_analysis_failed">このメモは解析できません。 (エラー: %1$d)</string>
     <string name="toast_copy_to_clipboard">クリップボードにコピーしました。</string>
     <string name="cd_copy_memo">メモをコピー</string>
-    <string name="error_image_analysis_reason_request_too_small">画像が小さすぎるため解析できません。</string>
-    <string name="error_image_analysis_reason_request_too_large">画像が大きすぎるため解析できません。</string>
-    <string name="error_image_analysis_reason_invalid_input_image">画像が不正なため解析できません。</string>
-    <string name="error_image_analysis_reason_response_processing_error">レスポンス処理に失敗したため解析できません。</string>
-    <string name="error_image_analysis_reason_response_generation_error">レスポンス生成に失敗したため解析できません。</string>
-    <string name="error_image_analysis_reason_request_processing_error">リクエスト処理に失敗したため解析できません。</string>
+    <string name="error_image_analysis_permanent_with_code">このメモは解析できません。エラーコード: (%1$s)</string>
+    <!-- 詳細理由の個別文言はユーザー混乱防止のため統合 -->
 </resources>
