@@ -6,6 +6,7 @@ import com.google.mlkit.genai.imagedescription.ImageDescription
 import com.google.mlkit.genai.imagedescription.ImageDescriptionRequest
 import com.google.mlkit.genai.imagedescription.ImageDescriber
 import com.google.mlkit.genai.imagedescription.ImageDescriberOptions
+import com.google.mlkit.common.MlKitException
 import com.google.mlkit.genai.prompt.GenerativeModel
 import com.google.mlkit.genai.prompt.Generation
 import com.google.mlkit.genai.prompt.GenerationConfig
@@ -25,6 +26,7 @@ import com.machi.memoiz.R
 import com.machi.memoiz.util.FailureCategoryHelper
 import java.util.Locale
 import org.json.JSONObject
+import com.google.mlkit.genai.common.GenAiException
 
 /**
  * Wrapper that calls ML Kit GenAI APIs to generate a short category
@@ -127,12 +129,7 @@ class MlKitCategorizer(private val context: Context) {
     suspend fun categorizeImage(bitmap: Bitmap, sourceApp: String?): Triple<String?, String?, String?>? {
         return try {
             // Get image description first
-            val (description, errorDetails) = describeImageWithErrorDetails(bitmap)
-            
-            // If we have error details, store them in the summary for debugging
-            if (errorDetails != null) {
-                return Triple(failureCategoryLabel(), null, "DEBUG: Image description failed - $errorDetails")
-            }
+            val description = describeImage(bitmap)
             
             // If we have a description, categorize based on it like text
             val localizedDescription = localizeDescription(description)
@@ -146,12 +143,16 @@ class MlKitCategorizer(private val context: Context) {
                     Triple(localizedMain, localizedSub, localizedDescription)
                 }
             } else {
-                Triple(failureCategoryLabel(), null, "DEBUG: Image description returned null or empty")
+                Triple(failureCategoryLabel(), null, null)
             }
+        } catch (e: PermanentCategorizationException) {
+            e.printStackTrace()
+            // Return uncategorizable for permanent errors with error code
+            val errorMessage = mapPermanentErrorMessage(e.errorCode)
+            Triple(uncategorizableLabel(), null, errorMessage)
         } catch (e: Exception) {
             e.printStackTrace()
-            val errorMsg = "DEBUG: Exception in categorizeImage - ${e.javaClass.simpleName}: ${e.message}"
-            Triple(failureCategoryLabel(), null, errorMsg)
+            Triple(failureCategoryLabel(), null, null)
         }
     }
 
@@ -162,39 +163,54 @@ class MlKitCategorizer(private val context: Context) {
         }.onFailure { it.printStackTrace() }.getOrNull()
     }
 
-    /**
-     * Describes an image using ML Kit's image description API.
-     * This is a convenience wrapper that calls describeImageWithErrorDetails and returns only the description.
-     */
-    private suspend fun describeImage(bitmap: Bitmap): String? {
-        return describeImageWithErrorDetails(bitmap).first
-    }
-    
-    /**
-     * Describes an image and captures detailed error information.
-     * @return Pair<String?, String?> where:
-     *   - first: the image description if successful, null otherwise
-     *   - second: error details if failed, null otherwise
-     *   When successful, first will be non-null and second will be null.
-     *   When failed, first will be null and second will contain error details.
-     */
-    private suspend fun describeImageWithErrorDetails(bitmap: Bitmap): Pair<String?, String?> = withContext(Dispatchers.IO) {
+    private suspend fun describeImage(bitmap: Bitmap): String? = withContext(Dispatchers.IO) {
         try {
             val request = ImageDescriptionRequest.builder(bitmap).build()
             val result = imageDescriber
                 .runInference(request)
                 .await()
-            
-            val description = result.description
-            if (description.isNullOrBlank()) {
-                return@withContext Pair(null, "API returned null or blank description")
+            result.description
+        } catch (e: GenAiException) {
+            e.printStackTrace()
+            if (isPermanentGenAiError(e.errorCode)) {
+                throw PermanentCategorizationException(e.errorCode)
             }
-            return@withContext Pair(description, null)
+            null
+        } catch (e: MlKitException) {
+            e.printStackTrace()
+            // Prefer GenAiException codes if present as cause; otherwise treat MlKit codes as transient.
+            val genAiError = (e.cause as? GenAiException)?.errorCode
+            if (genAiError != null && isPermanentGenAiError(genAiError)) {
+                throw PermanentCategorizationException(genAiError)
+            }
+            null
         } catch (e: Exception) {
             e.printStackTrace()
-            val errorMsg = "${e.javaClass.simpleName}: ${e.message ?: "Unknown error - no details available"}"
-            return@withContext Pair(null, errorMsg)
+            null
         }
+    }
+    
+    // Custom exception to mark permanent categorization failures
+    private class PermanentCategorizationException(val errorCode: Int) : Exception("Permanent error: $errorCode")
+
+    private fun isPermanentGenAiError(errorCode: Int): Boolean = when (errorCode) {
+        GenAiException.ErrorCode.RESPONSE_PROCESSING_ERROR,
+        GenAiException.ErrorCode.RESPONSE_GENERATION_ERROR,
+        GenAiException.ErrorCode.REQUEST_TOO_SMALL,
+        GenAiException.ErrorCode.REQUEST_TOO_LARGE,
+        GenAiException.ErrorCode.REQUEST_PROCESSING_ERROR,
+        GenAiException.ErrorCode.INVALID_INPUT_IMAGE -> true
+        else -> false
+    }
+
+    private fun mapPermanentErrorMessage(errorCode: Int): String = when (errorCode) {
+        GenAiException.ErrorCode.REQUEST_TOO_SMALL -> context.getString(R.string.error_image_analysis_reason_request_too_small)
+        GenAiException.ErrorCode.REQUEST_TOO_LARGE -> context.getString(R.string.error_image_analysis_reason_request_too_large)
+        GenAiException.ErrorCode.INVALID_INPUT_IMAGE -> context.getString(R.string.error_image_analysis_reason_invalid_input_image)
+        GenAiException.ErrorCode.RESPONSE_PROCESSING_ERROR -> context.getString(R.string.error_image_analysis_reason_response_processing_error)
+        GenAiException.ErrorCode.RESPONSE_GENERATION_ERROR -> context.getString(R.string.error_image_analysis_reason_response_generation_error)
+        GenAiException.ErrorCode.REQUEST_PROCESSING_ERROR -> context.getString(R.string.error_image_analysis_reason_request_processing_error)
+        else -> context.getString(R.string.error_image_analysis_failed, errorCode)
     }
 
     private suspend fun summarize(text: String): String? = withContext(Dispatchers.IO) {
