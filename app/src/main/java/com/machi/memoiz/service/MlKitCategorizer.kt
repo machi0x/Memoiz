@@ -162,14 +162,8 @@ class MlKitCategorizer(private val context: Context) {
         }.onFailure { it.printStackTrace() }.getOrNull()
     }
 
-    private suspend fun describeImage(bitmap: Bitmap): String? = withContext(Dispatchers.IO) {
-        runCatching {
-            val request = ImageDescriptionRequest.builder(bitmap).build()
-             val result = imageDescriber
-                 .runInference(request)
-                 .await()
-             result.description
-        }.onFailure { it.printStackTrace() }.getOrNull()
+    private suspend fun describeImage(bitmap: Bitmap): String? {
+        return describeImageWithErrorDetails(bitmap).first
     }
     
     private suspend fun describeImageWithErrorDetails(bitmap: Bitmap): Pair<String?, String?> = withContext(Dispatchers.IO) {
@@ -180,8 +174,8 @@ class MlKitCategorizer(private val context: Context) {
                 .await()
             
             val description = result.description
-            if (description == null) {
-                return@withContext Pair(null, "API returned null description")
+            if (description.isNullOrBlank()) {
+                return@withContext Pair(null, "API returned null or blank description")
             }
             return@withContext Pair(description, null)
         } catch (e: Exception) {
