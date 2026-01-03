@@ -94,7 +94,7 @@
     <string name="tutorial_title">メモイズの使い方</string>
     <string name="tutorial_next">次へ</string>
     <string name="tutorial_done">わかりました</string>
-    <string name="tutorial_skip">スキップ</string>
+    <string name="tutorial_skip">以降表示しない</string>
     <string name="tutorial_back">戻る</string>
     <string name="tutorial_step_overview_title">メモイズでできること</string>
     <string name="tutorial_step_overview_body">気になったテキストやリンク、画像をメモイズに共有すると、端末内のAIが解析・分類してメモとして保存します。保存したメモは後で簡単に検索・再利用できます。メモが外部に送信されることはありません。</string>

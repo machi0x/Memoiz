@@ -1536,7 +1536,8 @@ private fun TutorialDialog(
                     Column(
                         modifier = Modifier
                             .fillMaxSize()
-                            .let { m -> if (isSmallStep) m.verticalScroll(imageScrollState) else m.verticalScroll(imageScrollState) }
+                            // Only keep scroll for large shots after permission; cut off for earlier steps.
+                            .let { m -> if (isLargeShot) m.verticalScroll(imageScrollState) else m }
                             .padding(horizontal = 8.dp, vertical = 8.dp)
                     ) {
                         Image(
@@ -1548,7 +1549,7 @@ private fun TutorialDialog(
                             contentScale = if (isLargeShot) ContentScale.FillWidth else ContentScale.Fit
                         )
                     }
-                    if (imageScrollState.maxValue > 0) {
+                    if (isLargeShot && imageScrollState.maxValue > 0) {
                         val contentHeightPx = viewportHeightPx + imageScrollState.maxValue.toFloat()
                         val thumbHeightFraction = (viewportHeightPx / contentHeightPx).coerceIn(0.1f, 1f)
                         val thumbOffsetFraction = (imageScrollState.value.toFloat() / imageScrollState.maxValue.toFloat()).coerceIn(0f, 1f)
