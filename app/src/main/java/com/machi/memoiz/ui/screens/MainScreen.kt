@@ -1904,7 +1904,7 @@ private fun PreviewPinnedPhotoFrame() {
 private fun CampusNoteTextAligned(
     text: String,
     modifier: Modifier = Modifier,
-    lineHeight: androidx.compose.ui.unit.TextUnit = 24.sp
+    lineHeight: androidx.compose.ui.unit.TextUnit = 20.sp // smaller line spacing
 ) {
     val density = LocalDensity.current
     val lineHeightPx = with(density) { lineHeight.toPx() }
@@ -1927,7 +1927,8 @@ private fun CampusNoteTextAligned(
                     end = Offset(marginX, size.height),
                     strokeWidth = 2.dp.toPx()
                 )
-                var y = lineHeightPx
+                val lineOffset = 2.dp.toPx() // nudge lines upward for better baseline alignment
+                var y = lineHeightPx - lineOffset
                 while (y < size.height) {
                     drawLine(
                         color = Color(0xFFB7D7FF),
@@ -1938,7 +1939,7 @@ private fun CampusNoteTextAligned(
                     y += lineHeightPx
                 }
             }
-            .padding(start = 44.dp, top = 6.dp, end = 16.dp, bottom = 16.dp))
+            .padding(start = 44.dp, top = 2.dp, end = 16.dp, bottom = 16.dp))
 }
 
 private data class PrimaryAction(
