@@ -4,9 +4,6 @@
     <string name="failure_category">Analysis failure - will re-analyze automatically</string>
     <string name="failure_category_en" translatable="false">FAILURE</string>
     <string name="failure_category_ja" translatable="false">分類失敗</string>
-    <string name="failure_category_canonical">Analysis failure - will re-analyze automatically</string>
-    <string name="category_web_site">Web site</string>
-    <string name="category_image">Image</string>
     <string name="category_uncategorizable">Uncategorizable</string>
     
     <!-- Memo type labels -->
@@ -15,11 +12,10 @@
     <string name="memo_type_image">Image</string>
     
     <string name="fab_paste_clipboard">Paste from clipboard</string>
-    <string name="share_to_memoiz">Share to Memoiz</string>
     <string name="empty_state_message">No memos yet.
 Tap the clipboard button or share content to start.</string>
     <string name="nothing_to_categorize">No text or image in clipboard to categorize.</string>
-    <string name="categorization_started">Saved to Memoiz and started categorization in background.</string>
+    <string name="categorization_started">Saved to Memoiz and started AI categorization in background.</string>
     
     <!-- Main UI strings -->
     <string name="search_hint">Search in memo</string>
