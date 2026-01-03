@@ -230,7 +230,6 @@ class MlKitCategorizer(private val context: Context) {
     private suspend fun summarizeWebContent(title: String?, body: String): String? {
         val instruction = buildString {
             appendLine("You are summarizing a web page. Reply in ${getSystemLanguageName()} language.")
-            appendLine("If a page title is provided, output the title verbatim on the first line, then provide a concise 1-2 sentence summary on the following line(s).")
             appendLine("Keep the tone neutral and informative.")
             if (!title.isNullOrBlank()) {
                 appendLine("Page title: $title")

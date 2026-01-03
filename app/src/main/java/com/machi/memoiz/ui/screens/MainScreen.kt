@@ -1038,6 +1038,8 @@ private fun MemoCard(
             .fillMaxWidth()
             .padding(16.dp)
     ) {
+        var summaryOverride by remember { mutableStateOf<String?>(null) }
+
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -1185,8 +1187,17 @@ private fun MemoCard(
                             val maxChars = 240
                             if (memo.content.length <= maxChars) memo.content else memo.content.take(maxChars) + "\u2026"
                         }
+                        val (webTitle, webSummary) = remember(memo.summary) {
+                            val raw = memo.summary
+                            if (raw.isNullOrBlank()) null to null else {
+                                val first = raw.substringBefore("\n").trim().takeIf { it.isNotBlank() }
+                                val rest = raw.substringAfter("\n", "").trim().takeIf { it.isNotEmpty() }
+                                first to (rest ?: raw)
+                            }
+                        }
                         ChromeStyleUrlBar(
                             url = displayText,
+                            title = webTitle,
                             modifier = Modifier.fillMaxWidth()
                         )
                         if (memo.content.length > displayText.length) {
@@ -1197,6 +1208,7 @@ private fun MemoCard(
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
+                        summaryOverride = webSummary
                     }
                     else -> {
                         if (memo.content.isNotBlank()) {
@@ -1220,10 +1232,10 @@ private fun MemoCard(
                 }
 
                 if (!memo.summary.isNullOrBlank() && memo.memoType != MemoType.IMAGE) {
-                    val displaySummary = remember(memo.summary) { cleanSummary(memo.summary) }
-                    val prefixedSummary = remember(displaySummary, memo.memoType) {
+                    val cleaned = remember(memo.summary) { cleanSummary(summaryOverride ?: memo.summary) }
+                    val prefixedSummary = remember(cleaned, memo.memoType) {
                         val needsPrefix = memo.memoType == MemoType.IMAGE || memo.memoType == MemoType.WEB_SITE
-                        if (needsPrefix) "${AI_ROBOT_PREFIX} $displaySummary" else displaySummary
+                        if (needsPrefix && !cleaned.isNullOrBlank()) "${AI_ROBOT_PREFIX} $cleaned" else cleaned.orEmpty()
                     }
                     Spacer(modifier = Modifier.height(12.dp))
                     AiSummaryBlock(prefixedSummary)
@@ -1712,50 +1724,104 @@ private const val AI_ROBOT_PREFIX = "🤖"
 @Composable
 private fun ChromeStyleUrlBar(
     url: String,
+    title: String? = null,
     modifier: Modifier = Modifier
 ) {
     Surface(
         modifier = modifier
             .fillMaxWidth()
-            .height(52.dp)
             .padding(vertical = 4.dp),
         shape = RoundedCornerShape(26.dp),
         color = Color.White,
         tonalElevation = 2.dp,
         border = BorderStroke(1.dp, Color(0xFFE0E0E0))
     ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 12.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Surface(
-                color = MaterialTheme.colorScheme.primaryContainer,
-                shape = RoundedCornerShape(12.dp),
-                modifier = Modifier.padding(end = 8.dp)
+        val hasTitle = !title.isNullOrBlank()
+        if (hasTitle) {
+            // ...existing two-column layout with title on top, URL below...
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 12.dp, vertical = 10.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                Text(
-                    text = "URL",
-                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                    color = MaterialTheme.colorScheme.onPrimaryContainer,
-                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
+                Surface(
+                    color = MaterialTheme.colorScheme.primaryContainer,
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text(
+                        text = "URL",
+                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                    )
+                }
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Text(
+                        text = title!!,
+                        style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.SemiBold),
+                        color = Color(0xFF202124),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Text(
+                        text = url,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = Color(0xFF202124),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+                Icon(
+                    imageVector = Icons.Rounded.Star,
+                    contentDescription = null,
+                    modifier = Modifier
+                        .size(24.dp)
+                        .padding(4.dp),
+                    tint = Color(0xFFFFD700)
                 )
             }
-            Text(
-                text = url,
-                style = MaterialTheme.typography.bodyMedium,
-                color = Color(0xFF202124),
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.weight(1f)
-            )
-            Icon(
-                imageVector = Icons.Rounded.Star,
-                contentDescription = null,
+        } else {
+            // Fallback: single-line layout with label and URL in one row
+            Row(
                 modifier = Modifier
-                    .size(24.dp)
-                    .padding(4.dp),
-                tint = Color(0xFFFFD700)
-            )
+                    .fillMaxWidth()
+                    .padding(horizontal = 12.dp, vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                Surface(
+                    color = MaterialTheme.colorScheme.primaryContainer,
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text(
+                        text = "URL",
+                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                    )
+                }
+                Text(
+                    text = url,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Color(0xFF202124),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f)
+                )
+                Icon(
+                    imageVector = Icons.Rounded.Star,
+                    contentDescription = null,
+                    modifier = Modifier
+                        .size(24.dp)
+                        .padding(4.dp),
+                    tint = Color(0xFFFFD700)
+                )
+            }
         }
     }
 }
@@ -1880,6 +1946,7 @@ private fun PreviewChromeStyleUrlBar() {
         Surface(modifier = Modifier.fillMaxWidth()) {
             ChromeStyleUrlBar(
                 url = "https://news.example.com/articles/awesome-updates",
+                title = "Awesome Updates - Example News",
                 modifier = Modifier.padding(16.dp)
             )
         }
