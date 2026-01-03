@@ -61,7 +61,6 @@ Tap the clipboard button or share content to start.</string>
     <string name="error_open_url">Cannot open URL</string>
 
     <!-- Toast messages -->
-    <string name="toast_reanalyze_enqueued">Re-analysis scheduled in background.</string>
     <string name="toast_merge_enqueued">Re-analysis scheduled in background.</string>
     <string name="settings_about_title">About this app</string>
     <string name="settings_about_description">Memoiz categorizes text and images with on-device AI so you can save, revisit, and reuse them later. All data is processed locally and never leaves your device.</string>
@@ -82,8 +81,6 @@ Tap the clipboard button or share content to start.</string>
     <string name="cd_sort">Change sort order</string>
     <string name="cd_delete_category">Delete category</string>
     <string name="cd_delete_memo">Delete memo</string>
-    <string name="dialog_delete_title">Delete Memo</string>
-    <string name="dialog_delete_message">Are you sure you want to delete this memo?</string>
     <string name="dialog_delete_confirm">Delete</string>
     <string name="label_source_app">From: %1$s</string>
     <string name="cd_clear_search">Clear search</string>
