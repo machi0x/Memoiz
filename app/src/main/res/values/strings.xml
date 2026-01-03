@@ -4,9 +4,6 @@
     <string name="failure_category">Analysis failure - will re-analyze automatically</string>
     <string name="failure_category_en" translatable="false">FAILURE</string>
     <string name="failure_category_ja" translatable="false">分類失敗</string>
-    <string name="failure_category_canonical">Analysis failure - will re-analyze automatically</string>
-    <string name="category_web_site">Web site</string>
-    <string name="category_image">Image</string>
     <string name="category_uncategorizable">Uncategorizable</string>
     
     <!-- Memo type labels -->
@@ -15,11 +12,10 @@
     <string name="memo_type_image">Image</string>
     
     <string name="fab_paste_clipboard">Paste from clipboard</string>
-    <string name="share_to_memoiz">Share to Memoiz</string>
     <string name="empty_state_message">No memos yet.
 Tap the clipboard button or share content to start.</string>
     <string name="nothing_to_categorize">No text or image in clipboard to categorize.</string>
-    <string name="categorization_started">Saved to Memoiz and started categorization in background.</string>
+    <string name="categorization_started">Saved to Memoiz and started AI categorization in background.</string>
     
     <!-- Main UI strings -->
     <string name="search_hint">Search in memo</string>
@@ -65,7 +61,6 @@ Tap the clipboard button or share content to start.</string>
     <string name="error_open_url">Cannot open URL</string>
 
     <!-- Toast messages -->
-    <string name="toast_reanalyze_enqueued">Re-analysis scheduled in background.</string>
     <string name="toast_merge_enqueued">Re-analysis scheduled in background.</string>
     <string name="settings_about_title">About this app</string>
     <string name="settings_about_description">Memoiz categorizes text and images with on-device AI so you can save, revisit, and reuse them later. All data is processed locally and never leaves your device.</string>
@@ -86,8 +81,6 @@ Tap the clipboard button or share content to start.</string>
     <string name="cd_sort">Change sort order</string>
     <string name="cd_delete_category">Delete category</string>
     <string name="cd_delete_memo">Delete memo</string>
-    <string name="dialog_delete_title">Delete Memo</string>
-    <string name="dialog_delete_message">Are you sure you want to delete this memo?</string>
     <string name="dialog_delete_confirm">Delete</string>
     <string name="label_source_app">From: %1$s</string>
     <string name="cd_clear_search">Clear search</string>
@@ -152,11 +145,5 @@ Tap the clipboard button or share content to start.</string>
     <string name="dialog_create_memo_error_empty">Please enter some text</string>
     <string name="fab_close_menu">Close menu</string>
     <string name="processtext_label">Save to Memoiz</string>
-    <string name="error_image_analysis_failed">Cannot analyze this memo. (Error: %1$d)</string>
-    <string name="error_image_analysis_reason_request_too_small">Cannot analyze this memo: image is too small.</string>
-    <string name="error_image_analysis_reason_request_too_large">Cannot analyze this memo: image is too large.</string>
-    <string name="error_image_analysis_reason_invalid_input_image">Cannot analyze this memo: invalid image.</string>
-    <string name="error_image_analysis_reason_response_processing_error">Cannot analyze this memo: response processing failed.</string>
-    <string name="error_image_analysis_reason_response_generation_error">Cannot analyze this memo: response generation failed.</string>
-    <string name="error_image_analysis_reason_request_processing_error">Cannot analyze this memo: request processing failed.</string>
+    <string name="error_image_analysis_permanent_with_code">Cannot analyze this memo. Error code: %1$s</string>
 </resources>
