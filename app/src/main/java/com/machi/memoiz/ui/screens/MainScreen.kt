@@ -41,6 +41,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -60,6 +61,7 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
@@ -879,7 +881,8 @@ private fun CategoryAccordion(
     val reanalyzeFailuresString = stringResource(R.string.action_reanalyze_failures)
     val deleteCategoryString = stringResource(R.string.action_delete_category)
     Card(
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = colorResource(id = R.color.memo_card_background))
     ) {
         Column {
             // Category header (always visible)
@@ -1138,10 +1141,10 @@ private fun MemoCard(
             // Show image thumbnail if available
             if (!memo.imageUri.isNullOrBlank()) {
                 if (memo.memoType == MemoType.IMAGE) {
-                    MaskingTapeImage(
+                    ImageThumbnailFrame(
                         imageUri = memo.imageUri,
                         contentDescription = stringResource(R.string.cd_memo_image),
-                        modifier = Modifier.size(120.dp)
+                        modifier = Modifier.size(140.dp)
                     )
                 } else {
                     val imageModifier = Modifier.size(96.dp)
@@ -1758,69 +1761,102 @@ private fun ChromeStyleUrlBar(
 }
 
 @Composable
-private fun MaskingTapeImage(
+private fun ImageThumbnailFrame(
     imageUri: String,
     contentDescription: String?,
     modifier: Modifier = Modifier
 ) {
+    val outerShape = RoundedCornerShape(10.dp)
+    val innerShape = RoundedCornerShape(8.dp)
     Box(
         modifier = modifier
-            // Slightly rotate the entire image to blend with the note style (optional)
-            .graphicsLayer(rotationZ = 1f)
+            .graphicsLayer(rotationZ = 2.5f)
+            .shadow(
+                elevation = 10.dp,
+                ambientColor = Color.Black.copy(alpha = 0.12f),
+                spotColor = Color.Black.copy(alpha = 0.18f),
+                shape = outerShape
+            )
     ) {
-        // 1. Original image with shadow (no border, no frame, no background)
-        AsyncImage(
-            model = Uri.parse(imageUri),
-            contentDescription = contentDescription,
+        Box(
             modifier = Modifier
-                .fillMaxSize()
-                .shadow(2.dp), // Slight thickness when pasted on note
-            contentScale = ContentScale.Crop
-        )
+                .matchParentSize()
+                .background(colorResource(id = R.color.memo_card_background), shape = outerShape)
+                .padding(18.dp) // wider outer frame for more clearance
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color(0xFFF7F7F7), shape = innerShape)
+                    .padding(6.dp)
+            ) {
+                AsyncImage(
+                    model = Uri.parse(imageUri),
+                    contentDescription = contentDescription,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .clip(RoundedCornerShape(6.dp)),
+                    contentScale = ContentScale.Crop
+                )
+            }
+        }
 
-        // 2. Masking tape section
-        MaskingTape(
+        PinThumbtack(
             modifier = Modifier
-                .align(Alignment.TopCenter) // Position at the top
-                .offset(y = (-8).dp)        // Slightly overhang from the image
+                .align(Alignment.TopCenter)
+                .offset(y = 4.dp) // move pin down further
         )
     }
 }
 
 @Composable
-private fun MaskingTape(modifier: Modifier = Modifier) {
-    val tapeColor = Color(0xFFD1E9FF).copy(alpha = 0.7f) // Pastel blue (semi-transparent)
-
+private fun PinThumbtack(modifier: Modifier = Modifier) {
     Canvas(
         modifier = modifier
-            .width(80.dp)
-            .height(24.dp)
-            .graphicsLayer(rotationZ = -3f) // Paste tape at a slight angle
+            .size(width = 11.dp, height = 17.dp) // slightly smaller pin
+            .graphicsLayer(rotationX = 26f, rotationZ = -18f)
     ) {
-        val path = Path().apply {
-            val steps = 8
-            val stepWidth = size.width / steps
-            
-            // Left side jagged edge
-            moveTo(0f, 0f)
-            for (i in 1..steps) {
-                val x = i * stepWidth
-                val y = if (i % 2 == 0) 0f else 4f // Jagged depth
-                lineTo(x, y)
-            }
-            
-            // Draw to the bottom-right corner
-            lineTo(size.width, size.height)
-            
-            // Bottom side jagged edge
-            for (i in steps downTo 0) {
-                val x = i * stepWidth
-                val y = size.height + if (i % 2 == 0) 0f else -4f
-                lineTo(x, y)
-            }
-            close()
-        }
-        drawPath(path, color = tapeColor)
+        val pinColor = Color(0xFF2E7D32)
+        val shadowColor = Color.Black.copy(alpha = 0.26f)
+        val centerX = size.width / 2f
+        val headRadius = size.width * 0.34f
+        val needleWidth = size.width * 0.18f
+        val needleHeight = size.height * 0.62f
+        val needleTopY = headRadius * 1.25f
+
+        drawRoundRect(
+            color = shadowColor,
+            topLeft = Offset(centerX - needleWidth * 1.1f, needleTopY + 2.2f),
+            size = Size(needleWidth * 2.2f, needleHeight + headRadius * 1.3f),
+            cornerRadius = CornerRadius(needleWidth * 1.2f),
+            alpha = 0.25f
+        )
+
+        drawRoundRect(
+            color = shadowColor,
+            topLeft = Offset(centerX - needleWidth / 2f + 1.0f, needleTopY + 1.6f),
+            size = Size(needleWidth, needleHeight),
+            cornerRadius = CornerRadius(needleWidth)
+        )
+
+        drawRoundRect(
+            color = Color(0xFF7A5D48),
+            topLeft = Offset(centerX - needleWidth / 2f, needleTopY),
+            size = Size(needleWidth, needleHeight),
+            cornerRadius = CornerRadius(needleWidth)
+        )
+
+        drawCircle(
+            color = pinColor.copy(alpha = 0.25f),
+            radius = headRadius * 1.08f,
+            center = Offset(centerX - headRadius * 0.16f, headRadius * 0.9f)
+        )
+
+        drawCircle(
+            color = pinColor,
+            radius = headRadius,
+            center = Offset(centerX, headRadius)
+        )
     }
 }
 
@@ -1852,13 +1888,13 @@ private fun PreviewChromeStyleUrlBar() {
 
 @Preview(name = "Image Frame", showBackground = true)
 @Composable
-private fun PreviewMaskingTapeImage() {
+private fun PreviewPinnedPhotoFrame() {
     MemoizTheme {
         Surface(modifier = Modifier.padding(16.dp)) {
-            MaskingTapeImage(
+            ImageThumbnailFrame(
                 imageUri = "https://picsum.photos/seed/memoizPreview/600",
                 contentDescription = null,
-                modifier = Modifier.size(120.dp)
+                modifier = Modifier.size(160.dp)
             )
         }
     }
