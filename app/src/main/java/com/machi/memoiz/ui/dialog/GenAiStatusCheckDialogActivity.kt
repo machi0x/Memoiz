@@ -2,42 +2,48 @@ package com.machi.memoiz.ui.dialog
 
 import android.content.Context
 import android.content.Intent
-import android.graphics.Color
-import android.graphics.drawable.ColorDrawable
 import android.os.Bundle
-import android.view.LayoutInflater
-import android.view.View
-import android.view.Window
-import android.view.WindowManager
 import androidx.activity.ComponentActivity
-import androidx.lifecycle.lifecycleScope
+import androidx.activity.compose.setContent
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.size
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
 import com.machi.memoiz.R
-import com.machi.memoiz.databinding.ActivityGenaiStatusDialogBinding
 import com.machi.memoiz.service.GenAiFeatureStates
 import com.machi.memoiz.service.GenAiStatusManager
+import com.machi.memoiz.ui.theme.MemoizTheme
 import com.google.mlkit.genai.common.FeatureStatus
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 
-/** Dialog-like Activity that checks GenAI feature status and optionally downloads models. */
+/** Dialog-like Activity that checks GenAI feature status and optionally downloads models, using Jetpack Compose. */
 class GenAiStatusCheckDialogActivity : ComponentActivity() {
 
-    private lateinit var binding: ActivityGenaiStatusDialogBinding
     private lateinit var manager: GenAiStatusManager
-    private var downloadJob: Job? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        requestWindowFeature(Window.FEATURE_NO_TITLE)
         super.onCreate(savedInstanceState)
         manager = GenAiStatusManager(applicationContext)
-        binding = ActivityGenaiStatusDialogBinding.inflate(LayoutInflater.from(this))
-        setContentView(binding.root)
-
-        window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
-        window?.apply {
-            setGravity(android.view.Gravity.CENTER)
-            clearFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND)
-        }
 
         val forceOff = GenAiFeatureStates(
             imageDescription = if (intent.getBooleanExtra(GenAiStatusManager.EXTRA_FORCE_OFF_IMAGE, false)) FeatureStatus.UNAVAILABLE else FeatureStatus.AVAILABLE,
@@ -45,51 +51,14 @@ class GenAiStatusCheckDialogActivity : ComponentActivity() {
             summarization = if (intent.getBooleanExtra(GenAiStatusManager.EXTRA_FORCE_OFF_SUM, false)) FeatureStatus.UNAVAILABLE else FeatureStatus.AVAILABLE
         )
 
-        lifecycleScope.launch {
-            val status = manager.checkAll(forceOff)
-            render(status)
-        }
-
-        binding.buttonClose.setOnClickListener { finish() }
-        binding.buttonDownload.setOnClickListener { startDownload() }
-    }
-
-    private fun render(status: GenAiFeatureStates) {
-        val needsDownload = status.anyDownloadable()
-        val anyUnavailable = status.anyUnavailable()
-
-        when {
-            needsDownload -> {
-                binding.title.text = getString(R.string.genai_status_title_download)
-                binding.message.text = getString(R.string.genai_status_message_download)
-                binding.illustration.setImageResource(R.drawable.model_download)
-                binding.buttonDownload.visibility = View.VISIBLE
-                binding.progress.visibility = View.GONE
+        setContent {
+            MemoizTheme {
+                GenAiStatusDialog(manager = manager, forceOff = forceOff, onFinish = { finish() })
             }
-            anyUnavailable -> {
-                binding.title.text = getString(R.string.genai_status_title_unavailable)
-                binding.message.text = getString(R.string.genai_status_message_unavailable)
-                binding.illustration.setImageResource(R.drawable.model_unavailable)
-                binding.buttonDownload.visibility = View.GONE
-                binding.progress.visibility = View.GONE
-            }
-            else -> finish()
-        }
-    }
-
-    private fun startDownload() {
-        downloadJob?.cancel()
-        downloadJob = lifecycleScope.launch {
-            binding.progress.visibility = View.VISIBLE
-            binding.buttonDownload.visibility = View.GONE
-            val status = manager.checkAll()
-            manager.downloadMissing(status)
-            finish()
         }
     }
 
     override fun onDestroy() {
-        downloadJob?.cancel()
         manager.close()
         super.onDestroy()
     }
@@ -104,4 +73,92 @@ class GenAiStatusCheckDialogActivity : ComponentActivity() {
             })
         }
     }
+}
+
+@Composable
+private fun GenAiStatusDialog(manager: GenAiStatusManager, forceOff: GenAiFeatureStates, onFinish: () -> Unit) {
+    var status by remember { mutableStateOf<GenAiFeatureStates?>(null) }
+    var isDownloading by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
+
+    LaunchedEffect(Unit) {
+        val checkedStatus = manager.checkAll(forceOff)
+        // If all features are available, just close the dialog.
+        if (!checkedStatus.anyDownloadable() && !checkedStatus.anyUnavailable()) {
+            onFinish()
+        } else {
+            status = checkedStatus
+        }
+    }
+
+    if (status == null) {
+        // You can show a loading indicator here if the check is slow,
+        // but it's usually fast enough not to need one.
+        return
+    }
+
+    val needsDownload = status!!.anyDownloadable()
+    val anyUnavailable = status!!.anyUnavailable()
+
+    val title: String
+    val message: String
+    val iconRes: Int
+
+    when {
+        needsDownload -> {
+            title = stringResource(R.string.genai_status_title_download)
+            message = stringResource(R.string.genai_status_message_download)
+            iconRes = R.drawable.model_download
+        }
+        anyUnavailable -> {
+            title = stringResource(R.string.genai_status_title_unavailable)
+            message = stringResource(R.string.genai_status_message_unavailable)
+            iconRes = R.drawable.model_unavailable
+        }
+        else -> {
+            // This case should be handled by the LaunchedEffect, but as a fallback:
+            onFinish()
+            return
+        }
+    }
+
+    AlertDialog(
+        onDismissRequest = onFinish,
+        confirmButton = {
+            if (needsDownload) {
+                TextButton(
+                    onClick = {
+                        if (!isDownloading) { // Prevent multiple clicks
+                            isDownloading = true
+                            scope.launch {
+                                manager.downloadMissing(status!!)
+                                onFinish()
+                            }
+                        }
+                    }
+                ) {
+                    Text(stringResource(R.string.genai_status_download_start))
+                }
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onFinish) {
+                Text(stringResource(R.string.dialog_close))
+            }
+        },
+        title = { Text(title, style = MaterialTheme.typography.titleLarge) },
+        text = {
+            Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                Image(
+                    painter = painterResource(id = iconRes),
+                    contentDescription = null,
+                    modifier = Modifier.size(150.dp)
+                )
+                Text(message, style = MaterialTheme.typography.bodyLarge, textAlign = TextAlign.Center)
+                if (isDownloading) {
+                    CircularProgressIndicator()
+                }
+            }
+        }
+    )
 }
