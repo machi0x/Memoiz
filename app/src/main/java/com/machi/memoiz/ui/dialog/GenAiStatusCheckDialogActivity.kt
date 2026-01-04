@@ -37,7 +37,6 @@ import com.machi.memoiz.ui.theme.MemoizTheme
 import com.google.mlkit.genai.common.DownloadCallback
 import com.google.mlkit.genai.common.FeatureStatus
 import com.google.mlkit.genai.common.GenAiException
-import androidx.compose.ui.platform.LocalContext
 import kotlinx.coroutines.launch
 import java.util.Locale
 
@@ -93,10 +92,13 @@ private fun GenAiStatusDialog(manager: GenAiStatusManager, forceOff: GenAiFeatur
     var isDownloading by remember { mutableStateOf(false) }
     var totalBytesToDownload by remember { mutableStateOf(0L) }
     var totalBytesDownloaded by remember { mutableStateOf(0L) }
-    var showError by remember { mutableStateOf(false) }
-    var errorMessage by remember { mutableStateOf<String?>(null) }
+    // We intentionally do not expose raw exception messages to users.
+    // For failures we show a friendly localized message (strings) only.
+    // Removed unused showError and errorMessage variables to avoid showing raw errors.
+
+    // New state: null = no final result yet, true = success, false = failed/cancelled
+    var downloadResult by remember { mutableStateOf<Boolean?>(null) }
     val scope = rememberCoroutineScope()
-    val ctx = LocalContext.current
 
     LaunchedEffect(Unit) {
         val checkedStatus = manager.checkAll(forceOff)
@@ -121,29 +123,52 @@ private fun GenAiStatusDialog(manager: GenAiStatusManager, forceOff: GenAiFeatur
     val message: String
     val iconRes: Int
 
-    when {
-        needsDownload -> {
+    // If download result exists, show final result screen overriding other states
+    if (downloadResult != null) {
+        if (downloadResult == true) {
             title = stringResource(R.string.genai_status_title_download)
-            message = stringResource(R.string.genai_status_message_download)
+            message = stringResource(R.string.genai_status_message_download_completed)
             iconRes = R.drawable.model_download
-        }
-        anyUnavailable -> {
+        } else {
             title = stringResource(R.string.genai_status_title_unavailable)
-            message = stringResource(R.string.genai_status_message_unavailable)
+            message = stringResource(R.string.genai_status_message_download_failed_dialog)
             iconRes = R.drawable.model_unavailable
         }
-        else -> {
-            // This case should be handled by the LaunchedEffect, but as a fallback:
-            onFinish()
-            return
+    } else {
+        when {
+            needsDownload -> {
+                title = stringResource(R.string.genai_status_title_download)
+                message = stringResource(R.string.genai_status_message_download)
+                iconRes = R.drawable.model_download
+            }
+            anyUnavailable -> {
+                title = stringResource(R.string.genai_status_title_unavailable)
+                message = stringResource(R.string.genai_status_message_unavailable)
+                iconRes = R.drawable.model_unavailable
+            }
+            else -> {
+                // This case should be handled by the LaunchedEffect, but as a fallback:
+                onFinish()
+                return
+            }
         }
     }
 
     AlertDialog(
         onDismissRequest = onFinish,
         confirmButton = {
-            // Show the start-download button only when a download is needed and not already in progress.
-            if (needsDownload && !isDownloading) {
+            // If we already have a final result, show a single OK button that closes the dialog.
+            if (downloadResult != null) {
+                TextButton(onClick = onFinish) {
+                    Text(stringResource(R.string.dialog_close))
+                }
+                return@AlertDialog
+            }
+
+            // Show the start-download / cancel buttons depending on downloading state.
+            val showStartButton = needsDownload && !isDownloading
+            val showCancelButton = needsDownload && isDownloading
+            if (showStartButton) {
                 TextButton(
                     onClick = {
                         // Prevent double clicks and set downloading state inside coroutine so analyzer sees read/write.
@@ -157,11 +182,13 @@ private fun GenAiStatusDialog(manager: GenAiStatusManager, forceOff: GenAiFeatur
                                     }
 
                                     override fun onDownloadFailed(e: GenAiException) {
-                                        // Show error state in the dialog but do not immediately close it
+                                        // Show final failed state in the dialog but do not show raw exception text
                                         scope.launch {
                                             isDownloading = false
-                                            showError = true
-                                            errorMessage = e.message ?: ctx.getString(R.string.genai_status_message_download_failed)
+                                            downloadResult = false
+                                            // Clear progress values
+                                            totalBytesDownloaded = 0L
+                                            totalBytesToDownload = 0L
                                         }
                                     }
 
@@ -175,16 +202,17 @@ private fun GenAiStatusDialog(manager: GenAiStatusManager, forceOff: GenAiFeatur
                                             isDownloading = false
                                             // Ensure progress shows complete
                                             totalBytesDownloaded = totalBytesToDownload
-                                            // Close after success
-                                            onFinish()
+                                            // Show success result in dialog instead of closing immediately
+                                            downloadResult = true
                                         }
                                     }
                                 }
-                                manager.downloadMissing(status!!, callback) { throwable ->
+                                // The manager may also report an overall failure via the throwable callback.
+                                // We intentionally do not expose throwable.message to users; show localized message instead.
+                                manager.downloadMissing(status!!, callback) { _ ->
                                     scope.launch {
                                         isDownloading = false
-                                        showError = true
-                                        errorMessage = throwable.message ?: ctx.getString(R.string.genai_status_message_download_failed)
+                                        downloadResult = false
                                     }
                                 }
                             }
@@ -193,16 +221,15 @@ private fun GenAiStatusDialog(manager: GenAiStatusManager, forceOff: GenAiFeatur
                 ) {
                     Text(stringResource(R.string.genai_status_download_start))
                 }
-            } else if (needsDownload && isDownloading) {
+            } else if (showCancelButton) {
                 TextButton(onClick = {
-                    // Cancel downloads and update UI
+                    // Cancel downloads and update UI to final failed state
                     scope.launch {
                         manager.cancelDownloads()
                         isDownloading = false
                         totalBytesDownloaded = 0L
                         totalBytesToDownload = 0L
-                        showError = true
-                        errorMessage = ctx.getString(R.string.genai_status_message_download_cancelled)
+                        downloadResult = false
                     }
                 }) {
                     Text(stringResource(R.string.genai_status_download_cancel))
@@ -210,8 +237,11 @@ private fun GenAiStatusDialog(manager: GenAiStatusManager, forceOff: GenAiFeatur
              }
          },
         dismissButton = {
-            TextButton(onClick = onFinish) {
-                Text(stringResource(R.string.dialog_close))
+            // If we're in final result state, hide the cancel/dismiss; otherwise keep Close button
+            if (downloadResult == null) {
+                TextButton(onClick = onFinish) {
+                    Text(stringResource(R.string.dialog_close))
+                }
             }
         },
         title = { Text(title, style = MaterialTheme.typography.titleLarge) },
@@ -223,14 +253,7 @@ private fun GenAiStatusDialog(manager: GenAiStatusManager, forceOff: GenAiFeatur
                     modifier = Modifier.size(240.dp)
                 )
                 Text(message, style = MaterialTheme.typography.bodyLarge, textAlign = TextAlign.Center)
-                if (showError) {
-                    Image(
-                        painter = painterResource(id = R.drawable.model_unavailable),
-                        contentDescription = null,
-                        modifier = Modifier.size(240.dp)
-                    )
-                    Text(errorMessage ?: stringResource(R.string.genai_status_message_download_failed), style = MaterialTheme.typography.bodyLarge, textAlign = TextAlign.Center)
-                } else if (isDownloading) {
+                if (isDownloading) {
                      val progressFraction = if (totalBytesToDownload > 0) totalBytesDownloaded.toDouble() / totalBytesToDownload.toDouble() else 0.0
                      // Determinate bar with an indeterminate overlay to show motion
                      Box(modifier = Modifier.fillMaxWidth().height(24.dp), contentAlignment = Alignment.Center) {
