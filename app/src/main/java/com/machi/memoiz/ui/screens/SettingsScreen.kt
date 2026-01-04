@@ -15,11 +15,11 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.School
 import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.filled.ToggleOff
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -70,6 +70,8 @@ fun SettingsScreen(
     val appVersion = remember { BuildConfig.VERSION_NAME }
     val genAiPrefs by viewModel.genAiPreferences.collectAsState(initial = UserPreferences())
     val baseModelNames by viewModel.baseModelNames.collectAsStateWithLifecycle()
+    // Collect feature states for GenAI (nullable until loaded)
+    val featureStates by viewModel.featureStates.collectAsStateWithLifecycle()
 
     Scaffold(
         topBar = {
@@ -184,38 +186,45 @@ fun SettingsScreen(
                     HorizontalDivider(modifier = Modifier.padding(start = 72.dp))
                 }
 
-                // Consolidated AI models section
+                // Consolidated AI features header: use PreferenceItem so it aligns with other sections. Adjust subtitle padding if needed.
                 item {
-                    Text(
-                        text = stringResource(R.string.genai_models_title),
-                        style = MaterialTheme.typography.titleMedium,
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                    PreferenceItem(
+                        title = stringResource(R.string.genai_models_title),
+                        subtitle = stringResource(R.string.genai_models_switch_warning),
+                        leadingIcon = { Icon(Icons.Filled.AutoAwesome, contentDescription = null, tint = MaterialTheme.colorScheme.primary) }
                     )
                 }
-                val featureStates by viewModel.featureStates.collectAsState()
+
                 val imageState = featureStates?.imageDescription ?: com.google.mlkit.genai.common.FeatureStatus.UNAVAILABLE
                 val textState = featureStates?.textGeneration ?: com.google.mlkit.genai.common.FeatureStatus.UNAVAILABLE
                 val sumState = featureStates?.summarization ?: com.google.mlkit.genai.common.FeatureStatus.UNAVAILABLE
 
-                // Image description row
+                // Image description row (use smaller headline style and disable until feature state loaded)
                 item {
-                    val available = imageState == com.google.mlkit.genai.common.FeatureStatus.AVAILABLE
-                    val checked = available && !genAiPrefs.forceOffImageDescription
+                    val loaded = featureStates != null
+                    val available = loaded && imageState == com.google.mlkit.genai.common.FeatureStatus.AVAILABLE
+                    // If featureStates not yet loaded, default to showing ON when user hasn't forced OFF.
+                    val checked = (!genAiPrefs.forceOffImageDescription) && (featureStates == null || available)
                     PreferenceItem(
                         title = stringResource(R.string.genai_model_label_image),
+                        headlineStyle = MaterialTheme.typography.titleSmall,
                         subtitle = baseModelNames.first ?: stringResource(R.string.genai_models_loading),
-                        leadingIcon = { Icon(Icons.Default.AutoAwesome, contentDescription = null) },
+                        leadingIcon = { Spacer(modifier = Modifier.width(48.dp)) },
                         trailingContent = {
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(
-                                    imageVector = if (available) Icons.Default.CheckCircle else Icons.Default.HelpOutline,
-                                    contentDescription = null,
-                                    tint = if (available) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
-                                )
+                                if (available) {
+                                    Icon(
+                                        imageVector = Icons.Filled.CheckCircle,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.primary
+                                    )
+                                }
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Switch(
                                     checked = checked,
+                                    enabled = loaded,
                                     onCheckedChange = { newValue ->
+                                        if (!loaded) return@Switch
                                         if (newValue) {
                                             if (!available) {
                                                 // Navigate back to main UI so the usual check/download dialog runs
@@ -229,29 +238,36 @@ fun SettingsScreen(
                                     }
                                 )
                             }
-                        }
+                        },
+                        compact = true // Use compact mode for denser appearance
                     )
                 }
 
-                // Text generation row
+                // Text generation row (smaller headline)
                 item {
-                    val available = textState == com.google.mlkit.genai.common.FeatureStatus.AVAILABLE
-                    val checked = available && !genAiPrefs.forceOffTextGeneration
+                    val loaded = featureStates != null
+                    val available = loaded && textState == com.google.mlkit.genai.common.FeatureStatus.AVAILABLE
+                    val checked = (!genAiPrefs.forceOffTextGeneration) && (featureStates == null || available)
                     PreferenceItem(
                         title = stringResource(R.string.genai_model_label_text),
+                        headlineStyle = MaterialTheme.typography.titleSmall,
                         subtitle = baseModelNames.second ?: stringResource(R.string.genai_models_loading),
-                        leadingIcon = { Icon(Icons.Default.AutoAwesome, contentDescription = null) },
+                        leadingIcon = { Spacer(modifier = Modifier.width(48.dp)) },
                         trailingContent = {
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(
-                                    imageVector = if (available) Icons.Default.CheckCircle else Icons.Default.HelpOutline,
-                                    contentDescription = null,
-                                    tint = if (available) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
-                                )
+                                if (available) {
+                                    Icon(
+                                        imageVector = Icons.Filled.CheckCircle,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.primary
+                                    )
+                                }
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Switch(
                                     checked = checked,
+                                    enabled = loaded,
                                     onCheckedChange = { newValue ->
+                                        if (!loaded) return@Switch
                                         if (newValue) {
                                             if (!available) {
                                                 onNavigateBack()
@@ -264,29 +280,36 @@ fun SettingsScreen(
                                     }
                                 )
                             }
-                        }
+                        },
+                        compact = true // Use compact mode for denser appearance
                     )
                 }
 
-                // Summarization row
+                // Summarization row (smaller headline)
                 item {
-                    val available = sumState == com.google.mlkit.genai.common.FeatureStatus.AVAILABLE
-                    val checked = available && !genAiPrefs.forceOffSummarization
+                    val loaded = featureStates != null
+                    val available = loaded && sumState == com.google.mlkit.genai.common.FeatureStatus.AVAILABLE
+                    val checked = (!genAiPrefs.forceOffSummarization) && (featureStates == null || available)
                     PreferenceItem(
                         title = stringResource(R.string.genai_model_label_summarization),
+                        headlineStyle = MaterialTheme.typography.titleSmall,
                         subtitle = baseModelNames.third ?: stringResource(R.string.genai_models_loading),
-                        leadingIcon = { Icon(Icons.Default.AutoAwesome, contentDescription = null) },
+                        leadingIcon = { Spacer(modifier = Modifier.width(48.dp)) },
                         trailingContent = {
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(
-                                    imageVector = if (available) Icons.Default.CheckCircle else Icons.Default.HelpOutline,
-                                    contentDescription = null,
-                                    tint = if (available) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
-                                )
+                                if (available) {
+                                    Icon(
+                                        imageVector = Icons.Filled.CheckCircle,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.primary
+                                    )
+                                }
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Switch(
                                     checked = checked,
+                                    enabled = loaded,
                                     onCheckedChange = { newValue ->
+                                        if (!loaded) return@Switch
                                         if (newValue) {
                                             if (!available) {
                                                 onNavigateBack()
@@ -299,17 +322,36 @@ fun SettingsScreen(
                                     }
                                 )
                             }
-                        }
+                        },
+                        compact = true // Use compact mode for denser appearance
                     )
                 }
 
-                // Warning text under the section
+                // DEBUG: show current feature states and prefs (remove in production)
                 item {
+                    val dbgImage = when (featureStates?.imageDescription) {
+                        com.google.mlkit.genai.common.FeatureStatus.AVAILABLE -> "IMAGE:AV"
+                        com.google.mlkit.genai.common.FeatureStatus.DOWNLOADABLE -> "IMAGE:DL"
+                        com.google.mlkit.genai.common.FeatureStatus.UNAVAILABLE -> "IMAGE:NA"
+                        else -> "IMAGE:??"
+                    }
+                    val dbgText = when (featureStates?.textGeneration) {
+                        com.google.mlkit.genai.common.FeatureStatus.AVAILABLE -> "TEXT:AV"
+                        com.google.mlkit.genai.common.FeatureStatus.DOWNLOADABLE -> "TEXT:DL"
+                        com.google.mlkit.genai.common.FeatureStatus.UNAVAILABLE -> "TEXT:NA"
+                        else -> "TEXT:??"
+                    }
+                    val dbgSum = when (featureStates?.summarization) {
+                        com.google.mlkit.genai.common.FeatureStatus.AVAILABLE -> "SUM:AV"
+                        com.google.mlkit.genai.common.FeatureStatus.DOWNLOADABLE -> "SUM:DL"
+                        com.google.mlkit.genai.common.FeatureStatus.UNAVAILABLE -> "SUM:NA"
+                        else -> "SUM:??"
+                    }
                     Text(
-                        text = stringResource(R.string.genai_models_switch_warning),
-                        style = MaterialTheme.typography.bodySmall,
+                        text = "$dbgImage  $dbgText  $dbgSum\nforceOff: img=${genAiPrefs.forceOffImageDescription} text=${genAiPrefs.forceOffTextGeneration} sum=${genAiPrefs.forceOffSummarization}",
+                        style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
                     )
                 }
             }
@@ -350,11 +392,16 @@ private fun PreferenceItem(
     leadingIcon: (@Composable () -> Unit)? = null,
     trailingContent: (@Composable () -> Unit)? = null,
     extraContent: (@Composable () -> Unit)? = null,
-    onClick: (() -> Unit)? = null
+    onClick: (() -> Unit)? = null,
+    headlineStyle: androidx.compose.ui.text.TextStyle? = null,
+    compact: Boolean = false,
 ) {
+    val verticalPad = if (compact) 2.dp else 8.dp
+    val supportingSpacing = if (compact) 0.dp else 4.dp
+
     val supporting: (@Composable () -> Unit)? = if (subtitle != null || extraContent != null) {
         {
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(supportingSpacing)) {
                 subtitle?.let {
                     Text(
                         text = it,
@@ -372,9 +419,10 @@ private fun PreferenceItem(
     ListItem(
         modifier = Modifier
             .fillMaxWidth()
+            .padding(vertical = verticalPad)
             .then(
                 if (onClick != null) {
-                    // Use indication = null to avoid PlatformRipple/Indication mismatch crash on some Compose versions.
+                    // Use indication = null to avoid PlatformRipple/Indication mismatch issues.
                     Modifier.clickable(
                         indication = null,
                         interactionSource = remember { MutableInteractionSource() },
@@ -384,7 +432,7 @@ private fun PreferenceItem(
                     Modifier
                 }
             ),
-        headlineContent = { Text(title, style = MaterialTheme.typography.titleMedium) },
+        headlineContent = { Text(title, style = headlineStyle ?: MaterialTheme.typography.titleMedium) },
         supportingContent = supporting,
         leadingContent = leadingIcon?.let { { it() } },
         trailingContent = trailingContent?.let { { it() } } ?: onClick?.let {

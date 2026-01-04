@@ -146,10 +146,13 @@
     <string name="genai_status_notification_text">一部のAI機能が利用できません。詳しくはタップしてください。</string>
     <string name="genai_status_shrunk_mode">縮退モード: 要約のみ使用し、カテゴリ付与は省略する場合があります。</string>
     <string name="genai_status_message_download_failed">ダウンロードできませんでした。機能が制限される可能性があります。後でアプリを開きなおしてください。</string>
-    <string name="genai_models_title">利用中のAIモデル</string>
-    <string name="genai_model_label_image">画像説明用モデル</string>
-    <string name="genai_model_label_text">テキスト生成用モデル</string>
-    <string name="genai_model_label_summarization">要約用モデル</string>
+    <string name="genai_models_title">利用中のAI機能</string>
+    <string name="genai_model_label_image">画像説明機能</string>
+    <string name="genai_model_label_text">テキスト生成機能</string>
+    <string name="genai_model_label_summarization">要約機能</string>
     <string name="genai_models_loading">読み込み中...</string>
     <string name="genai_models_switch_warning">AIモデルをOFFにするとメモイズの機能が制限されます。通常はOFFにしないでください。</string>
+    <string name="genai_models_unavailable">現在利用できません</string>
+    <string name="genai_models_downloadable">現在利用できません</string>
+    <string name="genai_models_available">利用可能</string>
 </resources>
