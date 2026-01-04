@@ -112,8 +112,8 @@ fun MainScreen(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var showTutorialDialog by rememberSaveable { mutableStateOf(false) }
-    val genAiForceOff by viewModel.genAiForceOffFlags.collectAsState()
-    // Track whether we've already shown the GenAI dialog during this Activity lifecycle.
+    // force-off flags removed; do not collect or pass any forced flags
+     // Track whether we've already shown the GenAI dialog during this Activity lifecycle.
     // Use `remember` (not `rememberSaveable`) so this flag is NOT persisted into
     // SavedInstanceState. If the Activity/Composable is destroyed and re-created
     // (for example, user closed UI with Back and later re-opened), we want the
@@ -170,16 +170,11 @@ fun MainScreen(
         val manager = com.machi.memoiz.service.GenAiStatusManager(context.applicationContext)
         try {
             Log.d("MainScreen", "Starting GenAi status check (genAiDialogShown=$genAiDialogShown, preferencesLoaded=$preferencesLoaded, shouldShowTutorial=$shouldShowTutorial)")
-            val forced = com.machi.memoiz.service.GenAiFeatureStates(
-                imageDescription = if (genAiForceOff.first) com.google.mlkit.genai.common.FeatureStatus.UNAVAILABLE else com.google.mlkit.genai.common.FeatureStatus.AVAILABLE,
-                textGeneration = if (genAiForceOff.second) com.google.mlkit.genai.common.FeatureStatus.UNAVAILABLE else com.google.mlkit.genai.common.FeatureStatus.AVAILABLE,
-                summarization = if (genAiForceOff.third) com.google.mlkit.genai.common.FeatureStatus.UNAVAILABLE else com.google.mlkit.genai.common.FeatureStatus.AVAILABLE
-            )
-            val status = manager.checkAll(forced)
+            val status = manager.checkAll()
             Log.d("MainScreen", "GenAi checkAll returned: image=${status.imageDescription} text=${status.textGeneration} sum=${status.summarization}")
             if (status.anyUnavailable() || status.anyDownloadable()) {
                 Log.d("MainScreen", "GenAi status requires user attention; launching dialog")
-                GenAiStatusCheckDialogActivity.start(context.applicationContext, genAiForceOff)
+                GenAiStatusCheckDialogActivity.start(context.applicationContext)
                 genAiDialogShown = true
             } else {
                 Log.d("MainScreen", "GenAi status OK: no dialog needed")
@@ -189,7 +184,7 @@ fun MainScreen(
             e.printStackTrace()
             try {
                 Log.d("MainScreen", "GenAi check failed with exception; attempting to launch dialog as fallback: ${e.message}")
-                GenAiStatusCheckDialogActivity.start(context.applicationContext, genAiForceOff)
+                GenAiStatusCheckDialogActivity.start(context.applicationContext)
                 genAiDialogShown = true
             } catch (ignored: Exception) {
                 // If even launching the dialog fails, swallow to avoid crashing UI.
@@ -710,29 +705,24 @@ fun MainScreen(
                 scope.launch {
                     val manager = com.machi.memoiz.service.GenAiStatusManager(context.applicationContext)
                     try {
-                        val forced = com.machi.memoiz.service.GenAiFeatureStates(
-                            imageDescription = if (genAiForceOff.first) com.google.mlkit.genai.common.FeatureStatus.UNAVAILABLE else com.google.mlkit.genai.common.FeatureStatus.AVAILABLE,
-                            textGeneration = if (genAiForceOff.second) com.google.mlkit.genai.common.FeatureStatus.UNAVAILABLE else com.google.mlkit.genai.common.FeatureStatus.AVAILABLE,
-                            summarization = if (genAiForceOff.third) com.google.mlkit.genai.common.FeatureStatus.UNAVAILABLE else com.google.mlkit.genai.common.FeatureStatus.AVAILABLE
-                        )
-                        val status = manager.checkAll(forced)
+                        val status = manager.checkAll()
                         if (status.anyUnavailable() || status.anyDownloadable()) {
-                            GenAiStatusCheckDialogActivity.start(context.applicationContext, genAiForceOff)
+                            GenAiStatusCheckDialogActivity.start(context.applicationContext)
                             genAiDialogShown = true
                         }
-                    } catch (e: Exception) {
-                        // If the status check fails, attempt to show the dialog as a
-                        // fallback (matches previous behavior).
-                        e.printStackTrace()
-                        try {
-                            GenAiStatusCheckDialogActivity.start(context.applicationContext, genAiForceOff)
-                            genAiDialogShown = true
-                        } catch (ignored: Exception) {
-                            // swallow
-                        }
-                    } finally {
-                        manager.close()
-                    }
+                     } catch (e: Exception) {
+                         // If the status check fails, attempt to show the dialog as a
+                         // fallback (matches previous behavior).
+                         e.printStackTrace()
+                         try {
+                            GenAiStatusCheckDialogActivity.start(context.applicationContext)
+                             genAiDialogShown = true
+                         } catch (ignored: Exception) {
+                             // swallow
+                         }
+                     } finally {
+                         manager.close()
+                     }
                 }
              }
          )

@@ -83,30 +83,21 @@ class SettingsViewModel(
         ContentProcessingLauncher.enqueueMergeWork(context, null)
     }
 
-    // Existing force-off setters (lower-level) kept for backward compatibility
-    fun setForceOffImageDescription(enabled: Boolean) {
-        viewModelScope.launch { preferencesManager.setForceOffImageDescription(enabled) }
-    }
-
-    fun setForceOffTextGeneration(enabled: Boolean) {
-        viewModelScope.launch { preferencesManager.setForceOffTextGeneration(enabled) }
-    }
-
-    fun setForceOffSummarization(enabled: Boolean) {
-        viewModelScope.launch { preferencesManager.setForceOffSummarization(enabled) }
-    }
-
-    // Helper 'use' setters (UI shows switches as "Use this AI model"), which invert the stored force-off setting
+    // Legacy force-off setters removed. The Settings UI still exposes 'use' toggles,
+    // but those preferences were removed — keep methods as no-ops to preserve runtime calls.
     override fun setUseImageDescription(use: Boolean) {
-        viewModelScope.launch { preferencesManager.setForceOffImageDescription(!use) }
+        // No-op: stored force-off preference removed. UI toggle does not persist.
+        Log.d("SettingsViewModel", "setUseImageDescription called but force-off flags removed; no-op")
     }
 
     override fun setUseTextGeneration(use: Boolean) {
-        viewModelScope.launch { preferencesManager.setForceOffTextGeneration(!use) }
+        // No-op
+        Log.d("SettingsViewModel", "setUseTextGeneration called but force-off flags removed; no-op")
     }
 
     override fun setUseSummarization(use: Boolean) {
-        viewModelScope.launch { preferencesManager.setForceOffSummarization(!use) }
+        // No-op
+        Log.d("SettingsViewModel", "setUseSummarization called but force-off flags removed; no-op")
     }
 
     override fun refreshFeatureStates() {

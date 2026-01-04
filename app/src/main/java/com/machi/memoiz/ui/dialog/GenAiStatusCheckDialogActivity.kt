@@ -49,17 +49,11 @@ class GenAiStatusCheckDialogActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         manager = GenAiStatusManager(applicationContext)
 
-        val forceOff = GenAiFeatureStates(
-            imageDescription = if (intent.getBooleanExtra(GenAiStatusManager.EXTRA_FORCE_OFF_IMAGE, false)) FeatureStatus.UNAVAILABLE else FeatureStatus.AVAILABLE,
-            textGeneration = if (intent.getBooleanExtra(GenAiStatusManager.EXTRA_FORCE_OFF_TEXT, false)) FeatureStatus.UNAVAILABLE else FeatureStatus.AVAILABLE,
-            summarization = if (intent.getBooleanExtra(GenAiStatusManager.EXTRA_FORCE_OFF_SUM, false)) FeatureStatus.UNAVAILABLE else FeatureStatus.AVAILABLE
-        )
-
         setContent {
             MemoizTheme {
                 // Ensure that when the dialog finishes (user taps Close/back/outside),
                 // any in-progress downloads are cancelled before the Activity exits.
-                GenAiStatusDialog(manager = manager, forceOff = forceOff, onFinish = {
+                GenAiStatusDialog(manager = manager, onFinish = {
                     // Cancel any ongoing model downloads to avoid background work
                     // continuing after the UI is dismissed.
                     try { manager.cancelDownloads() } catch (_: Exception) { }
@@ -75,33 +69,29 @@ class GenAiStatusCheckDialogActivity : ComponentActivity() {
     }
 
     companion object {
-        fun start(context: Context, forceOff: Triple<Boolean, Boolean, Boolean>) {
+        fun start(context: Context) {
             context.startActivity(Intent(context, GenAiStatusCheckDialogActivity::class.java).apply {
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                putExtra(GenAiStatusManager.EXTRA_FORCE_OFF_IMAGE, forceOff.first)
-                putExtra(GenAiStatusManager.EXTRA_FORCE_OFF_TEXT, forceOff.second)
-                putExtra(GenAiStatusManager.EXTRA_FORCE_OFF_SUM, forceOff.third)
             })
         }
     }
 }
 
 @Composable
-private fun GenAiStatusDialog(manager: GenAiStatusManager, forceOff: GenAiFeatureStates, onFinish: () -> Unit) {
+private fun GenAiStatusDialog(manager: GenAiStatusManager, onFinish: () -> Unit) {
     var status by remember { mutableStateOf<GenAiFeatureStates?>(null) }
     var isDownloading by remember { mutableStateOf(false) }
     var totalBytesToDownload by remember { mutableStateOf(0L) }
     var totalBytesDownloaded by remember { mutableStateOf(0L) }
     // We intentionally do not expose raw exception messages to users.
     // For failures we show a friendly localized message (strings) only.
-    // Removed unused showError and errorMessage variables to avoid showing raw errors.
 
     // New state: null = no final result yet, true = success, false = failed/cancelled
     var downloadResult by remember { mutableStateOf<Boolean?>(null) }
     val scope = rememberCoroutineScope()
 
     LaunchedEffect(Unit) {
-        val checkedStatus = manager.checkAll(forceOff)
+        val checkedStatus = manager.checkAll()
         // If all features are available, just close the dialog.
         if (!checkedStatus.anyDownloadable() && !checkedStatus.anyUnavailable()) {
             onFinish()

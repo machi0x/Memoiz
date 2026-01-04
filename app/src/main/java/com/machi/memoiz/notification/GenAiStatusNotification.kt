@@ -4,7 +4,6 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import androidx.core.app.NotificationManagerCompat
-import com.machi.memoiz.R
 import com.machi.memoiz.service.GenAiStatusManager
 import com.machi.memoiz.ui.dialog.GenAiStatusCheckDialogActivity
 
@@ -12,14 +11,11 @@ object GenAiStatusNotification {
     private const val CHANNEL_ID = "genai_status"
     private const val NOTIFICATION_ID = 42
 
-    fun showUnavailable(context: Context, forceOff: Triple<Boolean, Boolean, Boolean>) {
+    fun showUnavailable(context: Context) {
         val manager = GenAiStatusManager(context)
         manager.buildNotificationChannel(CHANNEL_ID)
         val intent = Intent(context, GenAiStatusCheckDialogActivity::class.java).apply {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            putExtra(GenAiStatusManager.EXTRA_FORCE_OFF_IMAGE, forceOff.first)
-            putExtra(GenAiStatusManager.EXTRA_FORCE_OFF_TEXT, forceOff.second)
-            putExtra(GenAiStatusManager.EXTRA_FORCE_OFF_SUM, forceOff.third)
         }
         val pendingIntent = PendingIntent.getActivity(
             context,

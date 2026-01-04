@@ -5,7 +5,6 @@ import android.content.SharedPreferences
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
-import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
@@ -24,9 +23,6 @@ class PreferencesDataStoreManager(private val context: Context) {
         private const val SP_FILE_NAME = "memoiz_shared_prefs"
         private const val SP_KEY_HAS_SEEN_TUTORIAL = "has_seen_tutorial"
         private const val SP_KEY_SHOW_TUTORIAL_ON_NEXT_LAUNCH = "show_tutorial_on_next_launch"
-        private val FORCE_OFF_IMAGE_DESCRIPTION_KEY = booleanPreferencesKey("force_off_image_description")
-        private val FORCE_OFF_TEXT_GENERATION_KEY = booleanPreferencesKey("force_off_text_generation")
-        private val FORCE_OFF_SUMMARIZATION_KEY = booleanPreferencesKey("force_off_summarization")
     }
 
     // SharedPreferences + DataStore combined flow: keep DataStore for heavier prefs and
@@ -60,10 +56,7 @@ class PreferencesDataStoreManager(private val context: Context) {
             customCategories = preferences[CUSTOM_CATEGORIES_KEY] ?: emptySet(),
             categoryOrder = preferences[CATEGORY_ORDER_KEY]?.split(',')?.filter { it.isNotBlank() } ?: emptyList(),
             hasSeenTutorial = spPair.first,
-            showTutorialOnNextLaunch = spPair.second,
-            forceOffImageDescription = preferences[FORCE_OFF_IMAGE_DESCRIPTION_KEY] ?: false,
-            forceOffTextGeneration = preferences[FORCE_OFF_TEXT_GENERATION_KEY] ?: false,
-            forceOffSummarization = preferences[FORCE_OFF_SUMMARIZATION_KEY] ?: false
+            showTutorialOnNextLaunch = spPair.second
         )
     }.distinctUntilChanged()
 
@@ -115,23 +108,5 @@ class PreferencesDataStoreManager(private val context: Context) {
         sharedPrefs.edit().putBoolean(SP_KEY_SHOW_TUTORIAL_ON_NEXT_LAUNCH, true).apply()
         _sharedPrefFlow.value = Pair(_sharedPrefFlow.value.first, true)
         android.util.Log.d("PreferencesDataStore", "requestTutorial() completed — write finished")
-    }
-
-    suspend fun setForceOffImageDescription(enabled: Boolean) {
-        context.dataStore.edit { prefs ->
-            prefs[FORCE_OFF_IMAGE_DESCRIPTION_KEY] = enabled
-        }
-    }
-
-    suspend fun setForceOffTextGeneration(enabled: Boolean) {
-        context.dataStore.edit { prefs ->
-            prefs[FORCE_OFF_TEXT_GENERATION_KEY] = enabled
-        }
-    }
-
-    suspend fun setForceOffSummarization(enabled: Boolean) {
-        context.dataStore.edit { prefs ->
-            prefs[FORCE_OFF_SUMMARIZATION_KEY] = enabled
-        }
     }
 }
