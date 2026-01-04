@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.provider.Settings
+import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
@@ -14,10 +15,7 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.Indication
-import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
@@ -65,9 +63,7 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -76,8 +72,6 @@ import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.unit.Dp
-import kotlin.random.Random
 import com.machi.memoiz.R
 import com.machi.memoiz.data.entity.MemoType
 import com.machi.memoiz.domain.model.Memo
@@ -119,8 +113,14 @@ fun MainScreen(
     val scope = rememberCoroutineScope()
     var showTutorialDialog by rememberSaveable { mutableStateOf(false) }
     val genAiForceOff by viewModel.genAiForceOffFlags.collectAsState()
-    // Track whether we've already shown the GenAI dialog during this Activity lifecycle
-    var genAiDialogShown by rememberSaveable { mutableStateOf(false) }
+    // Track whether we've already shown the GenAI dialog during this Activity lifecycle.
+    // Use `remember` (not `rememberSaveable`) so this flag is NOT persisted into
+    // SavedInstanceState. If the Activity/Composable is destroyed and re-created
+    // (for example, user closed UI with Back and later re-opened), we want the
+    // flag to reset and allow the status check/dialog to run again. Using
+    // rememberSaveable caused the flag to be restored and prevented re-checks
+    // until the process was killed — which matches the reported repro.
+    var genAiDialogShown by remember { mutableStateOf(false) }
 
     LaunchedEffect(memoGroups) {
         viewModel.ensureCategoryOrder(memoGroups.map { it.category })
@@ -151,7 +151,10 @@ fun MainScreen(
     // status dialog if needed. It will not run on resume because LaunchedEffect(Unit)
     // only runs when entering composition.
     LaunchedEffect(Unit) {
-        if (genAiDialogShown) return@LaunchedEffect
+        if (genAiDialogShown) {
+            Log.d("MainScreen", "Skipping GenAi check: genAiDialogShown=true")
+            return@LaunchedEffect
+        }
         // If the tutorial will actually be shown (preferencesLoaded && shouldShowTutorial),
         // we intentionally skip the GenAI status check here and let the tutorial's
         // onFinished handler perform the check. Previously this checked only
@@ -159,24 +162,33 @@ fun MainScreen(
         // preferences were not yet loaded (default state), preventing the status
         // check from running on create. Require both flags so we only skip when
         // the tutorial truly will appear.
-        if (preferencesLoaded && shouldShowTutorial) return@LaunchedEffect
+        if (preferencesLoaded && shouldShowTutorial) {
+            Log.d("MainScreen", "Skipping GenAi check: preferencesLoaded and shouldShowTutorial are true => letting tutorial onFinished run the check")
+            return@LaunchedEffect
+        }
         // Perform an explicit status check to detect AICore-disabled devices immediately.
         val manager = com.machi.memoiz.service.GenAiStatusManager(context.applicationContext)
         try {
+            Log.d("MainScreen", "Starting GenAi status check (genAiDialogShown=$genAiDialogShown, preferencesLoaded=$preferencesLoaded, shouldShowTutorial=$shouldShowTutorial)")
             val forced = com.machi.memoiz.service.GenAiFeatureStates(
                 imageDescription = if (genAiForceOff.first) com.google.mlkit.genai.common.FeatureStatus.UNAVAILABLE else com.google.mlkit.genai.common.FeatureStatus.AVAILABLE,
                 textGeneration = if (genAiForceOff.second) com.google.mlkit.genai.common.FeatureStatus.UNAVAILABLE else com.google.mlkit.genai.common.FeatureStatus.AVAILABLE,
                 summarization = if (genAiForceOff.third) com.google.mlkit.genai.common.FeatureStatus.UNAVAILABLE else com.google.mlkit.genai.common.FeatureStatus.AVAILABLE
             )
             val status = manager.checkAll(forced)
+            Log.d("MainScreen", "GenAi checkAll returned: image=${status.imageDescription} text=${status.textGeneration} sum=${status.summarization}")
             if (status.anyUnavailable() || status.anyDownloadable()) {
+                Log.d("MainScreen", "GenAi status requires user attention; launching dialog")
                 GenAiStatusCheckDialogActivity.start(context.applicationContext, genAiForceOff)
                 genAiDialogShown = true
+            } else {
+                Log.d("MainScreen", "GenAi status OK: no dialog needed")
             }
         } catch (e: Exception) {
             // If status check failed (for example AICore disabled or GMS issue), assume unavailable and show dialog.
             e.printStackTrace()
             try {
+                Log.d("MainScreen", "GenAi check failed with exception; attempting to launch dialog as fallback: ${e.message}")
                 GenAiStatusCheckDialogActivity.start(context.applicationContext, genAiForceOff)
                 genAiDialogShown = true
             } catch (ignored: Exception) {
@@ -780,6 +792,18 @@ fun MainScreen(
                 }
             }
         )
+    }
+
+    // Emit a short, unconditional log right when the composable is entered so we
+    // can detect whether MainScreen is composed at all when reproducing the bug.
+    Log.d("MainScreen", "MainScreen composed entry: preferencesLoaded=$preferencesLoaded shouldShowTutorial=$shouldShowTutorial genAiDialogShown=$genAiDialogShown")
+
+    // Ensure we clear the in-memory flag when this composable is disposed.
+    DisposableEffect(Unit) {
+        onDispose {
+            Log.d("MainScreen", "MainScreen disposed; clearing genAiDialogShown")
+            genAiDialogShown = false
+        }
     }
 }
 
