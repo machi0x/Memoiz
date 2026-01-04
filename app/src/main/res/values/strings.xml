@@ -168,4 +168,5 @@ Try sharing text or images from other apps, or use the + button at the bottom of
     <string name="genai_model_label_text">Text generation model</string>
     <string name="genai_model_label_summarization">Summarization model</string>
     <string name="genai_models_loading">Loading...</string>
+    <string name="genai_models_switch_warning">Turning off AI models limits Memoiz features. Do not turn off unless you know what you are doing.</string>
 </resources>

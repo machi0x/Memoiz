@@ -151,4 +151,5 @@
     <string name="genai_model_label_text">テキスト生成用モデル</string>
     <string name="genai_model_label_summarization">要約用モデル</string>
     <string name="genai_models_loading">読み込み中...</string>
+    <string name="genai_models_switch_warning">AIモデルをOFFにするとメモイズの機能が制限されます。通常はOFFにしないでください。</string>
 </resources>

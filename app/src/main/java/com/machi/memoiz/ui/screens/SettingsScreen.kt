@@ -6,7 +6,6 @@ import android.content.Context
 import android.content.Intent
 import android.provider.Settings
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
@@ -185,52 +184,7 @@ fun SettingsScreen(
                     HorizontalDivider(modifier = Modifier.padding(start = 72.dp))
                 }
 
-                item {
-                    PreferenceItem(
-                        title = stringResource(R.string.genai_status_force_off_image),
-                        subtitle = stringResource(R.string.genai_status_notification_text),
-                        leadingIcon = { Icon(Icons.Default.ToggleOff, contentDescription = null) },
-                        trailingContent = {
-                            Switch(
-                                checked = genAiPrefs.forceOffImageDescription,
-                                onCheckedChange = { viewModel.setForceOffImageDescription(it) }
-                            )
-                        }
-                    )
-                }
-
-                item {
-                    PreferenceItem(
-                        title = stringResource(R.string.genai_status_force_off_text),
-                        subtitle = stringResource(R.string.genai_status_notification_text),
-                        leadingIcon = { Icon(Icons.Default.ToggleOff, contentDescription = null) },
-                        trailingContent = {
-                            Switch(
-                                checked = genAiPrefs.forceOffTextGeneration,
-                                onCheckedChange = { viewModel.setForceOffTextGeneration(it) }
-                            )
-                        }
-                    )
-                }
-
-                item {
-                    PreferenceItem(
-                        title = stringResource(R.string.genai_status_force_off_summarization),
-                        subtitle = stringResource(R.string.genai_status_notification_text),
-                        leadingIcon = { Icon(Icons.Default.ToggleOff, contentDescription = null) },
-                        trailingContent = {
-                            Switch(
-                                checked = genAiPrefs.forceOffSummarization,
-                                onCheckedChange = { viewModel.setForceOffSummarization(it) }
-                            )
-                        }
-                    )
-                }
-
-                item {
-                    HorizontalDivider(modifier = Modifier.padding(start = 72.dp))
-                }
-
+                // Consolidated AI models section
                 item {
                     Text(
                         text = stringResource(R.string.genai_models_title),
@@ -238,26 +192,124 @@ fun SettingsScreen(
                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
                     )
                 }
-                val (image, prompt, sum) = baseModelNames
+                val featureStates by viewModel.featureStates.collectAsState()
+                val imageState = featureStates?.imageDescription ?: com.google.mlkit.genai.common.FeatureStatus.UNAVAILABLE
+                val textState = featureStates?.textGeneration ?: com.google.mlkit.genai.common.FeatureStatus.UNAVAILABLE
+                val sumState = featureStates?.summarization ?: com.google.mlkit.genai.common.FeatureStatus.UNAVAILABLE
+
+                // Image description row
                 item {
+                    val available = imageState == com.google.mlkit.genai.common.FeatureStatus.AVAILABLE
+                    val checked = available && !genAiPrefs.forceOffImageDescription
                     PreferenceItem(
                         title = stringResource(R.string.genai_model_label_image),
-                        subtitle = image ?: stringResource(R.string.genai_models_loading),
-                        leadingIcon = { Icon(Icons.Default.AutoAwesome, contentDescription = null) }
+                        subtitle = baseModelNames.first ?: stringResource(R.string.genai_models_loading),
+                        leadingIcon = { Icon(Icons.Default.AutoAwesome, contentDescription = null) },
+                        trailingContent = {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    imageVector = if (available) Icons.Default.CheckCircle else Icons.Default.HelpOutline,
+                                    contentDescription = null,
+                                    tint = if (available) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Switch(
+                                    checked = checked,
+                                    onCheckedChange = { newValue ->
+                                        if (newValue) {
+                                            if (!available) {
+                                                // Navigate back to main UI so the usual check/download dialog runs
+                                                onNavigateBack()
+                                            } else {
+                                                viewModel.setUseImageDescription(true)
+                                            }
+                                        } else {
+                                            viewModel.setUseImageDescription(false)
+                                        }
+                                    }
+                                )
+                            }
+                        }
                     )
                 }
+
+                // Text generation row
                 item {
+                    val available = textState == com.google.mlkit.genai.common.FeatureStatus.AVAILABLE
+                    val checked = available && !genAiPrefs.forceOffTextGeneration
                     PreferenceItem(
                         title = stringResource(R.string.genai_model_label_text),
-                        subtitle = prompt ?: stringResource(R.string.genai_models_loading),
-                        leadingIcon = { Icon(Icons.Default.AutoAwesome, contentDescription = null) }
+                        subtitle = baseModelNames.second ?: stringResource(R.string.genai_models_loading),
+                        leadingIcon = { Icon(Icons.Default.AutoAwesome, contentDescription = null) },
+                        trailingContent = {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    imageVector = if (available) Icons.Default.CheckCircle else Icons.Default.HelpOutline,
+                                    contentDescription = null,
+                                    tint = if (available) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Switch(
+                                    checked = checked,
+                                    onCheckedChange = { newValue ->
+                                        if (newValue) {
+                                            if (!available) {
+                                                onNavigateBack()
+                                            } else {
+                                                viewModel.setUseTextGeneration(true)
+                                            }
+                                        } else {
+                                            viewModel.setUseTextGeneration(false)
+                                        }
+                                    }
+                                )
+                            }
+                        }
                     )
                 }
+
+                // Summarization row
                 item {
+                    val available = sumState == com.google.mlkit.genai.common.FeatureStatus.AVAILABLE
+                    val checked = available && !genAiPrefs.forceOffSummarization
                     PreferenceItem(
                         title = stringResource(R.string.genai_model_label_summarization),
-                        subtitle = sum ?: stringResource(R.string.genai_models_loading),
-                        leadingIcon = { Icon(Icons.Default.AutoAwesome, contentDescription = null) }
+                        subtitle = baseModelNames.third ?: stringResource(R.string.genai_models_loading),
+                        leadingIcon = { Icon(Icons.Default.AutoAwesome, contentDescription = null) },
+                        trailingContent = {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    imageVector = if (available) Icons.Default.CheckCircle else Icons.Default.HelpOutline,
+                                    contentDescription = null,
+                                    tint = if (available) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Switch(
+                                    checked = checked,
+                                    onCheckedChange = { newValue ->
+                                        if (newValue) {
+                                            if (!available) {
+                                                onNavigateBack()
+                                            } else {
+                                                viewModel.setUseSummarization(true)
+                                            }
+                                        } else {
+                                            viewModel.setUseSummarization(false)
+                                        }
+                                    }
+                                )
+                            }
+                        }
+                    )
+                }
+
+                // Warning text under the section
+                item {
+                    Text(
+                        text = stringResource(R.string.genai_models_switch_warning),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
                     )
                 }
             }
