@@ -58,7 +58,14 @@ class GenAiStatusCheckDialogActivity : ComponentActivity() {
 
         setContent {
             MemoizTheme {
-                GenAiStatusDialog(manager = manager, forceOff = forceOff, onFinish = { finish() })
+                // Ensure that when the dialog finishes (user taps Close/back/outside),
+                // any in-progress downloads are cancelled before the Activity exits.
+                GenAiStatusDialog(manager = manager, forceOff = forceOff, onFinish = {
+                    // Cancel any ongoing model downloads to avoid background work
+                    // continuing after the UI is dismissed.
+                    try { manager.cancelDownloads() } catch (_: Exception) { }
+                    finish()
+                })
             }
         }
     }
