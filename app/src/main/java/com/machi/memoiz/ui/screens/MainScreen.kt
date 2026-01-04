@@ -152,8 +152,14 @@ fun MainScreen(
     // only runs when entering composition.
     LaunchedEffect(Unit) {
         if (genAiDialogShown) return@LaunchedEffect
-        // If tutorial is showing, we'll let its onFinished schedule the dialog instead.
-        if (shouldShowTutorial) return@LaunchedEffect
+        // If the tutorial will actually be shown (preferencesLoaded && shouldShowTutorial),
+        // we intentionally skip the GenAI status check here and let the tutorial's
+        // onFinished handler perform the check. Previously this checked only
+        // `shouldShowTutorial` and could incorrectly skip the check when
+        // preferences were not yet loaded (default state), preventing the status
+        // check from running on create. Require both flags so we only skip when
+        // the tutorial truly will appear.
+        if (preferencesLoaded && shouldShowTutorial) return@LaunchedEffect
         // Perform an explicit status check to detect AICore-disabled devices immediately.
         val manager = com.machi.memoiz.service.GenAiStatusManager(context.applicationContext)
         try {
@@ -1774,7 +1780,7 @@ private fun AnalyzingIndicator() {
         )
         Box(
             modifier = Modifier
-                .size(48.dp)
+                .size(44.dp)
                 .clip(CircleShape)
                 .background(MaterialTheme.colorScheme.surfaceVariant),
             contentAlignment = Alignment.Center
