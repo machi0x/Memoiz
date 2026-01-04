@@ -22,6 +22,11 @@ import com.machi.memoiz.worker.ReanalyzeSingleMemoWorker
 import com.machi.memoiz.worker.WORK_TAG_MEMO_PROCESSING
 import com.google.mlkit.genai.common.FeatureStatus
 import java.util.concurrent.TimeUnit
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /**
  * Helper functions to enqueue clipboard categorization work from various entry points.
