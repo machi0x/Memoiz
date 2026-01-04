@@ -86,6 +86,7 @@ import com.machi.memoiz.ui.theme.MemoizTheme
 import com.machi.memoiz.util.FailureCategoryHelper
 import com.machi.memoiz.util.UsageStatsHelper
 import coil.compose.AsyncImage
+import com.machi.memoiz.ui.dialog.GenAiStatusCheckDialogActivity
 import java.text.DateFormat
 import java.util.*
 import kotlinx.coroutines.Job

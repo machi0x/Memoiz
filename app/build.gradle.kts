@@ -128,6 +128,7 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.10.0")
     implementation("androidx.activity:activity-compose:1.9.3")  // Downgraded from 1.12.2 to work with AGP 8.6.0
     implementation("androidx.core:core-splashscreen:1.2.0")
+    implementation("com.google.android.material:material:1.12.0")
 
     // Jetpack Compose
     implementation(platform("androidx.compose:compose-bom:2024.06.00"))
@@ -151,6 +152,7 @@ dependencies {
     // Coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-guava:1.10.2")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.10.2")
 
     // ViewModel Compose
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.10.0")
@@ -159,7 +161,7 @@ dependencies {
     // DataStore for preferences
     implementation("androidx.datastore:datastore-preferences:1.2.0")
 
-    // ML Kit GenAI (The correct on-device dependencies)
+    // ML Kit GenAI
     implementation("com.google.mlkit:genai-prompt:1.0.0-alpha1")
     implementation("com.google.mlkit:genai-image-description:1.0.0-beta1")
     implementation("com.google.mlkit:genai-summarization:1.0.0-beta1")

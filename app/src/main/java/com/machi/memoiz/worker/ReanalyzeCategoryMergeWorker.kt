@@ -7,8 +7,8 @@ import com.machi.memoiz.data.MemoizDatabase
 import com.machi.memoiz.data.datastore.PreferencesDataStoreManager
 import com.machi.memoiz.data.repository.MemoRepository
 import com.machi.memoiz.domain.model.Memo
+import com.machi.memoiz.service.AiCategorizationService
 import com.machi.memoiz.service.CategoryMergeService
-import com.machi.memoiz.service.ai.AiCategorizationService
 import kotlinx.coroutines.flow.first
 
 class ReanalyzeCategoryMergeWorker(
@@ -39,14 +39,9 @@ class ReanalyzeCategoryMergeWorker(
         }
 
         return try {
-            memosToProcess.forEach { memo ->
-                if (memo.isCategoryLocked) return@forEach
-                val input = CategoryMergeService.MergeInput(
-                    aiCategory = memo.category,
-                    aiSubCategory = memo.subCategory,
-                    existingCategories = existingCategories,
-                    customCategories = preferences.customCategories
-                )
+            for (memo in memosToProcess) {
+                if (memo.isCategoryLocked) continue
+
                 val aiService = AiCategorizationService(
                     applicationContext,
                     mergeService,
@@ -55,9 +50,19 @@ class ReanalyzeCategoryMergeWorker(
                     isCategoryLocked = false,
                     summarizationOnlyMode = preferences.forceOffTextGeneration && !preferences.forceOffSummarization
                 )
-                val mergeResult = aiService.categorize(memo)
-                if (mergeResult.finalCategory != memo.category) {
-                    memoRepository.updateMemo(memo.copy(category = mergeResult.finalCategory))
+
+                val updatedMemoEntity = when (memo.memoType) {
+                    com.machi.memoiz.data.entity.MemoType.TEXT -> {
+                        aiService.processText(memo.content, memo.sourceApp)
+                    }
+                    com.machi.memoiz.data.entity.MemoType.IMAGE -> {
+                        memo.imageUri?.let { aiService.processImageUri(it, memo.sourceApp) }
+                    }
+                    else -> null
+                }
+
+                if (updatedMemoEntity != null && updatedMemoEntity.category != memo.category) {
+                    memoRepository.updateMemo(memo.copy(category = updatedMemoEntity.category))
                 }
             }
             Result.success()

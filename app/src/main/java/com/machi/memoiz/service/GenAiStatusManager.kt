@@ -3,10 +3,14 @@ package com.machi.memoiz.service
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
+import android.graphics.Bitmap
 import android.os.Build
+import android.util.Log
 import androidx.core.app.NotificationCompat
 import com.google.android.gms.common.ConnectionResult
 import com.google.android.gms.common.GoogleApiAvailability
+import com.google.common.util.concurrent.ListenableFuture
+import com.google.mlkit.genai.common.DownloadCallback
 import com.google.mlkit.genai.common.FeatureStatus
 import com.google.mlkit.genai.common.GenAiException
 import com.google.mlkit.genai.imagedescription.ImageDescription
@@ -19,7 +23,7 @@ import com.google.mlkit.genai.summarization.Summarizer
 import com.google.mlkit.genai.summarization.SummarizerOptions
 import com.machi.memoiz.R
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.guava.await
 import kotlinx.coroutines.withContext
 
 data class GenAiFeatureStates(
@@ -38,6 +42,7 @@ data class GenAiFeatureStates(
 
 class GenAiStatusManager(private val context: Context) {
     companion object {
+        const val TAG = "GenAiStatusManager"
         const val EXTRA_FORCE_OFF_IMAGE = "force_off_image"
         const val EXTRA_FORCE_OFF_TEXT = "force_off_text"
         const val EXTRA_FORCE_OFF_SUM = "force_off_sum"
@@ -65,26 +70,52 @@ class GenAiStatusManager(private val context: Context) {
         val forced = forceOff ?: GenAiFeatureStates()
         return@withContext try {
             val img = if (forced.imageDescription == FeatureStatus.UNAVAILABLE) FeatureStatus.UNAVAILABLE else imageDescriber.checkFeatureStatus().await()
-            val gen = if (forced.textGeneration == FeatureStatus.UNAVAILABLE) FeatureStatus.UNAVAILABLE else promptModel.checkFeatureStatus().await()
+            // promptModel.checkFeatureStatus() is not available in alpha1
+            val gen = if (forced.textGeneration == FeatureStatus.UNAVAILABLE) FeatureStatus.UNAVAILABLE else FeatureStatus.AVAILABLE
             val sum = if (forced.summarization == FeatureStatus.UNAVAILABLE) FeatureStatus.UNAVAILABLE else summarizer.checkFeatureStatus().await()
             GenAiFeatureStates(img, gen, sum)
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to check feature status", e)
             GenAiFeatureStates()
         }
     }
 
     suspend fun downloadMissing(states: GenAiFeatureStates) = withContext(Dispatchers.IO) {
-        val callbacks = mutableListOf<suspend () -> Unit>()
+        val downloadCallback = object : DownloadCallback {
+            override fun onDownloadCompleted() {
+                Log.d(TAG, "Model download completed.")
+            }
+            override fun onDownloadFailed(e: GenAiException) {
+                Log.e(TAG, "Model download failed", e)
+            }
+            override fun onDownloadStarted(bytesToDownload: Long) {
+                 Log.d(TAG, "Model download started. Size: $bytesToDownload")
+            }
+            override fun onDownloadProgress(totalBytesDownloaded: Long) {
+                 Log.d(TAG, "Model download progress: $totalBytesDownloaded")
+            }
+        }
+
+        val tasks = mutableListOf<ListenableFuture<Void>>()
+
         if (states.imageDescription == FeatureStatus.DOWNLOADABLE) {
-            callbacks += { imageDescriber.download().await() }
+            tasks.add(imageDescriber.downloadFeature(downloadCallback))
         }
-        if (states.textGeneration == FeatureStatus.DOWNLOADABLE) {
-            callbacks += { promptModel.download().await() }
-        }
+
+        // promptModel.downloadFeature() is not available in alpha1
+
         if (states.summarization == FeatureStatus.DOWNLOADABLE) {
-            callbacks += { summarizer.download().await() }
+             tasks.add(summarizer.downloadFeature(downloadCallback))
         }
-        callbacks.forEach { runCatching { it() }.onFailure { it.printStackTrace() } }
+
+        // Await all downloads to complete.
+        tasks.forEach {
+            try {
+                it.await()
+            } catch (e: Exception) {
+                Log.e(TAG, "A download task failed.", e)
+            }
+        }
     }
 
     fun buildNotificationChannel(channelId: String) {
@@ -103,8 +134,7 @@ class GenAiStatusManager(private val context: Context) {
             .setSmallIcon(R.mipmap.ic_launcher)
             .setContentTitle(context.getString(R.string.genai_status_notification_title))
             .setContentText(context.getString(R.string.genai_status_notification_text))
-            .setLargeIcon(null)
-            .setPriority(NotificationCompat.PRIORITY_LOW)
+            .setLargeIcon(null as Bitmap?)
             .setAutoCancel(true)
     }
 
@@ -121,7 +151,8 @@ class GenAiStatusManager(private val context: Context) {
 
     suspend fun getBaseModelNames(): Triple<String?, String?, String?> = withContext(Dispatchers.IO) {
         val image = runCatching { imageDescriber.baseModelName.await() }.getOrNull()
-        val prompt = runCatching { promptModel.baseModelName.await() }.getOrNull()
+        // promptModel.baseModelName is not available in alpha1
+        val prompt = null
         val sum = runCatching { summarizer.baseModelName.await() }.getOrNull()
         Triple(image, prompt, sum)
     }
