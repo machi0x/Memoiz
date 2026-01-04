@@ -163,16 +163,22 @@ Try sharing text or images from other apps, or use the + button at the bottom of
     <string name="genai_status_notification_text">Some AI features are unavailable. Tap for details.</string>
     <string name="genai_status_shrunk_mode">Fallback: using summarization only; categories may be missing.</string>
     <string name="genai_status_message_download_failed">Download failed. Some features may be restricted. Please reopen the app later.</string>
-    <string name="genai_models_title">Active AI features</string>
+    <string name="genai_models_title">AI models and status in use</string>
     <string name="genai_model_label_image">Image description feature</string>
     <string name="genai_model_label_text">Text generation feature</string>
     <string name="genai_model_label_summarization">Summarization feature</string>
     <string name="genai_models_loading">Loading...</string>
-    <string name="genai_models_switch_warning">Turning off AI models limits Memoiz features. Do not turn off unless you know what you are doing.</string>
+    <string name="genai_models_switch_warning">Depending on device type and state, some AI features may be unavailable. In that case, Memoiz features may be restricted.</string>
     <string name="genai_status_download_cancel">Cancel download</string>
     <string name="genai_status_message_download_cancelled">Download cancelled. Some features may be restricted.</string>
     <string name="cd_refresh">Refresh</string>
-    <string name="genai_models_unavailable">Currently unavailable</string>
-    <string name="genai_models_downloadable">Currently unavailable</string>
+    <string name="genai_models_unavailable">Unavailable</string>
+    <string name="genai_models_downloadable">Download required</string>
     <string name="genai_models_available">Available</string>
+    <string name="genai_models_unknown">Unknown</string>
+    <string name="genai_status_paren_available">(Available)</string>
+    <string name="genai_status_paren_downloadable">(Download required)</string>
+    <string name="genai_status_paren_unavailable">(Unavailable)</string>
+    <string name="genai_label_model_name">Model name: %1$s</string>
+    <string name="genai_label_status">Status:</string>
 </resources>
