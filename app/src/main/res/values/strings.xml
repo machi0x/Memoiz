@@ -150,7 +150,7 @@ Try sharing text or images from other apps, or use the + button at the bottom of
 
     <!-- GenAI status dialog/notification -->
     <string name="genai_status_title_unavailable">On-device AI unavailable</string>
-    <string name="genai_status_message_unavailable">On this device, on-device AI is not available. Memo categorization or summaries may not be generated. You can still add memos and set categories manually.</string>
+    <string name="genai_status_message_unavailable">On this device, on-device AI or part of that is not available. Memo categorization or summaries may not be generated. You can still add memos and set categories manually.</string>
     <string name="genai_status_title_download">Download on-device AI model</string>
     <string name="genai_status_message_download">Download the on-device AI model used by Memoiz. It stays on your device and may also be reused by other supported apps. Use Wi‑Fi because the download can be large.</string>
     <string name="genai_status_download_start">Start download</string>

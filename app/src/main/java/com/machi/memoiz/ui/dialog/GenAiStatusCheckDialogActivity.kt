@@ -8,8 +8,6 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
@@ -128,9 +126,10 @@ private fun GenAiStatusDialog(manager: GenAiStatusManager, forceOff: GenAiFeatur
             if (needsDownload) {
                 TextButton(
                     onClick = {
-                        if (!isDownloading) { // Prevent multiple clicks
-                            isDownloading = true
-                            scope.launch {
+                        // Prevent double clicks and set downloading state inside coroutine so analyzer sees read/write.
+                        scope.launch {
+                            if (!isDownloading) {
+                                isDownloading = true
                                 manager.downloadMissing(status!!)
                                 onFinish()
                             }
@@ -148,11 +147,11 @@ private fun GenAiStatusDialog(manager: GenAiStatusManager, forceOff: GenAiFeatur
         },
         title = { Text(title, style = MaterialTheme.typography.titleLarge) },
         text = {
-            Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(20.dp)) {
                 Image(
                     painter = painterResource(id = iconRes),
                     contentDescription = null,
-                    modifier = Modifier.size(150.dp)
+                    modifier = Modifier.size(240.dp)
                 )
                 Text(message, style = MaterialTheme.typography.bodyLarge, textAlign = TextAlign.Center)
                 if (isDownloading) {

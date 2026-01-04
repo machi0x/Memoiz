@@ -133,7 +133,7 @@
     <string name="error_image_analysis_permanent_with_code">このメモは解析できません。エラーコード: (%1$s)</string>
     <!-- 詳細理由の個別文言はユーザー混乱防止のため統合 -->
     <string name="genai_status_title_unavailable">端末内AIが利用できません</string>
-    <string name="genai_status_message_unavailable">この端末では端末内AIを利用できません。メモの自動カテゴリ分けや要約が生成されない場合があります。メモの追加や手動でのカテゴリ指定は可能です。</string>
+    <string name="genai_status_message_unavailable">この端末では端末内AIが利用できないか、機能に一部制限があります。メモのカテゴリや要約が生成されない場合があります。メモの作成や手動でのカテゴリ指定は可能です。</string>
     <string name="genai_status_title_download">AIモデルのダウンロード</string>
     <string name="genai_status_message_download">メモイズで使う端末内AI用のモデル（解析用データ）をダウンロードします。一度保存すると端末の基本機能として他の対応アプリでも共通利用されます。通信量が大きいためWi‑Fi接続で行ってください。</string>
     <string name="genai_status_download_start">ダウンロードを開始</string>
