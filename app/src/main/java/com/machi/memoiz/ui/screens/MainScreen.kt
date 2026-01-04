@@ -945,8 +945,8 @@ private fun CategoryAccordion(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = LocalIndication.current
+                        indication = null,
+                        interactionSource = remember { MutableInteractionSource() }
                     ) { onHeaderClick() }
                     .padding(16.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -1350,8 +1350,8 @@ private fun SortModeDialog(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clickable(
-                                interactionSource = remember { MutableInteractionSource() },
-                                indication = LocalIndication.current
+                                indication = null,
+                                interactionSource = remember { MutableInteractionSource() }
                             ) { onModeSelected(mode) }
                             .padding(vertical = 12.dp),
                         verticalAlignment = Alignment.CenterVertically

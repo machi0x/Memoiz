@@ -95,16 +95,78 @@ class GenAiStatusManager(private val context: Context) {
             }
         }
 
+        downloadMissing(states, downloadCallback)
+    }
+
+    // New overload: allow caller to supply a DownloadCallback so UI can show progress
+    suspend fun downloadMissing(states: GenAiFeatureStates, downloadCallback: DownloadCallback, onError: (Throwable) -> Unit = {} ) = withContext(Dispatchers.IO) {
         val tasks = mutableListOf<ListenableFuture<Void>>()
 
+        // We'll aggregate totals from multiple downloads and forward aggregated values to the caller's callback
+        var aggregateTotalBytes: Long = 0L
+        val perTaskDownloaded = mutableMapOf<Int, Long>()
+        val perTaskTotal = mutableMapOf<Int, Long>()
+        var taskIndex = 0
+
+        fun forwardStarted(total: Long) {
+            // Forward aggregated total
+            downloadCallback.onDownloadStarted(total)
+        }
+
+        fun forwardProgress(aggregateDownloaded: Long) {
+            downloadCallback.onDownloadProgress(aggregateDownloaded)
+        }
+
+        fun forwardFailed(e: GenAiException) {
+            downloadCallback.onDownloadFailed(e)
+        }
+
+        fun forwardCompleted() {
+            downloadCallback.onDownloadCompleted()
+        }
+
+        // Helper to create a per-task wrapper callback that updates aggregates
+        fun makeWrapperCallback(index: Int): DownloadCallback {
+            return object : DownloadCallback {
+                override fun onDownloadStarted(bytesToDownload: Long) {
+                    perTaskTotal[index] = bytesToDownload
+                    aggregateTotalBytes += bytesToDownload
+                    // Notify caller of aggregated total
+                    forwardStarted(aggregateTotalBytes)
+                }
+
+                override fun onDownloadFailed(e: GenAiException) {
+                    forwardFailed(e)
+                }
+
+                override fun onDownloadProgress(totalBytesDownloadedForTask: Long) {
+                    perTaskDownloaded[index] = totalBytesDownloadedForTask
+                    val aggregateDownloaded = perTaskDownloaded.values.sum()
+                    forwardProgress(aggregateDownloaded)
+                }
+
+                override fun onDownloadCompleted() {
+                    // Ensure this task is accounted as fully downloaded
+                    perTaskDownloaded[index] = perTaskTotal[index] ?: perTaskDownloaded.getOrDefault(index, 0L)
+                    val aggregateDownloaded = perTaskDownloaded.values.sum()
+                    forwardProgress(aggregateDownloaded)
+                    // If all tasks have completed we will call forwardCompleted when awaiting futures
+                }
+            }
+        }
+
         if (states.imageDescription == FeatureStatus.DOWNLOADABLE) {
-            tasks.add(imageDescriber.downloadFeature(downloadCallback))
+            val idx = taskIndex++
+            val wrapper = makeWrapperCallback(idx)
+            tasks.add(imageDescriber.downloadFeature(wrapper))
         }
 
         // promptModel.downloadFeature() is not available in alpha1
 
         if (states.summarization == FeatureStatus.DOWNLOADABLE) {
-             tasks.add(summarizer.downloadFeature(downloadCallback))
+             val idx = taskIndex++
+             val wrapper = makeWrapperCallback(idx)
+             tasks.add(summarizer.downloadFeature(wrapper))
         }
 
         // Await all downloads to complete.
@@ -113,8 +175,18 @@ class GenAiStatusManager(private val context: Context) {
                 it.await()
             } catch (e: Exception) {
                 Log.e(TAG, "A download task failed.", e)
+                // If this is a GenAiException, forward it to the callback; otherwise just log and continue.
+                if (e is GenAiException) {
+                    forwardFailed(e)
+                } else {
+                    // Forward non-GenAiException via onError so UI can show a unified error state.
+                    onError(e)
+                }
             }
         }
+
+        // At the end forward completed
+        forwardCompleted()
     }
 
     fun buildNotificationChannel(channelId: String) {

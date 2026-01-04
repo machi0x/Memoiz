@@ -7,10 +7,14 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -31,8 +35,12 @@ import com.machi.memoiz.R
 import com.machi.memoiz.service.GenAiFeatureStates
 import com.machi.memoiz.service.GenAiStatusManager
 import com.machi.memoiz.ui.theme.MemoizTheme
+import com.google.mlkit.genai.common.DownloadCallback
 import com.google.mlkit.genai.common.FeatureStatus
+import com.google.mlkit.genai.common.GenAiException
+import androidx.compose.ui.platform.LocalContext
 import kotlinx.coroutines.launch
+import java.util.Locale
 
 /** Dialog-like Activity that checks GenAI feature status and optionally downloads models, using Jetpack Compose. */
 class GenAiStatusCheckDialogActivity : ComponentActivity() {
@@ -77,7 +85,12 @@ class GenAiStatusCheckDialogActivity : ComponentActivity() {
 private fun GenAiStatusDialog(manager: GenAiStatusManager, forceOff: GenAiFeatureStates, onFinish: () -> Unit) {
     var status by remember { mutableStateOf<GenAiFeatureStates?>(null) }
     var isDownloading by remember { mutableStateOf(false) }
+    var totalBytesToDownload by remember { mutableStateOf(0L) }
+    var totalBytesDownloaded by remember { mutableStateOf(0L) }
+    var showError by remember { mutableStateOf(false) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
+    val ctx = LocalContext.current
 
     LaunchedEffect(Unit) {
         val checkedStatus = manager.checkAll(forceOff)
@@ -130,12 +143,47 @@ private fun GenAiStatusDialog(manager: GenAiStatusManager, forceOff: GenAiFeatur
                         scope.launch {
                             if (!isDownloading) {
                                 isDownloading = true
-                                manager.downloadMissing(status!!)
-                                onFinish()
-                            }
-                        }
-                    }
-                ) {
+                                // Provide a DownloadCallback to receive progress updates
+                                val callback = object : DownloadCallback {
+                                    override fun onDownloadStarted(bytesToDownload: Long) {
+                                        scope.launch { totalBytesToDownload = bytesToDownload }
+                                    }
+
+                                    override fun onDownloadFailed(e: GenAiException) {
+                                        // Show error state in the dialog but do not immediately close it
+                                        scope.launch {
+                                            isDownloading = false
+                                            showError = true
+                                            errorMessage = e.message ?: ctx.getString(R.string.genai_status_message_download_failed)
+                                        }
+                                    }
+
+                                    override fun onDownloadProgress(totalBytesDownloadedArg: Long) {
+                                        // Update state via Compose scope (main thread)
+                                        scope.launch { totalBytesDownloaded = totalBytesDownloadedArg }
+                                    }
+
+                                    override fun onDownloadCompleted() {
+                                        scope.launch {
+                                            isDownloading = false
+                                            // Ensure progress shows complete
+                                            totalBytesDownloaded = totalBytesToDownload
+                                            // Close after success
+                                            onFinish()
+                                        }
+                                    }
+                                }
+                                manager.downloadMissing(status!!, callback) { throwable ->
+                                    scope.launch {
+                                        isDownloading = false
+                                        showError = true
+                                        errorMessage = throwable.message ?: ctx.getString(R.string.genai_status_message_download_failed)
+                                    }
+                                }
+                             }
+                         }
+                     }
+                 ) {
                     Text(stringResource(R.string.genai_status_download_start))
                 }
             }
@@ -154,10 +202,47 @@ private fun GenAiStatusDialog(manager: GenAiStatusManager, forceOff: GenAiFeatur
                     modifier = Modifier.size(240.dp)
                 )
                 Text(message, style = MaterialTheme.typography.bodyLarge, textAlign = TextAlign.Center)
-                if (isDownloading) {
-                    CircularProgressIndicator()
-                }
-            }
-        }
-    )
+                if (showError) {
+                    Image(
+                        painter = painterResource(id = R.drawable.model_unavailable),
+                        contentDescription = null,
+                        modifier = Modifier.size(240.dp)
+                    )
+                    Text(errorMessage ?: stringResource(R.string.genai_status_message_download_failed), style = MaterialTheme.typography.bodyLarge, textAlign = TextAlign.Center)
+                } else if (isDownloading) {
+                     val progressFraction = if (totalBytesToDownload > 0) totalBytesDownloaded.toDouble() / totalBytesToDownload.toDouble() else 0.0
+                     // Determinate bar with an indeterminate overlay to show motion
+                     Box(modifier = Modifier.fillMaxWidth().height(24.dp), contentAlignment = Alignment.Center) {
+                         // Determinate background fill
+                         LinearProgressIndicator(
+                             progress = progressFraction.toFloat(),
+                             modifier = Modifier
+                                 .fillMaxWidth()
+                                 .height(8.dp)
+                         )
+                         // Semi-transparent indeterminate overlay to show movement
+                         LinearProgressIndicator(
+                             modifier = Modifier
+                                 .fillMaxWidth()
+                                 .height(8.dp),
+                             // no progress -> indeterminate animation
+                         )
+                     }
+                     // Show numeric bytes below the bar
+                     val downloadedText = if (totalBytesToDownload > 0) {
+                         val downloadedMb = totalBytesDownloaded.toDouble() / (1024.0 * 1024.0)
+                         val totalMb = totalBytesToDownload.toDouble() / (1024.0 * 1024.0)
+                         String.format(Locale.getDefault(), "%.2f MB / %.2f MB (%.1f%%)", downloadedMb, totalMb, 100.0 * downloadedTextSafe(totalBytesDownloaded, totalBytesToDownload))
+                     } else {
+                         String.format(Locale.getDefault(), "%.2f MB", totalBytesDownloaded.toDouble() / (1024.0 * 1024.0))
+                     }
+                     Text(downloadedText, style = MaterialTheme.typography.bodyMedium, textAlign = TextAlign.Center)
+                 }
+             }
+         }
+     )
+}
+
+private fun downloadedTextSafe(downloaded: Long, total: Long): Double {
+    return if (total > 0) downloaded.toDouble() / total.toDouble() else 0.0
 }

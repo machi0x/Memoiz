@@ -6,7 +6,6 @@ import android.content.Context
 import android.content.Intent
 import android.provider.Settings
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.Indication
 import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -233,12 +232,32 @@ fun SettingsScreen(
                 }
 
                 item {
-                    val (image, prompt, sum) = baseModelNames
-                    val subtitle = listOfNotNull(image, prompt, sum).joinToString("\n")
+                    Text(
+                        text = stringResource(R.string.genai_models_title),
+                        style = MaterialTheme.typography.titleMedium,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                    )
+                }
+                val (image, prompt, sum) = baseModelNames
+                item {
                     PreferenceItem(
-                        title = "GenAI base models",
-                        subtitle = if (subtitle.isNotEmpty()) subtitle else "Loading...",
-                        leadingIcon = { Icon(Icons.Default.Info, contentDescription = null) }
+                        title = stringResource(R.string.genai_model_label_image),
+                        subtitle = image ?: stringResource(R.string.genai_models_loading),
+                        leadingIcon = { Icon(Icons.Default.AutoAwesome, contentDescription = null) }
+                    )
+                }
+                item {
+                    PreferenceItem(
+                        title = stringResource(R.string.genai_model_label_text),
+                        subtitle = prompt ?: stringResource(R.string.genai_models_loading),
+                        leadingIcon = { Icon(Icons.Default.AutoAwesome, contentDescription = null) }
+                    )
+                }
+                item {
+                    PreferenceItem(
+                        title = stringResource(R.string.genai_model_label_summarization),
+                        subtitle = sum ?: stringResource(R.string.genai_models_loading),
+                        leadingIcon = { Icon(Icons.Default.AutoAwesome, contentDescription = null) }
                     )
                 }
             }
@@ -303,9 +322,10 @@ private fun PreferenceItem(
             .fillMaxWidth()
             .then(
                 if (onClick != null) {
+                    // Use indication = null to avoid PlatformRipple/Indication mismatch crash on some Compose versions.
                     Modifier.clickable(
+                        indication = null,
                         interactionSource = remember { MutableInteractionSource() },
-                        indication = LocalIndication.current,
                         onClick = onClick
                     )
                 } else {

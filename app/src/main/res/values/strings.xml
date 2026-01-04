@@ -162,4 +162,10 @@ Try sharing text or images from other apps, or use the + button at the bottom of
     <string name="genai_status_notification_title">On-device AI unavailable</string>
     <string name="genai_status_notification_text">Some AI features are unavailable. Tap for details.</string>
     <string name="genai_status_shrunk_mode">Fallback: using summarization only; categories may be missing.</string>
+    <string name="genai_status_message_download_failed">Download failed. Some features may be restricted. Please reopen the app later.</string>
+    <string name="genai_models_title">Active AI models</string>
+    <string name="genai_model_label_image">Image description model</string>
+    <string name="genai_model_label_text">Text generation model</string>
+    <string name="genai_model_label_summarization">Summarization model</string>
+    <string name="genai_models_loading">Loading...</string>
 </resources>
