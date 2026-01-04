@@ -119,6 +119,8 @@ fun MainScreen(
     var showTutorialDialog by rememberSaveable { mutableStateOf(false) }
     val genAiForceOff by viewModel.genAiForceOffFlags.collectAsState()
     var pendingShowGenAiDialog by rememberSaveable { mutableStateOf(false) }
+    // Track whether we've already shown the GenAI dialog during this Activity lifecycle
+    var genAiDialogShown by rememberSaveable { mutableStateOf(false) }
 
     LaunchedEffect(memoGroups) {
         viewModel.ensureCategoryOrder(memoGroups.map { it.category })
@@ -136,25 +138,52 @@ fun MainScreen(
     LaunchedEffect(shouldShowTutorial) {
         if (shouldShowTutorial) {
             showTutorialDialog = true
-        } else {
-            pendingShowGenAiDialog = true
         }
     }
 
+    // Run once when the composable enters composition (onCreate). This explicitly checks
+    // the GenAI feature status (including cases where AICore is disabled) and shows the
+    // status dialog if needed. It will not run on resume because LaunchedEffect(Unit)
+    // only runs when entering composition.
     LaunchedEffect(Unit) {
-        // Trigger once on main creation when tutorial already seen
-        if (!shouldShowTutorial) {
-            pendingShowGenAiDialog = true
+        if (genAiDialogShown) return@LaunchedEffect
+        // If tutorial is showing, we'll let its onFinished schedule the dialog instead.
+        if (shouldShowTutorial) return@LaunchedEffect
+        // Perform an explicit status check to detect AICore-disabled devices immediately.
+        val manager = com.machi.memoiz.service.GenAiStatusManager(context.applicationContext)
+        try {
+            val forced = com.machi.memoiz.service.GenAiFeatureStates(
+                imageDescription = if (genAiForceOff.first) com.google.mlkit.genai.common.FeatureStatus.UNAVAILABLE else com.google.mlkit.genai.common.FeatureStatus.AVAILABLE,
+                textGeneration = if (genAiForceOff.second) com.google.mlkit.genai.common.FeatureStatus.UNAVAILABLE else com.google.mlkit.genai.common.FeatureStatus.AVAILABLE,
+                summarization = if (genAiForceOff.third) com.google.mlkit.genai.common.FeatureStatus.UNAVAILABLE else com.google.mlkit.genai.common.FeatureStatus.AVAILABLE
+            )
+            val status = manager.checkAll(forced)
+            if (status.anyUnavailable() || status.anyDownloadable()) {
+                GenAiStatusCheckDialogActivity.start(context.applicationContext, genAiForceOff)
+                genAiDialogShown = true
+            }
+        } catch (e: Exception) {
+            // If status check failed (for example AICore disabled or GMS issue), assume unavailable and show dialog.
+            e.printStackTrace()
+            try {
+                GenAiStatusCheckDialogActivity.start(context.applicationContext, genAiForceOff)
+                genAiDialogShown = true
+            } catch (ignored: Exception) {
+                // If even launching the dialog fails, swallow to avoid crashing UI.
+            }
+        } finally {
+            manager.close()
         }
     }
 
     LaunchedEffect(pendingShowGenAiDialog) {
-        if (pendingShowGenAiDialog) {
+        if (pendingShowGenAiDialog && !genAiDialogShown) {
             GenAiStatusCheckDialogActivity.start(
                 context.applicationContext,
                 genAiForceOff
             )
             pendingShowGenAiDialog = false
+            genAiDialogShown = true
         }
     }
 
@@ -660,7 +689,7 @@ fun MainScreen(
             onFinished = {
                 showTutorialDialog = false
                 viewModel.markTutorialSeen()
-                pendingShowGenAiDialog = true
+                if (!genAiDialogShown) pendingShowGenAiDialog = true
             }
         )
     }
