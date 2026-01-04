@@ -10,16 +10,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.ArrowForward
-import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.AutoAwesome
-import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.Description
-import androidx.compose.material.icons.filled.School
-import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -44,6 +34,11 @@ import com.machi.memoiz.util.UsageStatsHelper
 import kotlinx.coroutines.flow.MutableStateFlow
 import com.machi.memoiz.service.GenAiFeatureStates
 import com.google.mlkit.genai.common.FeatureStatus
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material.icons.filled.*
 
 /**
  * Settings screen for app configuration.
@@ -71,7 +66,8 @@ fun SettingsScreen(
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
     val appVersion = remember { BuildConfig.VERSION_NAME }
-    val genAiPrefs by viewModel.genAiPreferences.collectAsState(initial = UserPreferences())
+    // genAiPreferences is available in the viewModel but not needed for the read-only display here.
+    // val genAiPrefs by viewModel.genAiPreferences.collectAsState(initial = UserPreferences())
     val baseModelNames by viewModel.baseModelNames.collectAsStateWithLifecycle()
     // Collect feature states for GenAI (nullable until loaded)
     val featureStates by viewModel.featureStates.collectAsStateWithLifecycle()
@@ -102,7 +98,7 @@ fun SettingsScreen(
                         title = stringResource(R.string.settings_tutorial_title),
                         subtitle = stringResource(R.string.settings_tutorial_description),
                         leadingIcon = {
-                            Icon(Icons.Default.School, contentDescription = null)
+                            Icon(Icons.Filled.School, contentDescription = null)
                         },
                         onClick = {
                             viewModel.requestTutorial()
@@ -121,7 +117,7 @@ fun SettingsScreen(
                         subtitle = stringResource(R.string.settings_usage_description),
                         leadingIcon = {
                             Icon(
-                                imageVector = if (hasUsageStatsPermission) Icons.Default.CheckCircle else Icons.Default.Info,
+                                imageVector = if (hasUsageStatsPermission) Icons.Filled.CheckCircle else Icons.Filled.Info,
                                 contentDescription = null,
                                 tint = if (hasUsageStatsPermission) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -151,7 +147,7 @@ fun SettingsScreen(
                     PreferenceItem(
                         title = stringResource(R.string.settings_remerge_all_title),
                         subtitle = stringResource(R.string.settings_remerge_all_description),
-                        leadingIcon = { Icon(Icons.Default.Refresh, contentDescription = null) },
+                        leadingIcon = { Icon(Icons.Filled.Refresh, contentDescription = null) },
                         onClick = { showReMergeConfirm = true }
                     )
                 }
@@ -165,7 +161,7 @@ fun SettingsScreen(
                         title = stringResource(R.string.settings_oss_title),
                         subtitle = stringResource(R.string.settings_oss_description),
                         leadingIcon = {
-                            Icon(Icons.Default.Description, contentDescription = null)
+                            Icon(Icons.Filled.Description, contentDescription = null)
                         },
                         onClick = { openOssLicenses(context) }
                     )
@@ -179,7 +175,7 @@ fun SettingsScreen(
                     PreferenceItem(
                         title = stringResource(R.string.settings_about_button),
                         leadingIcon = {
-                            Icon(Icons.Default.Info, contentDescription = null)
+                            Icon(Icons.Filled.Info, contentDescription = null)
                         },
                         onClick = { showAboutDialog = true }
                     )
@@ -202,141 +198,33 @@ fun SettingsScreen(
                 val textState = featureStates?.textGeneration ?: FeatureStatus.UNAVAILABLE
                 val sumState = featureStates?.summarization ?: FeatureStatus.UNAVAILABLE
 
-                // Image description row (use smaller headline style and disable until feature state loaded)
+                // Show each AI feature as a two-column, no-border row: left = feature name, right = two stacked rows (model name / status)
                 item {
-                    val loaded = featureStates != null
-                    val available = loaded && imageState == FeatureStatus.AVAILABLE
-                    // If featureStates not yet loaded, default to showing ON when user hasn't forced OFF.
-                    val checked = (!genAiPrefs.forceOffImageDescription) && (featureStates == null || available)
-                    PreferenceItem(
-                        title = stringResource(R.string.genai_model_label_image),
-                        headlineStyle = MaterialTheme.typography.titleSmall,
-                        subtitle = baseModelNames.first ?: stringResource(R.string.genai_models_loading),
-                        leadingIcon = { Spacer(modifier = Modifier.width(48.dp)) },
-                        trailingContent = {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Switch(
-                                    modifier = Modifier.size(36.dp),
-                                    checked = checked,
-                                    enabled = loaded,
-                                    onCheckedChange = { newValue ->
-                                        if (!loaded) return@Switch
-                                        if (newValue) {
-                                            if (!available) {
-                                                // Navigate back to main UI so the usual check/download dialog runs
-                                                onNavigateBack()
-                                            } else {
-                                                viewModel.setUseImageDescription(true)
-                                            }
-                                        } else {
-                                            viewModel.setUseImageDescription(false)
-                                        }
-                                    }
-                                )
-                            }
-                        },
-                        compact = true // Use compact mode for denser appearance
+                    // Image description
+                    val imageModelName = baseModelNames.first
+                    val imageModelDisplay = imageModelName?.takeIf { it.isNotBlank() } ?: stringResource(R.string.genai_models_unknown)
+                    AiFeatureRow(
+                        featureTitle = stringResource(R.string.genai_model_label_image),
+                        modelDisplay = imageModelDisplay,
+                        state = imageState
                     )
-                }
 
-                // Text generation row (smaller headline)
-                item {
-                    val loaded = featureStates != null
-                    val available = loaded && textState == FeatureStatus.AVAILABLE
-                    val checked = (!genAiPrefs.forceOffTextGeneration) && (featureStates == null || available)
-                    PreferenceItem(
-                        title = stringResource(R.string.genai_model_label_text),
-                        headlineStyle = MaterialTheme.typography.titleSmall,
-                        subtitle = baseModelNames.second ?: stringResource(R.string.genai_models_loading),
-                        leadingIcon = { Spacer(modifier = Modifier.width(48.dp)) },
-                        trailingContent = {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Switch(
-                                    modifier = Modifier.size(36.dp),
-                                    checked = checked,
-                                    enabled = loaded,
-                                    onCheckedChange = { newValue ->
-                                        if (!loaded) return@Switch
-                                        if (newValue) {
-                                            if (!available) {
-                                                onNavigateBack()
-                                            } else {
-                                                viewModel.setUseTextGeneration(true)
-                                            }
-                                        } else {
-                                            viewModel.setUseTextGeneration(false)
-                                        }
-                                    }
-                                )
-                            }
-                        },
-                        compact = true // Use compact mode for denser appearance
+                    // Text generation
+                    val textModelName = baseModelNames.second
+                    val textModelDisplay = textModelName?.takeIf { it.isNotBlank() } ?: stringResource(R.string.genai_models_unknown)
+                    AiFeatureRow(
+                        featureTitle = stringResource(R.string.genai_model_label_text),
+                        modelDisplay = textModelDisplay,
+                        state = textState
                     )
-                }
 
-                // Summarization row (smaller headline)
-                item {
-                    val loaded = featureStates != null
-                    val available = loaded && sumState == FeatureStatus.AVAILABLE
-                    val checked = (!genAiPrefs.forceOffSummarization) && (featureStates == null || available)
-                    PreferenceItem(
-                        title = stringResource(R.string.genai_model_label_summarization),
-                        headlineStyle = MaterialTheme.typography.titleSmall,
-                        subtitle = baseModelNames.third ?: stringResource(R.string.genai_models_loading),
-                        leadingIcon = { Spacer(modifier = Modifier.width(48.dp)) },
-                        trailingContent = {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Switch(
-                                    modifier = Modifier.size(36.dp),
-                                    checked = checked,
-                                    enabled = loaded,
-                                    onCheckedChange = { newValue ->
-                                        if (!loaded) return@Switch
-                                        if (newValue) {
-                                            if (!available) {
-                                                onNavigateBack()
-                                            } else {
-                                                viewModel.setUseSummarization(true)
-                                            }
-                                        } else {
-                                            viewModel.setUseSummarization(false)
-                                        }
-                                    }
-                                )
-                            }
-                        },
-                        compact = true // Use compact mode for denser appearance
-                    )
-                }
-
-                // DEBUG: show current feature states and prefs (remove in production)
-                item {
-                    val dbgImage = when (featureStates?.imageDescription) {
-                        FeatureStatus.AVAILABLE -> "IMAGE:AV"
-                        FeatureStatus.DOWNLOADABLE -> "IMAGE:DL"
-                        FeatureStatus.UNAVAILABLE -> "IMAGE:NA"
-                        else -> "IMAGE:??"
-                    }
-                    val dbgText = when (featureStates?.textGeneration) {
-                        FeatureStatus.AVAILABLE -> "TEXT:AV"
-                        FeatureStatus.DOWNLOADABLE -> "TEXT:DL"
-                        FeatureStatus.UNAVAILABLE -> "TEXT:NA"
-                        else -> "TEXT:??"
-                    }
-                    val dbgSum = when (featureStates?.summarization) {
-                        FeatureStatus.AVAILABLE -> "SUM:AV"
-                        FeatureStatus.DOWNLOADABLE -> "SUM:DL"
-                        FeatureStatus.UNAVAILABLE -> "SUM:NA"
-                        else -> "SUM:??"
-                    }
-                    Text(
-                        text = "$dbgImage  $dbgText  $dbgSum\nforceOff: img=${genAiPrefs.forceOffImageDescription} text=${genAiPrefs.forceOffTextGeneration} sum=${genAiPrefs.forceOffSummarization}",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+                    // Summarization
+                    val sumModelName = baseModelNames.third
+                    val sumModelDisplay = sumModelName?.takeIf { it.isNotBlank() } ?: stringResource(R.string.genai_models_unknown)
+                    AiFeatureRow(
+                        featureTitle = stringResource(R.string.genai_model_label_summarization),
+                        modelDisplay = sumModelDisplay,
+                        state = sumState
                     )
                 }
             }
@@ -455,7 +343,7 @@ private fun AboutDialog(
             }
         },
         icon = {
-            Icon(Icons.Default.Info, contentDescription = null)
+            Icon(Icons.Filled.Info, contentDescription = null)
         },
         title = { Text(text = stringResource(R.string.settings_about_title)) },
         text = {
@@ -483,6 +371,59 @@ private fun AboutDialog(
             }
         }
     )
+}
+
+@Composable
+private fun AiFeatureRow(featureTitle: String, modelDisplay: String, state: @FeatureStatus Int) {
+    // Render a no-border two-column row: left = feature title, right = column(model, status)
+    val statusTextRes = if (state == FeatureStatus.AVAILABLE) {
+        R.string.genai_status_paren_available
+    } else if (state == FeatureStatus.DOWNLOADABLE) {
+        R.string.genai_status_paren_downloadable
+    } else {
+        R.string.genai_status_paren_unavailable
+    }
+    val statusColor = if (state == FeatureStatus.AVAILABLE) {
+        Color(0xFF2E7D32)
+    } else if (state == FeatureStatus.DOWNLOADABLE) {
+        Color(0xFFFBC02D)
+    } else {
+        MaterialTheme.colorScheme.error
+    }
+
+    // Use a Card with a subtle background to make this section look like an indented table row
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(start = 72.dp, end = 16.dp, top = 6.dp, bottom = 6.dp),
+        shape = RoundedCornerShape(8.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Left column: feature title (vertically centered)
+            Box(modifier = Modifier.width(160.dp).fillMaxHeight(), contentAlignment = Alignment.CenterStart) {
+                Text(text = featureTitle, style = MaterialTheme.typography.titleSmall)
+            }
+
+            // Right column: model name (upper) and status (lower)
+            Column(modifier = Modifier.weight(1f)) {
+                Text(text = stringResource(R.string.genai_label_model_name, modelDisplay), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Spacer(modifier = Modifier.height(6.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(text = stringResource(R.string.genai_label_status), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Icon(imageVector = Icons.Filled.FiberManualRecord, contentDescription = null, tint = statusColor, modifier = Modifier.size(12.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(text = stringResource(statusTextRes), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
+        }
+    }
 }
 
 // Preview for Settings screen
