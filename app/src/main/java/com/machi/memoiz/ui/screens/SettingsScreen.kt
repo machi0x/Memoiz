@@ -41,13 +41,16 @@ import com.machi.memoiz.R
 import com.machi.memoiz.data.datastore.UserPreferences
 import com.machi.memoiz.ui.theme.MemoizTheme
 import com.machi.memoiz.util.UsageStatsHelper
+import kotlinx.coroutines.flow.MutableStateFlow
+import com.machi.memoiz.service.GenAiFeatureStates
+import com.google.mlkit.genai.common.FeatureStatus
 
 /**
  * Settings screen for app configuration.
  */
 @Composable
 fun SettingsScreen(
-    viewModel: SettingsViewModel,
+    viewModel: SettingsScreenViewModel,
     onNavigateBack: () -> Unit
 ) {
     var showAboutDialog by remember { mutableStateOf(false) }
@@ -195,14 +198,14 @@ fun SettingsScreen(
                     )
                 }
 
-                val imageState = featureStates?.imageDescription ?: com.google.mlkit.genai.common.FeatureStatus.UNAVAILABLE
-                val textState = featureStates?.textGeneration ?: com.google.mlkit.genai.common.FeatureStatus.UNAVAILABLE
-                val sumState = featureStates?.summarization ?: com.google.mlkit.genai.common.FeatureStatus.UNAVAILABLE
+                val imageState = featureStates?.imageDescription ?: FeatureStatus.UNAVAILABLE
+                val textState = featureStates?.textGeneration ?: FeatureStatus.UNAVAILABLE
+                val sumState = featureStates?.summarization ?: FeatureStatus.UNAVAILABLE
 
                 // Image description row (use smaller headline style and disable until feature state loaded)
                 item {
                     val loaded = featureStates != null
-                    val available = loaded && imageState == com.google.mlkit.genai.common.FeatureStatus.AVAILABLE
+                    val available = loaded && imageState == FeatureStatus.AVAILABLE
                     // If featureStates not yet loaded, default to showing ON when user hasn't forced OFF.
                     val checked = (!genAiPrefs.forceOffImageDescription) && (featureStates == null || available)
                     PreferenceItem(
@@ -212,15 +215,9 @@ fun SettingsScreen(
                         leadingIcon = { Spacer(modifier = Modifier.width(48.dp)) },
                         trailingContent = {
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                if (available) {
-                                    Icon(
-                                        imageVector = Icons.Filled.CheckCircle,
-                                        contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.primary
-                                    )
-                                }
-                                Spacer(modifier = Modifier.width(8.dp))
+                                Spacer(modifier = Modifier.width(4.dp))
                                 Switch(
+                                    modifier = Modifier.size(36.dp),
                                     checked = checked,
                                     enabled = loaded,
                                     onCheckedChange = { newValue ->
@@ -246,7 +243,7 @@ fun SettingsScreen(
                 // Text generation row (smaller headline)
                 item {
                     val loaded = featureStates != null
-                    val available = loaded && textState == com.google.mlkit.genai.common.FeatureStatus.AVAILABLE
+                    val available = loaded && textState == FeatureStatus.AVAILABLE
                     val checked = (!genAiPrefs.forceOffTextGeneration) && (featureStates == null || available)
                     PreferenceItem(
                         title = stringResource(R.string.genai_model_label_text),
@@ -255,15 +252,9 @@ fun SettingsScreen(
                         leadingIcon = { Spacer(modifier = Modifier.width(48.dp)) },
                         trailingContent = {
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                if (available) {
-                                    Icon(
-                                        imageVector = Icons.Filled.CheckCircle,
-                                        contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.primary
-                                    )
-                                }
-                                Spacer(modifier = Modifier.width(8.dp))
+                                Spacer(modifier = Modifier.width(4.dp))
                                 Switch(
+                                    modifier = Modifier.size(36.dp),
                                     checked = checked,
                                     enabled = loaded,
                                     onCheckedChange = { newValue ->
@@ -288,7 +279,7 @@ fun SettingsScreen(
                 // Summarization row (smaller headline)
                 item {
                     val loaded = featureStates != null
-                    val available = loaded && sumState == com.google.mlkit.genai.common.FeatureStatus.AVAILABLE
+                    val available = loaded && sumState == FeatureStatus.AVAILABLE
                     val checked = (!genAiPrefs.forceOffSummarization) && (featureStates == null || available)
                     PreferenceItem(
                         title = stringResource(R.string.genai_model_label_summarization),
@@ -297,15 +288,9 @@ fun SettingsScreen(
                         leadingIcon = { Spacer(modifier = Modifier.width(48.dp)) },
                         trailingContent = {
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                if (available) {
-                                    Icon(
-                                        imageVector = Icons.Filled.CheckCircle,
-                                        contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.primary
-                                    )
-                                }
-                                Spacer(modifier = Modifier.width(8.dp))
+                                Spacer(modifier = Modifier.width(4.dp))
                                 Switch(
+                                    modifier = Modifier.size(36.dp),
                                     checked = checked,
                                     enabled = loaded,
                                     onCheckedChange = { newValue ->
@@ -330,21 +315,21 @@ fun SettingsScreen(
                 // DEBUG: show current feature states and prefs (remove in production)
                 item {
                     val dbgImage = when (featureStates?.imageDescription) {
-                        com.google.mlkit.genai.common.FeatureStatus.AVAILABLE -> "IMAGE:AV"
-                        com.google.mlkit.genai.common.FeatureStatus.DOWNLOADABLE -> "IMAGE:DL"
-                        com.google.mlkit.genai.common.FeatureStatus.UNAVAILABLE -> "IMAGE:NA"
+                        FeatureStatus.AVAILABLE -> "IMAGE:AV"
+                        FeatureStatus.DOWNLOADABLE -> "IMAGE:DL"
+                        FeatureStatus.UNAVAILABLE -> "IMAGE:NA"
                         else -> "IMAGE:??"
                     }
                     val dbgText = when (featureStates?.textGeneration) {
-                        com.google.mlkit.genai.common.FeatureStatus.AVAILABLE -> "TEXT:AV"
-                        com.google.mlkit.genai.common.FeatureStatus.DOWNLOADABLE -> "TEXT:DL"
-                        com.google.mlkit.genai.common.FeatureStatus.UNAVAILABLE -> "TEXT:NA"
+                        FeatureStatus.AVAILABLE -> "TEXT:AV"
+                        FeatureStatus.DOWNLOADABLE -> "TEXT:DL"
+                        FeatureStatus.UNAVAILABLE -> "TEXT:NA"
                         else -> "TEXT:??"
                     }
                     val dbgSum = when (featureStates?.summarization) {
-                        com.google.mlkit.genai.common.FeatureStatus.AVAILABLE -> "SUM:AV"
-                        com.google.mlkit.genai.common.FeatureStatus.DOWNLOADABLE -> "SUM:DL"
-                        com.google.mlkit.genai.common.FeatureStatus.UNAVAILABLE -> "SUM:NA"
+                        FeatureStatus.AVAILABLE -> "SUM:AV"
+                        FeatureStatus.DOWNLOADABLE -> "SUM:DL"
+                        FeatureStatus.UNAVAILABLE -> "SUM:NA"
                         else -> "SUM:??"
                     }
                     Text(
@@ -396,7 +381,7 @@ private fun PreferenceItem(
     headlineStyle: androidx.compose.ui.text.TextStyle? = null,
     compact: Boolean = false,
 ) {
-    val verticalPad = if (compact) 2.dp else 8.dp
+    val verticalPad = if (compact) 0.dp else 8.dp
     val supportingSpacing = if (compact) 0.dp else 4.dp
 
     val supporting: (@Composable () -> Unit)? = if (subtitle != null || extraContent != null) {
@@ -504,33 +489,30 @@ private fun AboutDialog(
 @Preview(showBackground = true)
 @Composable
 fun SettingsScreenPreview() {
+    // Use the fake view model so the preview runs the real SettingsScreen composable code path.
+    val fakeVm = remember { FakeSettingsViewModel() }
     MemoizTheme {
         Surface {
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(vertical = 8.dp)
-            ) {
-                item {
-                    PreferenceItem(
-                        title = "Source App Detection",
-                        subtitle = "Enabled - AI can see which app you copied from",
-                        leadingIcon = {
-                            Icon(Icons.Default.CheckCircle, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                        }
-                    )
-                }
-                item {
-                    HorizontalDivider(modifier = Modifier.padding(start = 72.dp))
-                }
-                item {
-                    PreferenceItem(
-                        title = "About this app",
-                        leadingIcon = {
-                            Icon(Icons.Default.Info, contentDescription = null)
-                        }
-                    )
-                }
-            }
+            SettingsScreen(viewModel = fakeVm, onNavigateBack = {})
         }
     }
+}
+
+// Preview-only fake ViewModel that matches the small API surface used by SettingsScreen.
+private class FakeSettingsViewModel : SettingsScreenViewModel {
+    override val genAiPreferences: kotlinx.coroutines.flow.Flow<UserPreferences> = MutableStateFlow(UserPreferences())
+    override val baseModelNames: kotlinx.coroutines.flow.StateFlow<Triple<String?, String?, String?>> = MutableStateFlow(Triple("nano-v2", "nano-text", "nano-v2"))
+    override val featureStates: kotlinx.coroutines.flow.StateFlow<GenAiFeatureStates?> = MutableStateFlow(
+        GenAiFeatureStates(
+            imageDescription = FeatureStatus.AVAILABLE,
+            textGeneration = FeatureStatus.DOWNLOADABLE,
+            summarization = FeatureStatus.AVAILABLE
+        )
+    )
+
+    override fun requestTutorial() {}
+    override fun remergeAllMemos(context: Context) {}
+    override fun setUseImageDescription(use: Boolean) { /* preview-only: no-op */ }
+    override fun setUseTextGeneration(use: Boolean) { /* preview-only: no-op */ }
+    override fun setUseSummarization(use: Boolean) { /* preview-only: no-op */ }
 }

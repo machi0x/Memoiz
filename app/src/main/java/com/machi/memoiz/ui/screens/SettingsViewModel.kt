@@ -7,9 +7,26 @@ import com.machi.memoiz.data.datastore.PreferencesDataStoreManager
 import com.machi.memoiz.service.ContentProcessingLauncher
 import com.machi.memoiz.service.GenAiStatusManager
 import com.machi.memoiz.service.GenAiFeatureStates
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+
+/**
+ * Contract (interface) used by SettingsScreen so Preview can inject a Fake VM.
+ */
+interface SettingsScreenViewModel {
+    val genAiPreferences: Flow<com.machi.memoiz.data.datastore.UserPreferences>
+    val baseModelNames: StateFlow<Triple<String?, String?, String?>>
+    val featureStates: StateFlow<GenAiFeatureStates?>
+
+    fun requestTutorial()
+    fun remergeAllMemos(context: Context)
+    fun setUseImageDescription(use: Boolean)
+    fun setUseTextGeneration(use: Boolean)
+    fun setUseSummarization(use: Boolean)
+}
 
 /**
  * ViewModel for Settings screen.
@@ -17,15 +34,15 @@ import kotlinx.coroutines.launch
 class SettingsViewModel(
     private val preferencesManager: PreferencesDataStoreManager,
     private val genAiStatusManager: GenAiStatusManager
-) : ViewModel() {
-    val genAiPreferences = preferencesManager.userPreferencesFlow
+) : ViewModel(), SettingsScreenViewModel {
+    override val genAiPreferences = preferencesManager.userPreferencesFlow
 
     private val _baseModelNames = MutableStateFlow<Triple<String?, String?, String?>>(Triple(null, null, null))
-    val baseModelNames = _baseModelNames.asStateFlow()
+    override val baseModelNames = _baseModelNames.asStateFlow()
 
     // Expose current feature status so the UI can show available/downloadable/unavailable
     private val _featureStates = MutableStateFlow<GenAiFeatureStates?>(null)
-    val featureStates = _featureStates.asStateFlow()
+    override val featureStates = _featureStates.asStateFlow()
 
     private val _loadingFeatureStates = MutableStateFlow(false)
     val loadingFeatureStates = _loadingFeatureStates.asStateFlow()
@@ -38,11 +55,11 @@ class SettingsViewModel(
         }
     }
 
-    fun requestTutorial() {
+    override fun requestTutorial() {
         viewModelScope.launch { preferencesManager.requestTutorial() }
     }
 
-    fun remergeAllMemos(context: Context) {
+    override fun remergeAllMemos(context: Context) {
         ContentProcessingLauncher.enqueueMergeWork(context, null)
     }
 
@@ -60,15 +77,15 @@ class SettingsViewModel(
     }
 
     // Helper 'use' setters (UI shows switches as "Use this AI model"), which invert the stored force-off setting
-    fun setUseImageDescription(use: Boolean) {
+    override fun setUseImageDescription(use: Boolean) {
         viewModelScope.launch { preferencesManager.setForceOffImageDescription(!use) }
     }
 
-    fun setUseTextGeneration(use: Boolean) {
+    override fun setUseTextGeneration(use: Boolean) {
         viewModelScope.launch { preferencesManager.setForceOffTextGeneration(!use) }
     }
 
-    fun setUseSummarization(use: Boolean) {
+    override fun setUseSummarization(use: Boolean) {
         viewModelScope.launch { preferencesManager.setForceOffSummarization(!use) }
     }
 
