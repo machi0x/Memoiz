@@ -36,6 +36,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.google.android.gms.oss.licenses.OssLicensesMenuActivity
 import com.machi.memoiz.BuildConfig
@@ -71,6 +72,7 @@ fun SettingsScreen(
     }
     val appVersion = remember { BuildConfig.VERSION_NAME }
     val genAiPrefs by viewModel.genAiPreferences.collectAsState(initial = UserPreferences())
+    val baseModelNames by viewModel.baseModelNames.collectAsStateWithLifecycle()
 
     Scaffold(
         topBar = {
@@ -232,9 +234,11 @@ fun SettingsScreen(
                 }
 
                 item {
+                    val (image, prompt, sum) = baseModelNames
+                    val subtitle = listOfNotNull(image, prompt, sum).joinToString("\n")
                     PreferenceItem(
                         title = "GenAI base models",
-                        subtitle = "Coming soon: show base model names",
+                        subtitle = if (subtitle.isNotEmpty()) subtitle else "Loading...",
                         leadingIcon = { Icon(Icons.Default.Info, contentDescription = null) }
                     )
                 }

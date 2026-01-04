@@ -50,7 +50,7 @@ class MainActivity : ComponentActivity() {
 
         // Create ViewModelFactory
         val workManager = WorkManager.getInstance(applicationContext)
-        viewModelFactory = ViewModelFactory(memoRepository, preferencesManager, workManager)
+        viewModelFactory = ViewModelFactory(memoRepository, preferencesManager, workManager, applicationContext)
 
         // Hide splash screen after 1.5 seconds
         lifecycleScope.launch {
