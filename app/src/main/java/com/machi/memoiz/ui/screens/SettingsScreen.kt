@@ -60,6 +60,12 @@ fun SettingsScreen(
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
                 hasUsageStatsPermission = UsageStatsHelper(context).hasUsageStatsPermission()
+                // Re-check GenAI feature states when Settings becomes visible to avoid stale/unknown UI state.
+                try {
+                    viewModel.refreshFeatureStates()
+                } catch (_: Exception) {
+                    // ignore - refreshFeatureStates is already safe and preserves previous values on failure
+                }
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
@@ -453,6 +459,7 @@ private class FakeSettingsViewModel : SettingsScreenViewModel {
 
     override fun requestTutorial() {}
     override fun remergeAllMemos(context: Context) {}
+    override fun refreshFeatureStates() { /* preview-only: no-op */ }
     override fun setUseImageDescription(use: Boolean) { /* preview-only: no-op */ }
     override fun setUseTextGeneration(use: Boolean) { /* preview-only: no-op */ }
     override fun setUseSummarization(use: Boolean) { /* preview-only: no-op */ }
