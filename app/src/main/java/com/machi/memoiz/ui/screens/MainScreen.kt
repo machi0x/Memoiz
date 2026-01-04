@@ -113,6 +113,7 @@ fun MainScreen(
     val expandedCategories by viewModel.expandedCategories.collectAsState()
     val categoryOrder by viewModel.categoryOrder.collectAsState()
     val shouldShowTutorial by viewModel.shouldShowTutorial.collectAsState()
+    val preferencesLoaded by viewModel.preferencesLoaded.collectAsState()
     val isProcessing by viewModel.isProcessing.collectAsState()
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -134,8 +135,13 @@ fun MainScreen(
     }
 
 
-    LaunchedEffect(shouldShowTutorial) {
-        if (shouldShowTutorial) {
+    // Only show the tutorial after we've loaded preferences from DataStore. The
+    // initial default prefs may report hasSeenTutorial=false before DataStore emits,
+    // which would incorrectly trigger showing the tutorial on cold start (or after
+    // an overwrite install where preferences are not yet read). Wait until
+    // `preferencesLoaded` is true to rely on the real stored value.
+    LaunchedEffect(shouldShowTutorial, preferencesLoaded) {
+        if (preferencesLoaded && shouldShowTutorial) {
             showTutorialDialog = true
         }
     }

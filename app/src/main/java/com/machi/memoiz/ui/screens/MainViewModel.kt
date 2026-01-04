@@ -62,12 +62,30 @@ class MainViewModel(
     private val userPreferencesFlow = preferencesManager.userPreferencesFlow
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), UserPreferences())
 
+    // Indicates whether we've observed the first real preferences emission from DataStore.
+    private val _preferencesLoaded = MutableStateFlow(false)
+    val preferencesLoaded: StateFlow<Boolean> = _preferencesLoaded.asStateFlow()
+
+    // Local in-memory immediate flag to reflect tutorial seen state without waiting for
+    // async persistence. This prevents a brief window where UI still thinks the user
+    // hasn't seen the tutorial while the SharedPreferences write completes.
+    private val _localHasSeenTutorial = MutableStateFlow(false)
+    val localHasSeenTutorial: StateFlow<Boolean> = _localHasSeenTutorial.asStateFlow()
+
     private val _categoryOrder = MutableStateFlow<List<String>>(emptyList())
     val categoryOrder: StateFlow<List<String>> = _categoryOrder.asStateFlow()
 
-    val shouldShowTutorial: StateFlow<Boolean> = userPreferencesFlow
-        .map { prefs -> !prefs.hasSeenTutorial || prefs.showTutorialOnNextLaunch }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+    // Combine persisted prefs with local immediate flag. Only show tutorial when
+    // the persisted prefs indicate it should be shown AND the local flag hasn't
+    // already marked it as seen.
+    val shouldShowTutorial: StateFlow<Boolean> = combine(
+        userPreferencesFlow,
+        _localHasSeenTutorial
+    ) { prefs, localSeen ->
+        // Show if user hasn't seen it (persisted) AND we haven't locally marked it seen,
+        // or when explicit show-on-next-launch is set.
+        (!prefs.hasSeenTutorial && !localSeen) || prefs.showTutorialOnNextLaunch
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
 
     val genAiForceOffFlags: StateFlow<Triple<Boolean, Boolean, Boolean>> = userPreferencesFlow
         .map { Triple(it.forceOffImageDescription, it.forceOffTextGeneration, it.forceOffSummarization) }
@@ -77,6 +95,17 @@ class MainViewModel(
         viewModelScope.launch {
             userPreferencesFlow.collect { prefs ->
                 _categoryOrder.value = prefs.categoryOrder
+            }
+        }
+
+        // Kick off a background collection to detect when DataStore has emitted at least once.
+        viewModelScope.launch {
+            try {
+                // This will suspend until the first real emission from preferencesManager.userPreferencesFlow
+                preferencesManager.userPreferencesFlow.first()
+                _preferencesLoaded.value = true
+            } catch (_: Exception) {
+                // ignore - keep false if we couldn't load
             }
         }
 
@@ -290,6 +319,8 @@ class MainViewModel(
     }
 
     fun markTutorialSeen() {
+        // Set local indicator first to prevent UI race, then persist.
+        _localHasSeenTutorial.value = true
         viewModelScope.launch { preferencesManager.markTutorialSeen() }
     }
 
