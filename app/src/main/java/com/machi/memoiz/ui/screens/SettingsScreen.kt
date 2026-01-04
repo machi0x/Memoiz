@@ -357,22 +357,36 @@ private fun AboutDialog(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
+                // Primary description lines with an empty line between them for readability
                 Text(
-                    text = stringResource(R.string.settings_about_description),
+                    text = "メモイズは、端末内でメモの解析を行います。解析データは端末外へ送信されません。",
                     style = MaterialTheme.typography.bodyMedium,
                     textAlign = TextAlign.Center
                 )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
                 Text(
-                    text = stringResource(R.string.settings_about_version, appVersion),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    text = "*このアプリで使用しているイラストは一部外部生成ツールにより生成しています。",
+                    style = MaterialTheme.typography.bodyMedium,
+                    textAlign = TextAlign.Center
                 )
+
+                Spacer(modifier = Modifier.height(12.dp))
+
                 Image(
                     painter = painterResource(id = R.drawable.thanks),
                     contentDescription = null,
                     modifier = Modifier
                         .size(200.dp)
-                        .padding(top = 8.dp)
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Text(
+                    text = stringResource(R.string.settings_about_version, appVersion),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         }
