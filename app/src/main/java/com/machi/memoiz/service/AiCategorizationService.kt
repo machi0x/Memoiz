@@ -23,7 +23,8 @@ class AiCategorizationService(
     private val mergeService: CategoryMergeService = CategoryMergeService(context),
     private val existingCategories: List<String> = emptyList(),
     private val customCategories: Set<String> = emptySet(),
-    private val isCategoryLocked: Boolean = false
+    private val isCategoryLocked: Boolean = false,
+    private val summarizationOnlyMode: Boolean = false
 ) {
     private val uncategorizableLabel by lazy { context.getString(R.string.category_uncategorizable) }
 
@@ -38,12 +39,13 @@ class AiCategorizationService(
                 CategoryMergeService(context),
                 existing,
                 preferences.customCategories,
-                isCategoryLocked
+                isCategoryLocked,
+                summarizationOnlyMode = preferences.forceOffTextGeneration && !preferences.forceOffSummarization
             )
         }
     }
 
-    private val mlKitCategorizer = MlKitCategorizer(context)
+    private val mlKitCategorizer = MlKitCategorizer(context, summarizationOnlyMode)
 
     private suspend fun mergeCategory(category: String, subCategory: String?, summary: String?): String {
         if (isCategoryLocked || category.isBlank() || shouldSkipMerge(category) || customCategories.contains(category)) {

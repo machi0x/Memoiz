@@ -39,7 +39,8 @@ class ReanalyzeFailedMemosWorker(
                     CategoryMergeService(applicationContext),
                     existingCategories,
                     preferences.customCategories,
-                    memo.isCategoryLocked
+                    memo.isCategoryLocked,
+                    summarizationOnlyMode = preferences.forceOffTextGeneration && !preferences.forceOffSummarization
                 )
                 try {
                     val updatedEntity = if (!memo.imageUri.isNullOrBlank()) {
@@ -49,27 +50,27 @@ class ReanalyzeFailedMemosWorker(
                         aiService.processText(memo.content, memo.sourceApp)
                     }
 
-                    if (updatedEntity != null && !FailureCategoryHelper.isFailureLabel(applicationContext, updatedEntity.category)) {
-                        memoRepository.updateMemo(memo.copy(
-                            content = updatedEntity.content,
-                            imageUri = updatedEntity.imageUri,
-                            memoType = updatedEntity.memoType,
-                            category = updatedEntity.category,
-                            subCategory = updatedEntity.subCategory,
-                            summary = updatedEntity.summary
-                        ))
+                    if (updatedEntity != null) {
+                        memoRepository.updateMemo(
+                            memo.copy(
+                                content = updatedEntity.content,
+                                imageUri = updatedEntity.imageUri ?: memo.imageUri,
+                                memoType = memo.memoType,
+                                category = updatedEntity.category,
+                                subCategory = updatedEntity.subCategory,
+                                summary = updatedEntity.summary,
+                                sourceApp = memo.sourceApp
+                            )
+                        )
                     }
-
                 } catch (e: Exception) {
                     e.printStackTrace()
-                    // continue with next memo
                 } finally {
                     aiService.close()
                 }
             }
 
             return Result.success()
-
         } catch (e: Exception) {
             e.printStackTrace()
             return Result.retry()

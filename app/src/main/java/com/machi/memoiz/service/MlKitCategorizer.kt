@@ -32,7 +32,7 @@ import com.google.mlkit.genai.common.GenAiException
  * Wrapper that calls ML Kit GenAI APIs to generate a short category
  * and optional sub-category from clipboard content.
  */
-class MlKitCategorizer(private val context: Context) {
+class MlKitCategorizer(private val context: Context, private val summarizationOnlyMode: Boolean = false) {
     private fun uncategorizableLabel(): String = context.getString(R.string.category_uncategorizable)
     private fun failureCategoryLabel(): String = FailureCategoryHelper.currentLabel(context)
 
@@ -50,6 +50,7 @@ class MlKitCategorizer(private val context: Context) {
 
     private suspend fun localizeText(text: String?): String? {
         if (text.isNullOrBlank()) return text
+        if (summarizationOnlyMode) return text
         return if (Locale.getDefault().language == "ja") {
             runCatching {
                 generateText(
@@ -95,9 +96,6 @@ class MlKitCategorizer(private val context: Context) {
                 if (webContent == null) {
                      return Triple(failureCategoryLabel(), null, null)
                  }
-                val pair = generateCategoryPair(webContent.body.take(2000), sourceApp)
-                val localizedMain = localizeText(pair.main)
-                val localizedSub = localizeText(pair.sub)
                 val summaryText = summarizeWebContent(webContent.title, webContent.body)
                 val localizedSummaryOnly = localizeText(summaryText)
                 val combinedSummary = when {
@@ -105,6 +103,12 @@ class MlKitCategorizer(private val context: Context) {
                     !webContent.title.isNullOrBlank() -> webContent.title
                     else -> localizedSummaryOnly
                 }
+                if (summarizationOnlyMode) {
+                    return Triple(null, null, combinedSummary)
+                }
+                val pair = generateCategoryPair(webContent.body.take(2000), sourceApp)
+                val localizedMain = localizeText(pair.main)
+                val localizedSub = localizeText(pair.sub)
                 if (localizedMain.isNullOrBlank()) {
                     return Triple(uncategorizableLabel(), localizedSub, combinedSummary)
                 }
@@ -115,6 +119,10 @@ class MlKitCategorizer(private val context: Context) {
             val summary = if (content.length > 800) {
                 summarize(content)
             } else null
+
+            if (summarizationOnlyMode) {
+                return Triple(null, null, summary)
+            }
 
             val pair = generateCategoryPair(content.take(2000), sourceApp)
             val localizedMain = localizeText(pair.main)
@@ -134,10 +142,12 @@ class MlKitCategorizer(private val context: Context) {
         return try {
             // Get image description first
             val description = describeImage(bitmap)
-            
-            // If we have a description, categorize based on it like text
+
             val localizedDescription = localizeDescription(description)
             if (!localizedDescription.isNullOrBlank()) {
+                if (summarizationOnlyMode) {
+                    return Triple(null, null, localizedDescription)
+                }
                 val pair = generateCategoryPair(localizedDescription.take(2000), sourceApp)
                 val localizedMain = localizeText(pair.main)
                 val localizedSub = localizeText(pair.sub)
@@ -151,7 +161,6 @@ class MlKitCategorizer(private val context: Context) {
             }
         } catch (e: PermanentCategorizationException) {
             e.printStackTrace()
-            // Return uncategorizable for permanent errors with error code
             val errorMessage = mapPermanentErrorMessage(e.errorCode)
             Triple(uncategorizableLabel(), null, errorMessage)
         } catch (e: Exception) {
@@ -161,6 +170,7 @@ class MlKitCategorizer(private val context: Context) {
     }
 
     private suspend fun generateText(prompt: String): String? = withContext(Dispatchers.IO) {
+        if (summarizationOnlyMode) return@withContext null
         runCatching {
             val request = generateContentRequest(TextPart(prompt)) { }
             promptModel.generateContent(request).candidates.firstOrNull()?.text?.trim()

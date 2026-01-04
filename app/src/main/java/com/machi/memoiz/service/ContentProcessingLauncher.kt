@@ -1,6 +1,6 @@
 package com.machi.memoiz.service
 
-import android.content.ClipData
+import android.app.Application
 import android.content.ClipboardManager
 import android.content.Context
 import android.net.Uri
@@ -11,18 +11,50 @@ import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
+import com.machi.memoiz.data.datastore.PreferencesDataStoreManager
+import com.machi.memoiz.notification.GenAiStatusNotification
 import com.machi.memoiz.ui.ProcessingDialogActivity
+import com.machi.memoiz.ui.dialog.GenAiStatusCheckDialogActivity
 import com.machi.memoiz.worker.ClipboardProcessingWorker
 import com.machi.memoiz.worker.ReanalyzeCategoryMergeWorker
 import com.machi.memoiz.worker.ReanalyzeFailedMemosWorker
 import com.machi.memoiz.worker.ReanalyzeSingleMemoWorker
 import com.machi.memoiz.worker.WORK_TAG_MEMO_PROCESSING
+import com.google.mlkit.genai.common.FeatureStatus
 import java.util.concurrent.TimeUnit
 
 /**
  * Helper functions to enqueue clipboard categorization work from various entry points.
  */
 object ContentProcessingLauncher {
+
+    private suspend fun checkGenAiAndMaybeNotify(context: Context, showDialogOnUnavailable: Boolean): Boolean {
+        return withContext(Dispatchers.IO) {
+            val prefs = PreferencesDataStoreManager(context).userPreferencesFlow.first()
+            val forceOff = GenAiFeatureStates(
+                imageDescription = if (prefs.forceOffImageDescription) FeatureStatus.UNAVAILABLE else FeatureStatus.AVAILABLE,
+                textGeneration = if (prefs.forceOffTextGeneration) FeatureStatus.UNAVAILABLE else FeatureStatus.AVAILABLE,
+                summarization = if (prefs.forceOffSummarization) FeatureStatus.UNAVAILABLE else FeatureStatus.AVAILABLE
+            )
+            val manager = GenAiStatusManager(context)
+            val status = manager.checkAll(forceOff)
+            val unavailable = status.anyUnavailable()
+            if (unavailable) {
+                if (showDialogOnUnavailable) {
+                    GenAiStatusCheckDialogActivity.start(
+                        context,
+                        Triple(prefs.forceOffImageDescription, prefs.forceOffTextGeneration, prefs.forceOffSummarization)
+                    )
+                } else if (context is Application) {
+                    GenAiStatusNotification.showUnavailable(
+                        context,
+                        Triple(prefs.forceOffImageDescription, prefs.forceOffTextGeneration, prefs.forceOffSummarization)
+                    )
+                }
+            }
+            unavailable
+        }
+    }
 
     /**
      * Reads the current clipboard content and enqueues background categorization if possible.
@@ -48,7 +80,8 @@ object ContentProcessingLauncher {
         imageUri: Uri?,
         sourceApp: String? = null,
         showDialog: Boolean = true,
-        forceCopyImage: Boolean = false
+        forceCopyImage: Boolean = false,
+        showStatusDialogOnUnavailable: Boolean = false
     ): Boolean {
         if (text.isNullOrBlank() && imageUri == null) {
             return false
@@ -72,6 +105,11 @@ object ContentProcessingLauncher {
             .setInputData(workData)
             .addTag(WORK_TAG_MEMO_PROCESSING)
             .build()
+
+        // Fire-and-forget GenAI status check to surface notification if unavailable.
+        CoroutineScope(Dispatchers.IO).launch {
+            checkGenAiAndMaybeNotify(context.applicationContext, showStatusDialogOnUnavailable)
+        }
 
         WorkManager.getInstance(context.applicationContext).enqueue(workRequest)
         if (showDialog) {
@@ -114,6 +152,6 @@ object ContentProcessingLauncher {
     }
 
     fun enqueueManualMemo(context: Context, text: String): Boolean {
-        return enqueueWork(context, text, null, showDialog = true)
+        return enqueueWork(context, text, null, showDialog = true, showStatusDialogOnUnavailable = true)
     }
 }

@@ -69,6 +69,10 @@ class MainViewModel(
         .map { prefs -> !prefs.hasSeenTutorial || prefs.showTutorialOnNextLaunch }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
 
+    val genAiForceOffFlags: StateFlow<Triple<Boolean, Boolean, Boolean>> = userPreferencesFlow
+        .map { Triple(it.forceOffImageDescription, it.forceOffTextGeneration, it.forceOffSummarization) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), Triple(false, false, false))
+
     init {
         viewModelScope.launch {
             userPreferencesFlow.collect { prefs ->

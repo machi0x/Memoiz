@@ -21,17 +21,6 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.Memoiz">
 
-        <!-- Main Activity -->
-        <activity
-            android:name=".MainActivity"
-            android:exported="true"
-            android:theme="@style/Theme.Memoiz.Splash">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
-
         <!-- Process Text Activity -->
         <activity
             android:name=".processtext.ProcessTextActivity"
@@ -59,6 +48,25 @@
             android:taskAffinity=""
             android:excludeFromRecents="true"
             android:finishOnTaskLaunch="true" />
+
+        <activity
+            android:name=".ui.dialog.GenAiStatusCheckDialogActivity"
+            android:exported="false"
+            android:theme="@style/Theme.Memoiz.Dialog"
+            android:taskAffinity=""
+            android:excludeFromRecents="true"
+            android:finishOnTaskLaunch="true" />
+
+        <!-- Main Activity -->
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:theme="@style/Theme.Memoiz.Splash">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
 
         <activity
             android:name="com.google.android.gms.oss.licenses.OssLicensesMenuActivity"
