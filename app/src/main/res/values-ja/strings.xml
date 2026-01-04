@@ -147,6 +147,8 @@
     <string name="genai_status_notification_text">一部のAI機能が利用できません。詳しくはタップしてください。</string>
     <string name="genai_status_shrunk_mode">縮退モード: 要約のみ使用し、カテゴリ付与は省略する場合があります。</string>
     <string name="genai_status_message_download_failed">ダウンロードできませんでした。機能が制限される可能性があります。後でアプリを開きなおしてください。</string>
+    <string name="genai_status_message_download_completed">AIモデルのダウンロードが完了しました</string>
+    <string name="genai_status_message_download_failed_dialog">AIモデルのダウンロードができませんでした。後でアプリを開きなおしてリトライしてください。</string>
     <string name="genai_models_title">利用するAI機能のモデルと状態</string>
     <string name="genai_model_label_image">画像説明機能</string>
     <string name="genai_model_label_text">テキスト生成機能</string>
