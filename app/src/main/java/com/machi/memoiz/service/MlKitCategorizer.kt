@@ -2,6 +2,7 @@ package com.machi.memoiz.service
 
 import android.content.Context
 import android.graphics.Bitmap
+import android.util.Log
 import com.google.mlkit.genai.imagedescription.ImageDescription
 import com.google.mlkit.genai.imagedescription.ImageDescriptionRequest
 import com.google.mlkit.genai.imagedescription.ImageDescriber
@@ -33,6 +34,7 @@ import com.google.mlkit.genai.common.GenAiException
  * and optional sub-category from clipboard content.
  */
 class MlKitCategorizer(private val context: Context, private val summarizationOnlyMode: Boolean = false) {
+    private val TAG = "MlKitCategorizer"
     private fun uncategorizableLabel(): String = context.getString(R.string.category_uncategorizable)
     private fun failureCategoryLabel(): String = FailureCategoryHelper.currentLabel(context)
 
@@ -171,10 +173,21 @@ class MlKitCategorizer(private val context: Context, private val summarizationOn
 
     private suspend fun generateText(prompt: String): String? = withContext(Dispatchers.IO) {
         if (summarizationOnlyMode) return@withContext null
-        runCatching {
+        val result = runCatching {
             val request = generateContentRequest(TextPart(prompt)) { }
             promptModel.generateContent(request).candidates.firstOrNull()?.text?.trim()
         }.onFailure { it.printStackTrace() }.getOrNull()
+
+        // Log a truncated preview of prompt and result to verify Generation API behavior
+        try {
+            val promptPreview = prompt.replace('\n', ' ').take(300)
+            val respPreview = result?.replace('\n', ' ')?.take(600) ?: "<null>"
+            Log.d(TAG, "generateText promptPreview=\"$promptPreview\" -> respPreview=\"$respPreview\"")
+        } catch (e: Exception) {
+            // Swallow logging errors to avoid impacting production flow
+        }
+
+        result
     }
 
     private suspend fun describeImage(bitmap: Bitmap): String? = withContext(Dispatchers.IO) {

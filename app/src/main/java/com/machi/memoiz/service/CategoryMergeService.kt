@@ -1,6 +1,7 @@
 package com.machi.memoiz.service
 
 import android.content.Context
+import android.util.Log
 import com.google.mlkit.genai.prompt.Generation
 import com.google.mlkit.genai.prompt.GenerationConfig
 import com.google.mlkit.genai.prompt.TextPart
@@ -17,6 +18,8 @@ import androidx.core.text.BidiFormatter
  * as immutable targets (they can absorb others but are never merged away).
  */
 class CategoryMergeService(private val context: Context) {
+
+    private val TAG = "CategoryMergeService"
 
     private val promptModel by lazy {
         Generation.getClient(GenerationConfig.Builder().build())
@@ -55,6 +58,15 @@ class CategoryMergeService(private val context: Context) {
         val text = runCatching {
             promptModel.generateContent(request).candidates.firstOrNull()?.text?.trim()
         }.getOrNull()
+
+        // Log truncated prompt + response for debugging Generation API behavior
+        try {
+            val promptPreview = prompt.replace('\n', ' ').take(300)
+            val respPreview = text?.replace('\n', ' ')?.take(600) ?: "<null>"
+            Log.d(TAG, "merge promptPreview=\"$promptPreview\" -> respPreview=\"$respPreview\"")
+        } catch (e: Exception) {
+            // ignore logging errors
+        }
 
         val raw = text?.takeIf { it.isNotBlank() }
         val sanitized = sanitizeResponse(raw)
