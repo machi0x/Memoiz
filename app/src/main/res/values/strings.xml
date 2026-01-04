@@ -63,7 +63,7 @@ Try sharing text or images from other apps, or use the + button at the bottom of
     <!-- Toast messages -->
     <string name="toast_merge_enqueued">Re-analysis scheduled in background.</string>
     <string name="settings_about_title">About this app</string>
-    <string name="settings_about_description">Memoiz categorizes text and images with on-device AI so you can save, revisit, and reuse them later. All data is processed locally and never leaves your device.</string>
+    <string name="settings_about_description">Memoiz categorizes text and images with on-device AI so you can save, revisit, and reuse them later. All data is processed locally and never leaves your device. Some illustrations in this app are AI-generated.</string>
     <string name="settings_about_button">About this app</string>
     <string name="settings_about_version">Version %1$s</string>
     <string name="dialog_close">Close</string>
