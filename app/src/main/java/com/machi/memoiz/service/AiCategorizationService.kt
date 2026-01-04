@@ -40,7 +40,7 @@ class AiCategorizationService(
                 existing,
                 preferences.customCategories,
                 isCategoryLocked,
-                summarizationOnlyMode = preferences.forceOffTextGeneration && !preferences.forceOffSummarization
+                summarizationOnlyMode = false // force-off flags removed
             )
         }
     }

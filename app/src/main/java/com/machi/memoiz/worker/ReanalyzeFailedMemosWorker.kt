@@ -40,7 +40,7 @@ class ReanalyzeFailedMemosWorker(
                     existingCategories,
                     preferences.customCategories,
                     memo.isCategoryLocked,
-                    summarizationOnlyMode = preferences.forceOffTextGeneration && !preferences.forceOffSummarization
+                    summarizationOnlyMode = false // force-off flags removed
                 )
                 try {
                     val updatedEntity = if (!memo.imageUri.isNullOrBlank()) {

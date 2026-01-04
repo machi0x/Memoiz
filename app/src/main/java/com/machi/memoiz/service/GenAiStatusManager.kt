@@ -46,9 +46,6 @@ data class GenAiFeatureStates(
 class GenAiStatusManager(private val context: Context) {
     companion object {
         const val TAG = "GenAiStatusManager"
-        const val EXTRA_FORCE_OFF_IMAGE = "force_off_image"
-        const val EXTRA_FORCE_OFF_TEXT = "force_off_text"
-        const val EXTRA_FORCE_OFF_SUM = "force_off_sum"
     }
 
     private val imageDescriber: ImageDescriber by lazy {
@@ -88,18 +85,8 @@ class GenAiStatusManager(private val context: Context) {
         else -> FeatureStatus.DOWNLOADABLE
     }
 
-    suspend fun checkAll(forceOff: GenAiFeatureStates? = null): GenAiFeatureStates = withContext(Dispatchers.IO) {
-        // Note: treat `forceOff` as nullable. Previously code used a default
-        // GenAiFeatureStates() (which itself defaulted to UNAVAILABLE) when
-        // forceOff was null, unintentionally disabling real status checks.
-        val forced = forceOff // nullable; only non-null when caller intends to force-off
-
-        // Log incoming forced flags for debugging (show if null)
-        if (forced != null) {
-            Log.d(TAG, "checkAll invoked; forced flags: image=${statusName(forced.imageDescription)} text=${statusName(forced.textGeneration)} sum=${statusName(forced.summarization)}")
-        } else {
-            Log.d(TAG, "checkAll invoked; no forceOff flags — performing real checks")
-        }
+    suspend fun checkAll(): GenAiFeatureStates = withContext(Dispatchers.IO) {
+        Log.d(TAG, "checkAll invoked; performing real checks")
 
         // If Google Play Services unavailable, return cached if present else default UNAVAILABLEs
         val gmsStatus = GoogleApiAvailability.getInstance().isGooglePlayServicesAvailable(context)
@@ -111,33 +98,18 @@ class GenAiStatusManager(private val context: Context) {
 
         // For each feature, try to query; on failure, fall back to cached value if any.
         // Perform per-feature checks without caching; a failure in one won't overwrite others.
-        val imgState = if (forced?.imageDescription == FeatureStatus.UNAVAILABLE) {
-            // Caller explicitly requested imageDescription to be forced OFF
-            FeatureStatus.UNAVAILABLE
-        } else {
-            runCatching { imageDescriber.checkFeatureStatus().await() }
-                .onFailure { Log.w(TAG, "ImageDescription.checkFeatureStatus failed", it) }
-                .getOrDefault(FeatureStatus.UNAVAILABLE)
-        }
+        val imgState = runCatching { imageDescriber.checkFeatureStatus().await() }
+            .onFailure { Log.w(TAG, "ImageDescription.checkFeatureStatus failed", it) }
+            .getOrDefault(FeatureStatus.UNAVAILABLE)
 
-        val genState = if (forced?.textGeneration == FeatureStatus.UNAVAILABLE) {
-            FeatureStatus.UNAVAILABLE
-        } else {
-            // Use promptModel.checkStatus() if available (suspend fun returning @FeatureStatus Int).
-            val got = runCatching { promptModel.checkStatus() }
-                .onFailure { Log.w(TAG, "Generation.checkStatus failed", it) }
-                .getOrDefault(FeatureStatus.UNAVAILABLE)
-            Log.d(TAG, "promptModel.checkStatus returned: ${statusName(got)} ($got)")
-            got
-        }
+        val genState = runCatching { promptModel.checkStatus() }
+            .onFailure { Log.w(TAG, "Generation.checkStatus failed", it) }
+            .getOrDefault(FeatureStatus.UNAVAILABLE)
+        Log.d(TAG, "promptModel.checkStatus returned: ${statusName(genState)} ($genState)")
 
-        val sumState = if (forced?.summarization == FeatureStatus.UNAVAILABLE) {
-            FeatureStatus.UNAVAILABLE
-        } else {
-            runCatching { summarizer.checkFeatureStatus().await() }
-                .onFailure { Log.w(TAG, "Summarizer.checkFeatureStatus failed", it) }
-                .getOrDefault(FeatureStatus.UNAVAILABLE)
-        }
+        val sumState = runCatching { summarizer.checkFeatureStatus().await() }
+            .onFailure { Log.w(TAG, "Summarizer.checkFeatureStatus failed", it) }
+            .getOrDefault(FeatureStatus.UNAVAILABLE)
 
         // Normalize unknown statuses to DOWNLOADABLE so the UI offers a download flow
         // (prevents silent UNKNOWN state that could hide the dialog).
@@ -399,4 +371,5 @@ class GenAiStatusManager(private val context: Context) {
     fun hasDownloadableFeatures(states: GenAiFeatureStates): Boolean {
         return (states.imageDescription == FeatureStatus.DOWNLOADABLE) || (states.summarization == FeatureStatus.DOWNLOADABLE)
     }
+
 }

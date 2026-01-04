@@ -35,26 +35,15 @@ object ContentProcessingLauncher {
 
     private suspend fun checkGenAiAndMaybeNotify(context: Context, showDialogOnUnavailable: Boolean): Boolean {
         return withContext(Dispatchers.IO) {
-            val prefs = PreferencesDataStoreManager(context).userPreferencesFlow.first()
-            val forceOff = GenAiFeatureStates(
-                imageDescription = if (prefs.forceOffImageDescription) FeatureStatus.UNAVAILABLE else FeatureStatus.AVAILABLE,
-                textGeneration = if (prefs.forceOffTextGeneration) FeatureStatus.UNAVAILABLE else FeatureStatus.AVAILABLE,
-                summarization = if (prefs.forceOffSummarization) FeatureStatus.UNAVAILABLE else FeatureStatus.AVAILABLE
-            )
+            // Force-off flags removed — always perform an unforced real check
             val manager = GenAiStatusManager(context)
-            val status = manager.checkAll(forceOff)
+            val status = manager.checkAll()
             val unavailable = status.anyUnavailable()
             if (unavailable) {
                 if (showDialogOnUnavailable) {
-                    GenAiStatusCheckDialogActivity.start(
-                        context,
-                        Triple(prefs.forceOffImageDescription, prefs.forceOffTextGeneration, prefs.forceOffSummarization)
-                    )
+                    GenAiStatusCheckDialogActivity.start(context)
                 } else if (context is Application) {
-                    GenAiStatusNotification.showUnavailable(
-                        context,
-                        Triple(prefs.forceOffImageDescription, prefs.forceOffTextGeneration, prefs.forceOffSummarization)
-                    )
+                    GenAiStatusNotification.showUnavailable(context)
                 }
             }
             unavailable

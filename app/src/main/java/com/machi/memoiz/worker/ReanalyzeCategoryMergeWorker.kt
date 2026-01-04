@@ -48,7 +48,7 @@ class ReanalyzeCategoryMergeWorker(
                     existingCategories,
                     preferences.customCategories,
                     isCategoryLocked = false,
-                    summarizationOnlyMode = preferences.forceOffTextGeneration && !preferences.forceOffSummarization
+                    summarizationOnlyMode = false // force-off flags removed
                 )
 
                 val updatedMemoEntity = when (memo.memoType) {
