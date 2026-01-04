@@ -38,7 +38,7 @@ android {
 
     defaultConfig {
         applicationId = "com.machi.memoiz"
-        minSdk = 29
+        minSdk = 34
         targetSdk = 36
         // versionCodeとversionNameを動的に設定
         val gitCount = getGitCommitCount()

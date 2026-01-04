@@ -4,7 +4,6 @@ package com.machi.memoiz.ui.screens
 
 import android.content.Context
 import android.content.Intent
-import android.os.Build
 import android.provider.Settings
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.Indication
@@ -59,11 +58,11 @@ fun SettingsScreen(
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     var hasUsageStatsPermission by remember {
-        mutableStateOf(if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) UsageStatsHelper(context).hasUsageStatsPermission() else false)
+        mutableStateOf(UsageStatsHelper(context).hasUsageStatsPermission())
     }
     DisposableEffect(lifecycleOwner, context) {
         val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_RESUME && Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            if (event == Lifecycle.Event.ON_RESUME) {
                 hasUsageStatsPermission = UsageStatsHelper(context).hasUsageStatsPermission()
             }
         }

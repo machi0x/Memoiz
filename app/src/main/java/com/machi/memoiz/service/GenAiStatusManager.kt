@@ -4,7 +4,6 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
 import android.graphics.Bitmap
-import android.os.Build
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import com.google.android.gms.common.ConnectionResult
@@ -119,15 +118,15 @@ class GenAiStatusManager(private val context: Context) {
     }
 
     fun buildNotificationChannel(channelId: String) {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
-        val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        val channel = NotificationChannel(
-            channelId,
-            context.getString(R.string.genai_status_notification_title),
-            NotificationManager.IMPORTANCE_LOW
-        )
-        manager.createNotificationChannel(channel)
-    }
+        // Min SDK is 34; notification channels are always supported.
+         val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+         val channel = NotificationChannel(
+             channelId,
+             context.getString(R.string.genai_status_notification_title),
+             NotificationManager.IMPORTANCE_LOW
+         )
+         manager.createNotificationChannel(channel)
+     }
 
     fun buildUnavailableNotification(channelId: String): NotificationCompat.Builder {
         return NotificationCompat.Builder(context, channelId)
