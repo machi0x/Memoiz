@@ -39,7 +39,8 @@ class ReanalyzeSingleMemoWorker(
             CategoryMergeService(applicationContext),
             existingCategories,
             preferences.customCategories,
-            isCategoryLocked = memo.isCategoryLocked
+            isCategoryLocked = memo.isCategoryLocked,
+            summarizationOnlyMode = preferences.forceOffTextGeneration && !preferences.forceOffSummarization
         )
         try {
             val updatedEntity = if (!memo.imageUri.isNullOrBlank()) {

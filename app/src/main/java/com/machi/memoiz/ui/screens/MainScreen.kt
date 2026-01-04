@@ -116,6 +116,8 @@ fun MainScreen(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var showTutorialDialog by rememberSaveable { mutableStateOf(false) }
+    val genAiForceOff by viewModel.genAiForceOffFlags.collectAsState()
+    var pendingShowGenAiDialog by rememberSaveable { mutableStateOf(false) }
 
     LaunchedEffect(memoGroups) {
         viewModel.ensureCategoryOrder(memoGroups.map { it.category })
@@ -133,6 +135,25 @@ fun MainScreen(
     LaunchedEffect(shouldShowTutorial) {
         if (shouldShowTutorial) {
             showTutorialDialog = true
+        } else {
+            pendingShowGenAiDialog = true
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        // Trigger once on main creation when tutorial already seen
+        if (!shouldShowTutorial) {
+            pendingShowGenAiDialog = true
+        }
+    }
+
+    LaunchedEffect(pendingShowGenAiDialog) {
+        if (pendingShowGenAiDialog) {
+            GenAiStatusCheckDialogActivity.start(
+                context.applicationContext,
+                genAiForceOff
+            )
+            pendingShowGenAiDialog = false
         }
     }
 
@@ -638,6 +659,7 @@ fun MainScreen(
             onFinished = {
                 showTutorialDialog = false
                 viewModel.markTutorialSeen()
+                pendingShowGenAiDialog = true
             }
         )
     }

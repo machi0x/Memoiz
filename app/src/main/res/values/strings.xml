@@ -147,4 +147,19 @@ Try sharing text or images from other apps, or use the + button at the bottom of
     <string name="fab_close_menu">Close menu</string>
     <string name="processtext_label">Save to Memoiz</string>
     <string name="error_image_analysis_permanent_with_code">Cannot analyze this memo. Error code: %1$s</string>
+
+    <!-- GenAI status dialog/notification -->
+    <string name="genai_status_title_unavailable">On-device AI unavailable</string>
+    <string name="genai_status_message_unavailable">On this device, on-device AI is not available. Memo categorization or summaries may not be generated. You can still add memos and set categories manually.</string>
+    <string name="genai_status_title_download">Download on-device AI model</string>
+    <string name="genai_status_message_download">Download the on-device AI model used by Memoiz. It stays on your device and may also be reused by other supported apps. Use Wi‑Fi because the download can be large.</string>
+    <string name="genai_status_download_start">Start download</string>
+    <string name="genai_status_download_skip">Not now</string>
+    <string name="genai_status_progress">Downloading… %1$d%%</string>
+    <string name="genai_status_force_off_image">Force OFF: Image description</string>
+    <string name="genai_status_force_off_text">Force OFF: Text generation</string>
+    <string name="genai_status_force_off_summarization">Force OFF: Summarization</string>
+    <string name="genai_status_notification_title">On-device AI unavailable</string>
+    <string name="genai_status_notification_text">Some AI features are unavailable. Tap for details.</string>
+    <string name="genai_status_shrunk_mode">Fallback: using summarization only; categories may be missing.</string>
 </resources>

@@ -8,6 +8,7 @@ import com.machi.memoiz.data.datastore.PreferencesDataStoreManager
 import com.machi.memoiz.data.repository.MemoRepository
 import com.machi.memoiz.domain.model.Memo
 import com.machi.memoiz.service.CategoryMergeService
+import com.machi.memoiz.service.ai.AiCategorizationService
 import kotlinx.coroutines.flow.first
 
 class ReanalyzeCategoryMergeWorker(
@@ -46,7 +47,15 @@ class ReanalyzeCategoryMergeWorker(
                     existingCategories = existingCategories,
                     customCategories = preferences.customCategories
                 )
-                val mergeResult = mergeService.merge(input)
+                val aiService = AiCategorizationService(
+                    applicationContext,
+                    mergeService,
+                    existingCategories,
+                    preferences.customCategories,
+                    isCategoryLocked = false,
+                    summarizationOnlyMode = preferences.forceOffTextGeneration && !preferences.forceOffSummarization
+                )
+                val mergeResult = aiService.categorize(memo)
                 if (mergeResult.finalCategory != memo.category) {
                     memoRepository.updateMemo(memo.copy(category = mergeResult.finalCategory))
                 }

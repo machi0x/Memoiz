@@ -22,6 +22,7 @@ import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.School
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.ToggleOff
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -39,6 +40,7 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.google.android.gms.oss.licenses.OssLicensesMenuActivity
 import com.machi.memoiz.BuildConfig
 import com.machi.memoiz.R
+import com.machi.memoiz.data.datastore.UserPreferences
 import com.machi.memoiz.ui.theme.MemoizTheme
 import com.machi.memoiz.util.UsageStatsHelper
 
@@ -68,6 +70,7 @@ fun SettingsScreen(
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
     val appVersion = remember { BuildConfig.VERSION_NAME }
+    val genAiPrefs by viewModel.genAiPreferences.collectAsState(initial = UserPreferences())
 
     Scaffold(
         topBar = {
@@ -175,6 +178,64 @@ fun SettingsScreen(
                             Icon(Icons.Default.Info, contentDescription = null)
                         },
                         onClick = { showAboutDialog = true }
+                    )
+                }
+
+                item {
+                    HorizontalDivider(modifier = Modifier.padding(start = 72.dp))
+                }
+
+                item {
+                    PreferenceItem(
+                        title = stringResource(R.string.genai_status_force_off_image),
+                        subtitle = stringResource(R.string.genai_status_notification_text),
+                        leadingIcon = { Icon(Icons.Default.ToggleOff, contentDescription = null) },
+                        trailingContent = {
+                            Switch(
+                                checked = genAiPrefs.forceOffImageDescription,
+                                onCheckedChange = { viewModel.setForceOffImageDescription(it) }
+                            )
+                        }
+                    )
+                }
+
+                item {
+                    PreferenceItem(
+                        title = stringResource(R.string.genai_status_force_off_text),
+                        subtitle = stringResource(R.string.genai_status_notification_text),
+                        leadingIcon = { Icon(Icons.Default.ToggleOff, contentDescription = null) },
+                        trailingContent = {
+                            Switch(
+                                checked = genAiPrefs.forceOffTextGeneration,
+                                onCheckedChange = { viewModel.setForceOffTextGeneration(it) }
+                            )
+                        }
+                    )
+                }
+
+                item {
+                    PreferenceItem(
+                        title = stringResource(R.string.genai_status_force_off_summarization),
+                        subtitle = stringResource(R.string.genai_status_notification_text),
+                        leadingIcon = { Icon(Icons.Default.ToggleOff, contentDescription = null) },
+                        trailingContent = {
+                            Switch(
+                                checked = genAiPrefs.forceOffSummarization,
+                                onCheckedChange = { viewModel.setForceOffSummarization(it) }
+                            )
+                        }
+                    )
+                }
+
+                item {
+                    HorizontalDivider(modifier = Modifier.padding(start = 72.dp))
+                }
+
+                item {
+                    PreferenceItem(
+                        title = "GenAI base models",
+                        subtitle = "Coming soon: show base model names",
+                        leadingIcon = { Icon(Icons.Default.Info, contentDescription = null) }
                     )
                 }
             }
