@@ -81,6 +81,13 @@ class GenAiStatusManager(private val context: Context) {
         else -> "UNKNOWN($s)"
     }
 
+    // Normalize statuses: treat any unknown/unexpected numeric value as DOWNLOADABLE
+    // so the app will offer to download the model rather than silently treating it as unavailable.
+    private fun normalizeFeatureStatus(@FeatureStatus s: Int): Int = when (s) {
+        FeatureStatus.AVAILABLE, FeatureStatus.DOWNLOADABLE, FeatureStatus.UNAVAILABLE -> s
+        else -> FeatureStatus.DOWNLOADABLE
+    }
+
     suspend fun checkAll(forceOff: GenAiFeatureStates? = null): GenAiFeatureStates = withContext(Dispatchers.IO) {
         // Note: treat `forceOff` as nullable. Previously code used a default
         // GenAiFeatureStates() (which itself defaulted to UNAVAILABLE) when
@@ -132,7 +139,13 @@ class GenAiStatusManager(private val context: Context) {
                 .getOrDefault(FeatureStatus.UNAVAILABLE)
         }
 
-        val result = GenAiFeatureStates(imgState, genState, sumState)
+        // Normalize unknown statuses to DOWNLOADABLE so the UI offers a download flow
+        // (prevents silent UNKNOWN state that could hide the dialog).
+        val normImg = normalizeFeatureStatus(imgState)
+        val normGen = normalizeFeatureStatus(genState)
+        val normSum = normalizeFeatureStatus(sumState)
+        val result = GenAiFeatureStates(normImg, normGen, normSum)
+
         Log.d(TAG, "checkAll result image=${statusName(result.imageDescription)} (${result.imageDescription}) text=${statusName(result.textGeneration)} (${result.textGeneration}) sum=${statusName(result.summarization)} (${result.summarization})")
         result
     }
