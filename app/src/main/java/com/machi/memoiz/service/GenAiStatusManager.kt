@@ -22,8 +22,12 @@ import com.google.mlkit.genai.summarization.Summarizer
 import com.google.mlkit.genai.summarization.SummarizerOptions
 import com.machi.memoiz.R
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.guava.await
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.launch
 
 data class GenAiFeatureStates(
     val imageDescription: Int = FeatureStatus.UNAVAILABLE,
@@ -66,6 +70,8 @@ class GenAiStatusManager(private val context: Context) {
 
     // Track current download futures so we can cancel them from UI
     private val ongoingDownloads = mutableListOf<ListenableFuture<Void>>()
+    // Track an optional Job for prompt model download flow so it can be cancelled
+    private var ongoingPromptDownloadJob: Job? = null
 
     // Helper to pretty-print FeatureStatus ints
     private fun statusName(@FeatureStatus s: Int): String = when (s) {
@@ -107,7 +113,7 @@ class GenAiStatusManager(private val context: Context) {
                 .getOrDefault(FeatureStatus.UNAVAILABLE)
         }
 
-        var genState = if (forced?.textGeneration == FeatureStatus.UNAVAILABLE) {
+        val genState = if (forced?.textGeneration == FeatureStatus.UNAVAILABLE) {
             FeatureStatus.UNAVAILABLE
         } else {
             // Use promptModel.checkStatus() if available (suspend fun returning @FeatureStatus Int).
@@ -116,15 +122,6 @@ class GenAiStatusManager(private val context: Context) {
                 .getOrDefault(FeatureStatus.UNAVAILABLE)
             Log.d(TAG, "promptModel.checkStatus returned: ${statusName(got)} ($got)")
             got
-        }
-
-        // WORKAROUND: Some devices/SDKs report textGeneration as DOWNLOADABLE while
-        // the prompt generation API actually works. Treat DOWNLOADABLE as AVAILABLE
-        // for textGeneration to avoid spurious "model download" dialogs. TODO: Investigate
-        // root cause (why promptModel.checkStatus returns DOWNLOADABLE even when generateContent works)
-        if (genState == FeatureStatus.DOWNLOADABLE) {
-            Log.w(TAG, "Treating textGeneration DOWNLOADABLE as AVAILABLE (workaround)")
-            genState = FeatureStatus.AVAILABLE
         }
 
         val sumState = if (forced?.summarization == FeatureStatus.UNAVAILABLE) {
@@ -217,52 +214,98 @@ class GenAiStatusManager(private val context: Context) {
         }
 
         try {
-            if (states.imageDescription == FeatureStatus.DOWNLOADABLE) {
-                val idx = taskIndex++
-                val wrapper = makeWrapperCallback(idx)
-                val f = imageDescriber.downloadFeature(wrapper)
-                tasks.add(f)
-            }
+            // Use coroutineScope so we can launch a job to collect promptModel.download() in parallel
+            coroutineScope {
+                // If prompt (textGeneration) is DOWNLOADABLE, start collecting its Flow-based download
+                if (states.textGeneration == FeatureStatus.DOWNLOADABLE) {
+                    // Launch the prompt model download collector as a Job that can be cancelled.
+                    val job = launch {
+                        try {
+                            promptModel.download().collect { status ->
+                                when (status) {
+                                    is com.google.mlkit.genai.common.DownloadStatus.DownloadStarted -> {
+                                        forwardStarted(status.bytesToDownload)
+                                    }
+                                    is com.google.mlkit.genai.common.DownloadStatus.DownloadProgress -> {
+                                        forwardProgress(status.totalBytesDownloaded)
+                                    }
+                                    is com.google.mlkit.genai.common.DownloadStatus.DownloadFailed -> {
+                                        forwardFailed(status.e)
+                                    }
+                                    is com.google.mlkit.genai.common.DownloadStatus.DownloadCompleted -> {
+                                        // no-op here; we'll call forwardCompleted after awaiting all tasks
+                                    }
+                                }
+                            }
+                        } catch (e: Exception) {
+                            Log.e(TAG, "promptModel.download() collector failed", e)
+                            // Convert to a GenAiException to notify caller
+                            if (e is GenAiException) forwardFailed(e) else onError(e)
+                        }
+                    }
+                    synchronized(ongoingDownloads) {
+                        ongoingPromptDownloadJob = job
+                    }
+                }
 
-            // promptModel.downloadFeature() is not available in alpha1
+                if (states.imageDescription == FeatureStatus.DOWNLOADABLE) {
+                    val idx = taskIndex++
+                    val wrapper = makeWrapperCallback(idx)
+                    val f = imageDescriber.downloadFeature(wrapper)
+                    tasks.add(f)
+                }
 
-            if (states.summarization == FeatureStatus.DOWNLOADABLE) {
-                 val idx = taskIndex++
-                 val wrapper = makeWrapperCallback(idx)
-                 val f = summarizer.downloadFeature(wrapper)
-                 tasks.add(f)
-            }
+                // promptModel.downloadFeature() is not available in alpha1
 
-            // Register ongoing downloads for potential cancellation
-            synchronized(ongoingDownloads) {
-                ongoingDownloads.clear()
-                ongoingDownloads.addAll(tasks)
-            }
+                if (states.summarization == FeatureStatus.DOWNLOADABLE) {
+                     val idx = taskIndex++
+                     val wrapper = makeWrapperCallback(idx)
+                     val f = summarizer.downloadFeature(wrapper)
+                     tasks.add(f)
+                }
 
-            // Await all downloads to complete.
-            tasks.forEach {
-                try {
-                    it.await()
-                } catch (e: Exception) {
-                    Log.e(TAG, "A download task failed.", e)
-                    // If this is a GenAiException, forward it to the callback; otherwise just log and continue.
-                    if (e is GenAiException) {
-                        forwardFailed(e)
-                    } else {
-                        // Forward non-GenAiException via onError so UI can show a unified error state.
+                // Register ongoing downloads for potential cancellation
+                synchronized(ongoingDownloads) {
+                    ongoingDownloads.clear()
+                    ongoingDownloads.addAll(tasks)
+                }
+
+                // Await all downloads to complete. Await ListenableFuture tasks and then
+                // wait for the prompt Job (if any) to finish.
+                tasks.forEach {
+                    try {
+                        it.await()
+                    } catch (e: Exception) {
+                        Log.e(TAG, "A download task failed.", e)
+                        if (e is GenAiException) {
+                            forwardFailed(e)
+                        } else {
+                            onError(e)
+                        }
+                    }
+                }
+
+                // Wait for prompt download job to finish (if any). It will update progress via callbacks.
+                val promptJobSnapshot = synchronized(ongoingDownloads) { ongoingPromptDownloadJob }
+                if (promptJobSnapshot != null) {
+                    try {
+                        promptJobSnapshot.join()
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Prompt download job failed/was cancelled", e)
                         onError(e)
                     }
                 }
-            }
 
-            // At the end forward completed
-            forwardCompleted()
-        } finally {
-            // Clear ongoing downloads in any case
-            synchronized(ongoingDownloads) {
-                ongoingDownloads.clear()
+             // At the end forward completed
+             forwardCompleted()
             }
-        }
+         } finally {
+             // Clear ongoing downloads in any case
+             synchronized(ongoingDownloads) {
+                 ongoingDownloads.clear()
+                ongoingPromptDownloadJob = null
+             }
+         }
     }
 
     /**
@@ -279,6 +322,12 @@ class GenAiStatusManager(private val context: Context) {
                 }
             }
             ongoingDownloads.clear()
+            // Also cancel prompt model download job if active
+            try {
+                ongoingPromptDownloadJob?.cancel()
+            } catch (_: Exception) {
+            }
+            ongoingPromptDownloadJob = null
         }
     }
 
