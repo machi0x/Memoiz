@@ -40,6 +40,21 @@ class SettingsViewModel(
     private val preferencesManager: PreferencesDataStoreManager,
     private val genAiStatusManager: GenAiStatusManager
 ) : ViewModel(), SettingsScreenViewModel {
+    // Helper to pretty-print FeatureStatus int constants for logs
+    private fun featureStatusName(@com.google.mlkit.genai.common.FeatureStatus status: Int): String {
+        return when (status) {
+            com.google.mlkit.genai.common.FeatureStatus.AVAILABLE -> "AVAILABLE"
+            com.google.mlkit.genai.common.FeatureStatus.DOWNLOADABLE -> "DOWNLOADABLE"
+            com.google.mlkit.genai.common.FeatureStatus.UNAVAILABLE -> "UNAVAILABLE"
+            else -> "UNKNOWN($status)"
+        }
+    }
+
+    private fun prettyStates(s: GenAiFeatureStates?): String {
+        if (s == null) return "null"
+        return "image=${featureStatusName(s.imageDescription)} text=${featureStatusName(s.textGeneration)} sum=${featureStatusName(s.summarization)}"
+    }
+
     override val genAiPreferences = preferencesManager.userPreferencesFlow
 
     private val _baseModelNames = MutableStateFlow<Triple<String?, String?, String?>>(Triple(null, null, null))
@@ -112,7 +127,7 @@ class SettingsViewModel(
                 // Then check feature states; on failure keep previous value to avoid flipping to UNAVAILABLE.
                 val prevStates = _featureStates.value
                 var checked = runCatching { genAiStatusManager.checkAll() }.getOrNull()
-                Log.d("SettingsViewModel", "initial checkAll returned: $checked; prevStates=$prevStates")
+                Log.d("SettingsViewModel", "initial checkAll returned: ${prettyStates(checked)}; prevStates=${prettyStates(prevStates)}")
                 // If first check failed or returned all UNAVAILABLE and we had no previous value,
                 // retry once after a short delay to avoid transient GMS/GenAI hiccups causing false UNAVAILABLE.
                 val prev = prevStates
@@ -125,7 +140,7 @@ class SettingsViewModel(
                     try {
                         delay(500)
                         checked = runCatching { genAiStatusManager.checkAll() }.getOrNull()
-                        Log.d("SettingsViewModel", "retry checkAll returned: $checked")
+                        Log.d("SettingsViewModel", "retry checkAll returned: ${prettyStates(checked)}")
                     } catch (_: Exception) {
                         // ignore retry failures
                     }
@@ -138,39 +153,17 @@ class SettingsViewModel(
                 }
 
                 if (checked != null) {
-                     // If the freshly checked state reports all features UNAVAILABLE but we previously
-                     // had a non-empty, non-all-unavailable value, it is likely a transient failure
-                     // (e.g., GMS hiccup). In that case, prefer to keep the previous known-good state.
-                     val checkedAllUnavailable = (checked.imageDescription == com.google.mlkit.genai.common.FeatureStatus.UNAVAILABLE
-                             && checked.textGeneration == com.google.mlkit.genai.common.FeatureStatus.UNAVAILABLE
-                             && checked.summarization == com.google.mlkit.genai.common.FeatureStatus.UNAVAILABLE)
-
-                     val prevHadAnyAvailable = prev != null && !(
-                         prev.imageDescription == com.google.mlkit.genai.common.FeatureStatus.UNAVAILABLE
-                                 && prev.textGeneration == com.google.mlkit.genai.common.FeatureStatus.UNAVAILABLE
-                                 && prev.summarization == com.google.mlkit.genai.common.FeatureStatus.UNAVAILABLE
-                     )
-
-                    if (checkedAllUnavailable && prevHadAnyAvailable) {
-                        // preserve previous state
-                    } else if (checkedAllUnavailable && prev == null) {
-                        // No previous state and check returned all UNAVAILABLE. Use model name hints
-                        // (baseModelNames) to infer availability: if a model name exists, consider
-                        // that feature AVAILABLE to avoid false negative UI.
-                        val names = _baseModelNames.value
-                        val inferredImage = if (!names.first.isNullOrBlank()) com.google.mlkit.genai.common.FeatureStatus.AVAILABLE else checked.imageDescription
-                        val inferredText = if (!names.second.isNullOrBlank()) com.google.mlkit.genai.common.FeatureStatus.AVAILABLE else checked.textGeneration
-                        val inferredSum = if (!names.third.isNullOrBlank()) com.google.mlkit.genai.common.FeatureStatus.AVAILABLE else checked.summarization
-                        val inferred = GenAiFeatureStates(inferredImage, inferredText, inferredSum)
-                        _featureStates.value = inferred
-                    } else {
-                        _featureStates.value = checked
-                    }
-                 } else {
-                     // keep prevStates
-                 }
+                    // Use the freshly checked state directly. Inference based on
+                    // model name hints can create a UI mismatch where the status
+                    // appears AVAILABLE even though checkAll reports UNAVAILABLE.
+                    // To ensure Settings reflects the real checked status, accept
+                    // the checked result as authoritative.
+                    _featureStates.value = checked
+                } else {
+                    // keep prevStates
+                }
             } catch (ignored: Exception) {
-                // keep previous values on unexpected errors
+                // keep previous values o chn unexpected errors
             } finally {
                 _loadingFeatureStates.value = false
             }

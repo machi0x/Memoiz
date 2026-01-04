@@ -118,7 +118,6 @@ fun MainScreen(
     val scope = rememberCoroutineScope()
     var showTutorialDialog by rememberSaveable { mutableStateOf(false) }
     val genAiForceOff by viewModel.genAiForceOffFlags.collectAsState()
-    var pendingShowGenAiDialog by rememberSaveable { mutableStateOf(false) }
     // Track whether we've already shown the GenAI dialog during this Activity lifecycle
     var genAiDialogShown by rememberSaveable { mutableStateOf(false) }
 
@@ -176,16 +175,6 @@ fun MainScreen(
         }
     }
 
-    LaunchedEffect(pendingShowGenAiDialog) {
-        if (pendingShowGenAiDialog && !genAiDialogShown) {
-            GenAiStatusCheckDialogActivity.start(
-                context.applicationContext,
-                genAiForceOff
-            )
-            pendingShowGenAiDialog = false
-            genAiDialogShown = true
-        }
-    }
 
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     var showSortDialog by remember { mutableStateOf(false) }
@@ -689,10 +678,41 @@ fun MainScreen(
             onFinished = {
                 showTutorialDialog = false
                 viewModel.markTutorialSeen()
-                if (!genAiDialogShown) pendingShowGenAiDialog = true
-            }
-        )
-    }
+                // Instead of unconditionally scheduling the GenAI status dialog, run
+                // an explicit check and only start the dialog if features are
+                // unavailable or require download. This avoids showing the "model
+                // download" dialog when everything is already available.
+                if (genAiDialogShown) return@TutorialDialog
+                scope.launch {
+                    val manager = com.machi.memoiz.service.GenAiStatusManager(context.applicationContext)
+                    try {
+                        val forced = com.machi.memoiz.service.GenAiFeatureStates(
+                            imageDescription = if (genAiForceOff.first) com.google.mlkit.genai.common.FeatureStatus.UNAVAILABLE else com.google.mlkit.genai.common.FeatureStatus.AVAILABLE,
+                            textGeneration = if (genAiForceOff.second) com.google.mlkit.genai.common.FeatureStatus.UNAVAILABLE else com.google.mlkit.genai.common.FeatureStatus.AVAILABLE,
+                            summarization = if (genAiForceOff.third) com.google.mlkit.genai.common.FeatureStatus.UNAVAILABLE else com.google.mlkit.genai.common.FeatureStatus.AVAILABLE
+                        )
+                        val status = manager.checkAll(forced)
+                        if (status.anyUnavailable() || status.anyDownloadable()) {
+                            GenAiStatusCheckDialogActivity.start(context.applicationContext, genAiForceOff)
+                            genAiDialogShown = true
+                        }
+                    } catch (e: Exception) {
+                        // If the status check fails, attempt to show the dialog as a
+                        // fallback (matches previous behavior).
+                        e.printStackTrace()
+                        try {
+                            GenAiStatusCheckDialogActivity.start(context.applicationContext, genAiForceOff)
+                            genAiDialogShown = true
+                        } catch (ignored: Exception) {
+                            // swallow
+                        }
+                    } finally {
+                        manager.close()
+                    }
+                }
+             }
+         )
+     }
 
     if (showCreateMemoDialog) {
         AlertDialog(

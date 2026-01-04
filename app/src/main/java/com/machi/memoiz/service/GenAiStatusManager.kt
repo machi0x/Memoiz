@@ -67,17 +67,39 @@ class GenAiStatusManager(private val context: Context) {
     // Track current download futures so we can cancel them from UI
     private val ongoingDownloads = mutableListOf<ListenableFuture<Void>>()
 
+    // Helper to pretty-print FeatureStatus ints
+    private fun statusName(@FeatureStatus s: Int): String = when (s) {
+        FeatureStatus.AVAILABLE -> "AVAILABLE"
+        FeatureStatus.DOWNLOADABLE -> "DOWNLOADABLE"
+        FeatureStatus.UNAVAILABLE -> "UNAVAILABLE"
+        else -> "UNKNOWN($s)"
+    }
+
     suspend fun checkAll(forceOff: GenAiFeatureStates? = null): GenAiFeatureStates = withContext(Dispatchers.IO) {
-        val forced = forceOff ?: GenAiFeatureStates()
+        // Note: treat `forceOff` as nullable. Previously code used a default
+        // GenAiFeatureStates() (which itself defaulted to UNAVAILABLE) when
+        // forceOff was null, unintentionally disabling real status checks.
+        val forced = forceOff // nullable; only non-null when caller intends to force-off
+
+        // Log incoming forced flags for debugging (show if null)
+        if (forced != null) {
+            Log.d(TAG, "checkAll invoked; forced flags: image=${statusName(forced.imageDescription)} text=${statusName(forced.textGeneration)} sum=${statusName(forced.summarization)}")
+        } else {
+            Log.d(TAG, "checkAll invoked; no forceOff flags — performing real checks")
+        }
 
         // If Google Play Services unavailable, return cached if present else default UNAVAILABLEs
-        if (!isGooglePlayServicesAvailable()) {
+        val gmsStatus = GoogleApiAvailability.getInstance().isGooglePlayServicesAvailable(context)
+        Log.d(TAG, "GooglePlayServices availability code: $gmsStatus")
+        if (gmsStatus != ConnectionResult.SUCCESS) {
+            Log.w(TAG, "Google Play Services not available (code=$gmsStatus). Returning UNAVAILABLE for all features.")
             return@withContext GenAiFeatureStates()
         }
 
         // For each feature, try to query; on failure, fall back to cached value if any.
         // Perform per-feature checks without caching; a failure in one won't overwrite others.
-        val imgState = if (forced.imageDescription == FeatureStatus.UNAVAILABLE) {
+        val imgState = if (forced?.imageDescription == FeatureStatus.UNAVAILABLE) {
+            // Caller explicitly requested imageDescription to be forced OFF
             FeatureStatus.UNAVAILABLE
         } else {
             runCatching { imageDescriber.checkFeatureStatus().await() }
@@ -85,17 +107,18 @@ class GenAiStatusManager(private val context: Context) {
                 .getOrDefault(FeatureStatus.UNAVAILABLE)
         }
 
-        val genState = if (forced.textGeneration == FeatureStatus.UNAVAILABLE) {
+        val genState = if (forced?.textGeneration == FeatureStatus.UNAVAILABLE) {
             FeatureStatus.UNAVAILABLE
         } else {
             // Use promptModel.checkStatus() if available (suspend fun returning @FeatureStatus Int).
             val got = runCatching { promptModel.checkStatus() }
                 .onFailure { Log.w(TAG, "Generation.checkStatus failed", it) }
                 .getOrDefault(FeatureStatus.UNAVAILABLE)
+            Log.d(TAG, "promptModel.checkStatus returned: ${statusName(got)} ($got)")
             got
         }
 
-        val sumState = if (forced.summarization == FeatureStatus.UNAVAILABLE) {
+        val sumState = if (forced?.summarization == FeatureStatus.UNAVAILABLE) {
             FeatureStatus.UNAVAILABLE
         } else {
             runCatching { summarizer.checkFeatureStatus().await() }
@@ -104,7 +127,7 @@ class GenAiStatusManager(private val context: Context) {
         }
 
         val result = GenAiFeatureStates(imgState, genState, sumState)
-        Log.d(TAG, "checkAll result image=${result.imageDescription} text=${result.textGeneration} sum=${result.summarization}")
+        Log.d(TAG, "checkAll result image=${statusName(result.imageDescription)} (${result.imageDescription}) text=${statusName(result.textGeneration)} (${result.textGeneration}) sum=${statusName(result.summarization)} (${result.summarization})")
         result
     }
 
