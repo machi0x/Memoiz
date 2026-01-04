@@ -68,18 +68,44 @@ class GenAiStatusManager(private val context: Context) {
     private val ongoingDownloads = mutableListOf<ListenableFuture<Void>>()
 
     suspend fun checkAll(forceOff: GenAiFeatureStates? = null): GenAiFeatureStates = withContext(Dispatchers.IO) {
-        if (!isGooglePlayServicesAvailable()) return@withContext GenAiFeatureStates()
         val forced = forceOff ?: GenAiFeatureStates()
-        return@withContext try {
-            val img = if (forced.imageDescription == FeatureStatus.UNAVAILABLE) FeatureStatus.UNAVAILABLE else imageDescriber.checkFeatureStatus().await()
-            // promptModel.checkFeatureStatus() is not available in alpha1
-            val gen = if (forced.textGeneration == FeatureStatus.UNAVAILABLE) FeatureStatus.UNAVAILABLE else FeatureStatus.AVAILABLE
-            val sum = if (forced.summarization == FeatureStatus.UNAVAILABLE) FeatureStatus.UNAVAILABLE else summarizer.checkFeatureStatus().await()
-            GenAiFeatureStates(img, gen, sum)
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to check feature status", e)
-            GenAiFeatureStates()
+
+        // If Google Play Services unavailable, return cached if present else default UNAVAILABLEs
+        if (!isGooglePlayServicesAvailable()) {
+            return@withContext GenAiFeatureStates()
         }
+
+        // For each feature, try to query; on failure, fall back to cached value if any.
+        // Perform per-feature checks without caching; a failure in one won't overwrite others.
+        val imgState = if (forced.imageDescription == FeatureStatus.UNAVAILABLE) {
+            FeatureStatus.UNAVAILABLE
+        } else {
+            runCatching { imageDescriber.checkFeatureStatus().await() }
+                .onFailure { Log.w(TAG, "ImageDescription.checkFeatureStatus failed", it) }
+                .getOrDefault(FeatureStatus.UNAVAILABLE)
+        }
+
+        val genState = if (forced.textGeneration == FeatureStatus.UNAVAILABLE) {
+            FeatureStatus.UNAVAILABLE
+        } else {
+            // Use promptModel.checkStatus() if available (suspend fun returning @FeatureStatus Int).
+            val got = runCatching { promptModel.checkStatus() }
+                .onFailure { Log.w(TAG, "Generation.checkStatus failed", it) }
+                .getOrDefault(FeatureStatus.UNAVAILABLE)
+            got
+        }
+
+        val sumState = if (forced.summarization == FeatureStatus.UNAVAILABLE) {
+            FeatureStatus.UNAVAILABLE
+        } else {
+            runCatching { summarizer.checkFeatureStatus().await() }
+                .onFailure { Log.w(TAG, "Summarizer.checkFeatureStatus failed", it) }
+                .getOrDefault(FeatureStatus.UNAVAILABLE)
+        }
+
+        val result = GenAiFeatureStates(imgState, genState, sumState)
+        Log.d(TAG, "checkAll result image=${result.imageDescription} text=${result.textGeneration} sum=${result.summarization}")
+        result
     }
 
     suspend fun downloadMissing(states: GenAiFeatureStates) = withContext(Dispatchers.IO) {
@@ -256,10 +282,27 @@ class GenAiStatusManager(private val context: Context) {
     }
 
     suspend fun getBaseModelNames(): Triple<String?, String?, String?> = withContext(Dispatchers.IO) {
-        val image = runCatching { imageDescriber.baseModelName.await() }.getOrNull()
-        // promptModel.baseModelName is not available in alpha1
-        val prompt = null
-        val sum = runCatching { summarizer.baseModelName.await() }.getOrNull()
+        val image = runCatching { imageDescriber.baseModelName.await() }
+            .onFailure { Log.w(TAG, "imageDescriber.baseModelName failed", it) }
+            .getOrNull()
+
+        val prompt = runCatching { promptModel.getBaseModelName() }
+            .onFailure { Log.w(TAG, "promptModel.baseModelName failed", it) }
+            .getOrNull()
+
+        val sum = runCatching { summarizer.baseModelName.await() }
+            .onFailure { Log.w(TAG, "summarizer.baseModelName failed", it) }
+            .getOrNull()
+
         Triple(image, prompt, sum)
+    }
+
+    /**
+     * Returns true if any feature which this manager can download is currently DOWNLOADABLE.
+     * Currently promptModel (textGeneration) does not support download in this SDK, so only
+     * imageDescription and summarization are considered downloadable.
+     */
+    fun hasDownloadableFeatures(states: GenAiFeatureStates): Boolean {
+        return (states.imageDescription == FeatureStatus.DOWNLOADABLE) || (states.summarization == FeatureStatus.DOWNLOADABLE)
     }
 }
