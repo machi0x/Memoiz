@@ -107,7 +107,7 @@ class GenAiStatusManager(private val context: Context) {
                 .getOrDefault(FeatureStatus.UNAVAILABLE)
         }
 
-        val genState = if (forced?.textGeneration == FeatureStatus.UNAVAILABLE) {
+        var genState = if (forced?.textGeneration == FeatureStatus.UNAVAILABLE) {
             FeatureStatus.UNAVAILABLE
         } else {
             // Use promptModel.checkStatus() if available (suspend fun returning @FeatureStatus Int).
@@ -116,6 +116,15 @@ class GenAiStatusManager(private val context: Context) {
                 .getOrDefault(FeatureStatus.UNAVAILABLE)
             Log.d(TAG, "promptModel.checkStatus returned: ${statusName(got)} ($got)")
             got
+        }
+
+        // WORKAROUND: Some devices/SDKs report textGeneration as DOWNLOADABLE while
+        // the prompt generation API actually works. Treat DOWNLOADABLE as AVAILABLE
+        // for textGeneration to avoid spurious "model download" dialogs. TODO: Investigate
+        // root cause (why promptModel.checkStatus returns DOWNLOADABLE even when generateContent works)
+        if (genState == FeatureStatus.DOWNLOADABLE) {
+            Log.w(TAG, "Treating textGeneration DOWNLOADABLE as AVAILABLE (workaround)")
+            genState = FeatureStatus.AVAILABLE
         }
 
         val sumState = if (forced?.summarization == FeatureStatus.UNAVAILABLE) {
