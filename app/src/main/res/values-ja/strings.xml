@@ -1,6 +1,115 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Japanese translations -->
-    <string name="genai_status_download_cancel">キャンセル</string>
-</resources>
+    <!-- Japanese translations for Memoiz -->
+    <string name="app_name">メモイズ</string>
+    <string name="failure_category">解析失敗</string>
+    <string name="failure_category_en" translatable="false">FAILURE</string>
+    <string name="failure_category_ja" translatable="false">分類失敗</string>
+    <string name="category_uncategorizable">分類不能</string>
 
+    <!-- Memo type labels -->
+    <string name="memo_type_text">テキスト</string>
+    <string name="memo_type_web_site">Web サイト</string>
+    <string name="memo_type_image">画像</string>
+
+    <string name="fab_paste_clipboard">クリップボードから貼り付け</string>
+    <string name="empty_state_message">まだメモがありません。\n他のアプリからテキストや画像を共有するか、画面下の + ボタンで最初のメモを追加してください。</string>
+    <string name="nothing_to_categorize">クリップボードに解析するテキストや画像がありません。</string>
+    <string name="categorization_started">Memoiz に保存し、バックグラウンドで AI 分類を開始しました。</string>
+
+    <!-- Main UI strings -->
+    <string name="search_hint">メモを検索</string>
+    <string name="drawer_all_categories">すべて</string>
+    <string name="drawer_filter_by_type">種類で絞る</string>
+    <string name="drawer_filter_by_category">カテゴリで絞る</string>
+    <string name="drawer_settings">設定</string>
+    <string name="drawer_add_category">マイカテゴリを追加</string>
+    <string name="drawer_category_hint">表示するカテゴリ</string>
+    <string name="sort_by_created">日付で並べる</string>
+    <string name="sort_by_category_name">カテゴリ名で並べる</string>
+    <string name="sort_mode_label">並び替えモード</string>
+
+    <!-- Memo actions -->
+    <string name="action_share">共有</string>
+    <string name="action_open">開く</string>
+    <string name="action_reanalyze">再解析</string>
+    <string name="action_reanalyze_failures">失敗分を再解析</string>
+    <string name="action_copy">クリップボードにコピー</string>
+    <string name="toast_copy_to_clipboard">クリップボードにコピーしました。</string>
+    <string name="cd_copy_memo">メモ内容をコピー</string>
+
+    <!-- General actions -->
+    <string name="action_delete">削除</string>
+    <string name="memo_menu_delete">メモを削除</string>
+    <string name="manual_category_indicator">(手動カテゴリ)</string>
+
+    <!-- Category actions -->
+    <string name="action_delete_category">カテゴリを削除</string>
+
+    <!-- Custom category dialog -->
+    <string name="dialog_add_category_title">マイカテゴリを追加</string>
+    <string name="dialog_add_category_message">利用したいカテゴリ名を入力してください。AI は分類時にこの名前を参照します。</string>
+    <string name="dialog_category_name_label">カテゴリ名</string>
+    <string name="dialog_add">追加</string>
+    <string name="dialog_add_and_remerge">追加して再マージ</string>
+    <string name="dialog_cancel">キャンセル</string>
+    <string name="error_category_name_empty">名前を入力してください</string>
+    <string name="error_category_name_too_long">名前が長すぎます（最大 50 文字）</string>
+    <string name="error_category_already_exists">このカテゴリは既に存在します</string>
+    <string name="no_matching_memos_found">該当するメモは見つかりません</string>
+    <string name="error_open_image">画像を開けません</string>
+    <string name="error_open_url">URL を開けません</string>
+
+    <!-- Toast messages -->
+    <string name="toast_merge_enqueued">再解析がバックグラウンドでスケジュールされました。</string>
+    <string name="settings_about_title">このアプリについて</string>
+    <string name="settings_about_description">Memoiz は端末内でテキストや画像の解析を行うオンデバイスAIを使って、保存と再利用を助けます。解析データは端末外へ送信されません。一部のイラストは外部の生成ツールで作成されています。</string>
+    <string name="settings_about_button">このアプリについて</string>
+    <string name="settings_about_version">バージョン %1$s</string>
+    <string name="dialog_close">閉じる</string>
+    <string name="settings_title">設定</string>
+    <string name="settings_usage_title">利用元アプリ名の検出</string>
+    <string name="settings_usage_description">権限を付与すると解析精度が向上し、メモに送信元アプリ名が保存されます。Memoiz の設定から Usage Access を許可してください。</string>
+    <string name="settings_usage_status_enabled">権限が付与されています</string>
+    <string name="settings_usage_status_disabled">権限が付与されていません</string>
+    <string name="settings_usage_button">利用状況アクセスを開く</string>
+    <string name="settings_oss_title">オープンソースライセンス</string>
+    <string name="settings_oss_description">Memoiz で利用しているサードパーティライブラリの一覧を表示します。</string>
+    <string name="cd_back">戻る</string>
+    <string name="cd_open_drawer">ナビゲーションを開く</string>
+    <string name="cd_open_memo_menu">メモメニューを開く</string>
+    <string name="cd_sort">並び順を変更</string>
+    <string name="cd_delete_category">カテゴリを削除</string>
+    <string name="cd_delete_memo">メモを削除</string>
+    <string name="dialog_delete_confirm">削除する</string>
+    <string name="label_source_app">送信元: %1$s</string>
+    <string name="cd_clear_search">検索をクリア</string>
+    <string name="cd_no_memo_image">メモがない状態を示すイラスト</string>
+    <string name="dialog_delete_category_title">カテゴリを削除</string>
+    <string name="dialog_delete_category_message">このカテゴリを削除すると関連するすべてのメモも削除されます。本当によろしいですか？</string>
+    <string name="dialog_delete_category_warning">このカテゴリのメモは復元できません。</string>
+    <string name="dialog_delete_custom_category_message">このカスタムカテゴリを削除すると、メモは保持されバックグラウンドで再解析されます。</string>
+    <string name="dialog_delete_custom_category_warning">メモは再解析され、別のカテゴリに移動する可能性があります。</string>
+    <string name="dialog_delete_memo_title">メモを削除</string>
+    <string name="dialog_delete_memo_message">このメモを削除してもよろしいですか？</string>
+    <string name="cd_remove_custom_category">このマイカテゴリを削除</string>
+    <string name="category_memo_count">(%1$d)</string>
+    <string name="cd_memo_image">メモ画像のサムネイルプレビュー</string>
+    <string name="cd_analyzing_indicator">AI がメモを解析中</string>
+    <string name="label_analyzing">解析中…</string>
+    <string name="cd_category_drag_handle">カテゴリの並び替えをドラッグ</string>
+    <string name="toast_category_order_saved">カテゴリの並び順を保存しました</string>
+    <string name="dialog_reanalyze_title">メモを再解析しますか？</string>
+    <string name="dialog_reanalyze_message">再解析によりメモのカテゴリや要約が変わる場合があります。メモの種類は変わりません。</string>
+    <string name="dialog_reanalyze_confirm">再解析する</string>
+    <string name="filter_note_type_and_category">"%1$s" タイプかつ "%2$s" カテゴリで絞り込み中</string>
+    <string name="filter_note_type_only">"%1$s" タイプで絞り込み中</string>
+    <string name="filter_note_category_only">"%1$s" カテゴリで絞り込み中</string>
+    <string name="dialog_edit_category_title">カテゴリ編集</string>
+    <string name="dialog_edit_category_message">リストからカテゴリを選ぶか、新しい名前を入力してください。</string>
+    <string name="dialog_edit_category_auto_hint">新しい名前は自動的にマイカテゴリとして保存されます。</string>
+    <string name="dialog_choose_existing_category">既存カテゴリから選択</string>
+    <string name="dialog_save">保存</string>
+    <string name="tutorial_title">Memoiz の使い方</string>
+    <string name="tutorial_next">次へ</string>
+</resources>
