@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -136,7 +135,8 @@ private fun GenAiStatusDialog(manager: GenAiStatusManager, forceOff: GenAiFeatur
     AlertDialog(
         onDismissRequest = onFinish,
         confirmButton = {
-            if (needsDownload) {
+            // Show the start-download button only when a download is needed and not already in progress.
+            if (needsDownload && !isDownloading) {
                 TextButton(
                     onClick = {
                         // Prevent double clicks and set downloading state inside coroutine so analyzer sees read/write.
@@ -180,14 +180,28 @@ private fun GenAiStatusDialog(manager: GenAiStatusManager, forceOff: GenAiFeatur
                                         errorMessage = throwable.message ?: ctx.getString(R.string.genai_status_message_download_failed)
                                     }
                                 }
-                             }
-                         }
-                     }
-                 ) {
+                            }
+                        }
+                    }
+                ) {
                     Text(stringResource(R.string.genai_status_download_start))
                 }
-            }
-        },
+            } else if (needsDownload && isDownloading) {
+                TextButton(onClick = {
+                    // Cancel downloads and update UI
+                    scope.launch {
+                        manager.cancelDownloads()
+                        isDownloading = false
+                        totalBytesDownloaded = 0L
+                        totalBytesToDownload = 0L
+                        showError = true
+                        errorMessage = ctx.getString(R.string.genai_status_message_download_cancelled)
+                    }
+                }) {
+                    Text(stringResource(R.string.genai_status_download_cancel))
+                }
+             }
+         },
         dismissButton = {
             TextButton(onClick = onFinish) {
                 Text(stringResource(R.string.dialog_close))
@@ -215,7 +229,7 @@ private fun GenAiStatusDialog(manager: GenAiStatusManager, forceOff: GenAiFeatur
                      Box(modifier = Modifier.fillMaxWidth().height(24.dp), contentAlignment = Alignment.Center) {
                          // Determinate background fill
                          LinearProgressIndicator(
-                             progress = progressFraction.toFloat(),
+                             progress = { progressFraction.toFloat() },
                              modifier = Modifier
                                  .fillMaxWidth()
                                  .height(8.dp)

@@ -64,6 +64,9 @@ class GenAiStatusManager(private val context: Context) {
         Generation.getClient(GenerationConfig.Builder().build())
     }
 
+    // Track current download futures so we can cancel them from UI
+    private val ongoingDownloads = mutableListOf<ListenableFuture<Void>>()
+
     suspend fun checkAll(forceOff: GenAiFeatureStates? = null): GenAiFeatureStates = withContext(Dispatchers.IO) {
         if (!isGooglePlayServicesAvailable()) return@withContext GenAiFeatureStates()
         val forced = forceOff ?: GenAiFeatureStates()
@@ -103,7 +106,7 @@ class GenAiStatusManager(private val context: Context) {
         val tasks = mutableListOf<ListenableFuture<Void>>()
 
         // We'll aggregate totals from multiple downloads and forward aggregated values to the caller's callback
-        var aggregateTotalBytes: Long = 0L
+        var aggregateTotalBytes = 0L
         val perTaskDownloaded = mutableMapOf<Int, Long>()
         val perTaskTotal = mutableMapOf<Int, Long>()
         var taskIndex = 0
@@ -155,38 +158,70 @@ class GenAiStatusManager(private val context: Context) {
             }
         }
 
-        if (states.imageDescription == FeatureStatus.DOWNLOADABLE) {
-            val idx = taskIndex++
-            val wrapper = makeWrapperCallback(idx)
-            tasks.add(imageDescriber.downloadFeature(wrapper))
-        }
+        try {
+            if (states.imageDescription == FeatureStatus.DOWNLOADABLE) {
+                val idx = taskIndex++
+                val wrapper = makeWrapperCallback(idx)
+                val f = imageDescriber.downloadFeature(wrapper)
+                tasks.add(f)
+            }
 
-        // promptModel.downloadFeature() is not available in alpha1
+            // promptModel.downloadFeature() is not available in alpha1
 
-        if (states.summarization == FeatureStatus.DOWNLOADABLE) {
-             val idx = taskIndex++
-             val wrapper = makeWrapperCallback(idx)
-             tasks.add(summarizer.downloadFeature(wrapper))
-        }
+            if (states.summarization == FeatureStatus.DOWNLOADABLE) {
+                 val idx = taskIndex++
+                 val wrapper = makeWrapperCallback(idx)
+                 val f = summarizer.downloadFeature(wrapper)
+                 tasks.add(f)
+            }
 
-        // Await all downloads to complete.
-        tasks.forEach {
-            try {
-                it.await()
-            } catch (e: Exception) {
-                Log.e(TAG, "A download task failed.", e)
-                // If this is a GenAiException, forward it to the callback; otherwise just log and continue.
-                if (e is GenAiException) {
-                    forwardFailed(e)
-                } else {
-                    // Forward non-GenAiException via onError so UI can show a unified error state.
-                    onError(e)
+            // Register ongoing downloads for potential cancellation
+            synchronized(ongoingDownloads) {
+                ongoingDownloads.clear()
+                ongoingDownloads.addAll(tasks)
+            }
+
+            // Await all downloads to complete.
+            tasks.forEach {
+                try {
+                    it.await()
+                } catch (e: Exception) {
+                    Log.e(TAG, "A download task failed.", e)
+                    // If this is a GenAiException, forward it to the callback; otherwise just log and continue.
+                    if (e is GenAiException) {
+                        forwardFailed(e)
+                    } else {
+                        // Forward non-GenAiException via onError so UI can show a unified error state.
+                        onError(e)
+                    }
                 }
             }
-        }
 
-        // At the end forward completed
-        forwardCompleted()
+            // At the end forward completed
+            forwardCompleted()
+        } finally {
+            // Clear ongoing downloads in any case
+            synchronized(ongoingDownloads) {
+                ongoingDownloads.clear()
+            }
+        }
+    }
+
+    /**
+     * Cancel any in-progress model downloads started by this manager.
+     * This calls cancel(true) on underlying ListenableFuture tasks.
+     */
+    fun cancelDownloads() {
+        synchronized(ongoingDownloads) {
+            ongoingDownloads.forEach { f ->
+                try {
+                    f.cancel(true)
+                } catch (ignored: Exception) {
+                    // ignore
+                }
+            }
+            ongoingDownloads.clear()
+        }
     }
 
     fun buildNotificationChannel(channelId: String) {
