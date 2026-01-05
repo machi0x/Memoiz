@@ -11,9 +11,6 @@ on:
         description: 'Attach built AAB/APK to the GitHub Release'
         required: false
         default: 'true'
-  push:
-    branches:
-      - main
 
 permissions:
   contents: write
@@ -201,7 +198,7 @@ jobs:
           echo "TAG=$TAG" >> $GITHUB_OUTPUT
 
       - name: Create GitHub Release
-        if: success() && (github.event_name == 'push' || github.event.inputs.create_release == 'true')
+        if: success() && github.event.inputs.create_release == 'true'
         id: create_release
         uses: actions/create-release@v1
         with:
@@ -247,4 +244,3 @@ jobs:
             const body = `❌ Official release workflow failed. Check logs: ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${runId}`;
             // Create an issue to track failures (optional)
             await github.rest.issues.create({ owner: context.repo.owner, repo: context.repo.repo, title: 'Release workflow failure', body });
-
