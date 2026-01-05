@@ -103,7 +103,7 @@ class AiCategorizationService(
      */
     suspend fun processImage(bitmap: Bitmap, sourceApp: String?, originalImageUri: String? = null): MemoEntity? = withContext(Dispatchers.Default) {
         try {
-            val (category, subCategory, summary) = mlKitCategorizer.categorizeImage(bitmap, sourceApp) ?: return@withContext null
+            val (category, subCategory, summary) = mlKitCategorizer.categorizeImage(bitmap, sourceApp, originalImageUri) ?: return@withContext null
             val finalCategory = mergeCategory(category ?: "Image", subCategory, summary)
             MemoEntity(
                 content = summary ?: "", // Store image description in content field
