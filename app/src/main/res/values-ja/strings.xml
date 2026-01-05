@@ -73,8 +73,9 @@
     <string name="cd_analyzing_indicator">AIが解析中</string>
     <string name="label_analyzing">解析中…</string>
     <string name="dialog_add_and_remerge">追加して再解析</string>
-    <string name="dialog_delete_custom_category_message">このマイカテゴリを削除してもメモは残り、バックグラウンドで再解析されます。</string>
-    <string name="dialog_delete_custom_category_warning">再解析後、メモは別のカテゴリへ移動します。</string>
+    <string name="dialog_delete_custom_category_title">マイカテゴリを削除</string>
+    <string name="dialog_delete_custom_category_message">このカテゴリのメモが存する場合、メモは削除されません。必要な場合は各メモのメニューから再解析を実行するか、手動でのカテゴリ変更を実行してください。</string>
+    <string name="dialog_delete_custom_category_warning">必要な場合は、各メモのメニューから再解析を実行するか、手動でカテゴリを変更してください。</string>
     <string name="cd_remove_custom_category">このマイカテゴリを削除</string>
     <string name="cd_category_drag_handle">ドラッグしてカテゴリを並べ替え</string>
     <string name="toast_category_order_saved">カテゴリの順序を更新しました</string>
@@ -174,4 +175,7 @@
     <string name="genai_status_paren_unavailable">（利用不可）</string>
     <string name="genai_label_model_name">モデル名: %1$s</string>
     <string name="genai_label_status">状態:</string>
+    <string name="cd_clear_search">検索をクリア</string>
+    <string name="genai_status_message_download_cancelled">ダウンロードをキャンセルしました。機能が制限される可能性があります。</string>
+    <string name="cd_refresh">更新</string>
 </resources>

@@ -88,8 +88,9 @@ Try sharing text or images from other apps, or use the + button at the bottom of
     <string name="dialog_delete_category_title">Delete Category</string>
     <string name="dialog_delete_category_message">Deleting this category will also delete all associated memos. Are you sure?</string>
     <string name="dialog_delete_category_warning">Memos in this category cannot be restored.</string>
-    <string name="dialog_delete_custom_category_message">Removing this custom category keeps the memos and re-analyzes them in the background.</string>
-    <string name="dialog_delete_custom_category_warning">Memos will be re-analyzed and might move to different categories.</string>
+    <string name="dialog_delete_custom_category_title">Delete My Category</string>
+    <string name="dialog_delete_custom_category_message">If memos exist in this category, the memos will be kept and not deleted. If needed, re-analyze or change its category manually by the menu of each memo.</string>
+    <string name="dialog_delete_custom_category_warning">Memos are preserved; manually re-analyze or change categories via each memo\'s menu if required.</string>
     <string name="dialog_delete_memo_title">Delete Memo</string>
     <string name="dialog_delete_memo_message">Are you sure you want to delete this memo?</string>
     <string name="cd_remove_custom_category">Remove this My Category</string>
