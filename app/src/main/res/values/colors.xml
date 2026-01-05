@@ -25,4 +25,19 @@
 
     <!-- Memo Card Color -->
     <color name="memo_card_background">#E1E2ED</color>
+
+    <!-- Chrome-style omnibox / URL bar colors (light theme) -->
+    <color name="chrome_omnibox_bg">#FFFFFF</color>
+    <color name="chrome_omnibox_border">#E0E0E0</color>
+    <color name="chrome_omnibox_text">#202124</color>
+
+    <!-- Campus note background (light theme = keep current appearance) -->
+    <color name="campus_note_bg">#F3F4F6</color>
+
+    <!-- Campus note text color (light theme) -->
+    <color name="campus_note_text">#111111</color>
+
+    <!-- Campus note line colors (light theme = keep current look) -->
+    <color name="campus_note_line_vertical">#FF9AA2</color>
+    <color name="campus_note_line_horizontal">#B7D7FF</color>
 </resources>
