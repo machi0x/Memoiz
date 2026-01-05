@@ -40,10 +40,9 @@ android {
         applicationId = "com.machi.memoiz"
         minSdk = 34
         targetSdk = 36
-        // versionCodeとversionNameを動的に設定
         val gitCount = getGitCommitCount()
         versionCode = gitCount
-        versionName = "1.0.3"
+        versionName = "1.0.4"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
