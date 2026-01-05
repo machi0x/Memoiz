@@ -20,6 +20,11 @@ Memoiz is a privacy-first Android clipboard companion that captures text, links,
 - **Localization**: summaries and category hints adapt to the system language (English or Japanese). Image captions default to English, then are rewritten when the locale is Japanese.
 - **Memo Integrity**: re-analysis never changes memo type; failed analyses can be batch re-run or individually re-queued.
 
+### AI model management
+- The app performs on-device AI model management when needed: the main UI can trigger model downloads and shows progress or error states to the user.
+- If a model download fails, the UI surfaces a clear error state and offers a retry option; the app falls back to safe behavior until models are available.
+- Settings exposes the current AI feature status (e.g. Enabled / Disabled / Downloading / Error) so users can quickly see whether AI features are available.
+
 ### Main Screen Experience
 - **Search + Filter Note**: top search box with a contextual banner (e.g., `カテゴリ「アイデア」でフィルタ中`).
 - **Category Accordion**: expandable cards showing memo counts, drag handles, delete/reanalyze icons, and a pencil icon per memo for manual reassignment.
@@ -66,11 +71,6 @@ Install the resulting APK (`app/build/outputs/apk/debug/`). Target devices must 
 - Room, WorkManager, Kotlin Coroutines
 - ML Kit GenAI Prompt, Summarization, and Image Description APIs
 - OkHttp + Jsoup for URL fetching, Coil for image loading
-
-## Roadmap (Post-UI Cleanup)
-- Settings enhancements (cloud opt-in toggles, model download diagnostics)
-- Multi-select share (`ACTION_SEND_MULTIPLE`)
-- Backup/export tooling
 
 ## License
 Apache License 2.0 — see `LICENSE` for details.
