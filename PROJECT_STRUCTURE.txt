@@ -22,13 +22,13 @@ Root
     - `data/` (Room entities, DAOs, repositories, database)
     - `domain/` (`Memo`, `MemoGroup`, DTOs)
     - `processtext/` and `share/` entry activities
-    - `service/` (`AiCategorizationService`, `MlKitCategorizer`, `CategoryMergeService`, helpers) — contains model management and download logic
+    - `service/` (`AiCategorizationService`, `MlKitCategorizer`, `CategoryMergeService`, helpers) — contains model management, download logic, and image-analysis fallback logic (image description → prompt fallback). Batch re-analysis flows have been removed from default background workers; per-memo retries remain.
     - `worker/` (`ClipboardProcessingWorker` etc.)
     - `ui/`
       - `screens/` (`MainScreen`, `SettingsScreen`), view models — `SettingsScreen` now displays AI feature status (Enabled/Disabled/Downloading/Error)
       - `theme/` (Material 3 theme tokens)
       - `ViewModelFactory.kt`
-    - `util/` (`UsageStatsHelper`, `ImageUriManager`, formatters)
+    - `util/` (`UsageStatsHelper`, `ImageUriManager`, formatters). `ImageUriManager` helps determine whether an image memo has an app-local copy (used to select pin color: red for local copy, blue for URI-only).
   - `res/`
     - `values/` + `values-ja/` (strings, themes)
     - `drawable*/`, `mipmap*/`, `xml/` (backup/data extraction rules)

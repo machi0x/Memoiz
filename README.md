@@ -15,10 +15,11 @@ Memoiz is a privacy-first Android clipboard companion that captures text, links,
 - **Clipboard FAB**: tap the floating button to enqueue the most recent clipboard contents.
 
 ### Categorization & Analysis
-- **Stage 1**: `MlKitCategorizer` generates main/sub categories + summaries using ML Kit GenAI (Prompt, Summarization, Image Description APIs).
-- **Stage 2**: `CategoryMergeService` reconciles AI output with existing and custom categories to reduce duplication.
+- **Stage 1**: `MlKitCategorizer` generates main/sub categories + summaries using ML Kit GenAI (Prompt, Summarization, Image Description APIs). The categorizer logs the inference flow so developers can trace "analysis → error → fallback → result" in logcat.
+- **Image fallback**: when an image analysis fails with a permanent GenAI error (for example AICore inference/policy errors), the app attempts a fallback to the text-generation (Prompt) API by sending an image part plus a short prompt to describe the image in English while avoiding sensitive wording. The primary fallback uses a bitmap-based ImagePart for reliability; if that fails the implementation will try a file/URI variant as a secondary attempt.
+- **Stage 2**: `CategoryMergeService` reconciles AI output with existing and custom categories to reduce duplication. Note: automatic "batch re-analysis" flows were removed — merges and reclassification happen during individual memo processing or when explicitly triggered by the user per memo.
 - **Localization**: summaries and category hints adapt to the system language (English or Japanese). Image captions default to English, then are rewritten when the locale is Japanese.
-- **Memo Integrity**: re-analysis never changes memo type; failed analyses can be batch re-run or individually re-queued.
+- **Memo Integrity**: re-analysis never changes memo type; failed analyses can be re-queued individually but global/batch re-analysis has been removed to avoid unexpected quota consumption and running AI while the app is backgrounded.
 
 ### AI model management
 - The app performs on-device AI model management when needed: the main UI can trigger model downloads and shows progress or error states to the user.
@@ -27,12 +28,13 @@ Memoiz is a privacy-first Android clipboard companion that captures text, links,
 
 ### Main Screen Experience
 - **Search + Filter Note**: top search box with a contextual banner (e.g., `カテゴリ「アイデア」でフィルタ中`).
-- **Category Accordion**: expandable cards showing memo counts, drag handles, delete/reanalyze icons, and a pencil icon per memo for manual reassignment.
-- **Memo Cards**: stacked type/sub-category chips, optional image thumbnail, raw content, summary, source app, timestamp, and quick actions (open/share/delete/reanalyze).
+- **Category Accordion**: expandable cards showing memo counts, drag handles and a pencil icon per memo for manual reassignment. (Category-level batch re-analysis controls have been removed.)
+- **Memo Cards**: stacked type/sub-category chips, optional image thumbnail, raw content, summary, source app, timestamp, and quick actions (open/share/delete/reanalyze). Re-analyze is per-memo only.
+- **Pin color for image memos**: image memos that include an app-local copy (file:// or FileProvider URI owned by the app) display a red pin; image memos that only reference an external URI show a blue pin.
 - **Manual Category Dialog**: lets users type a new category (auto-saved as "My Category") or pick from existing ones via a dropdown.
 
 ### Management Utilities
-- **Re-analyze dialog** warns that categories/summaries may change while memo type remains fixed.
+- **Re-analyze dialog** warns that categories/summaries may change while memo type remains fixed; re-analyze runs per-memo and will not run AI work while the app is backgrounded.
 - **Category order** persists after drag-and-drop via `toast_category_order_saved` feedback.
 - **Filters** for memo type (Text / Web / Image) and category, accessible from the navigation drawer.
 
