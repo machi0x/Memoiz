@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Dark theme overrides -->
+    <!-- memo_card_background used for memo/category card outer background and thumbnail frame -->
+    <!-- Choose a dark gray that keeps onBackground/onSurface text readable (contrast with white) -->
+    <color name="memo_card_background">#1E1F22</color>
+
+    <!-- Chrome-style omnibox / URL bar colors (dark theme) -->
+    <color name="chrome_omnibox_bg">#2F333E</color>
+    <color name="chrome_omnibox_border">#3C3C3C</color>
+    <color name="chrome_omnibox_text">#E8EAED</color>
+
+    <!-- Campus note background: use same color as light theme to keep CampusNote identical in both modes -->
+    <color name="campus_note_bg">#F3F4F6</color>
+
+    <!-- Campus note text color: use same as light theme (dark text) -->
+    <color name="campus_note_text">#111111</color>
+
+    <!-- Campus note line colors: use same as light theme so lines look identical in both modes -->
+    <color name="campus_note_line_vertical">#FF9AA2</color>
+    <color name="campus_note_line_horizontal">#B7D7FF</color>
+</resources>

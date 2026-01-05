@@ -1849,103 +1849,108 @@ private fun ChromeStyleUrlBar(
     title: String? = null,
     modifier: Modifier = Modifier
 ) {
+    // Use color resources so Android automatically resolves night variants from values-night.
+    val bgColor = colorResource(id = R.color.chrome_omnibox_bg)
+    val borderColor = colorResource(id = R.color.chrome_omnibox_border)
+    val textColor = colorResource(id = R.color.chrome_omnibox_text)
+
     Surface(
         modifier = modifier
             .fillMaxWidth()
             .padding(vertical = 4.dp),
         shape = RoundedCornerShape(26.dp),
-        color = Color.White,
+        color = bgColor,
         tonalElevation = 2.dp,
-        border = BorderStroke(1.dp, Color(0xFFE0E0E0))
+        border = BorderStroke(1.dp, borderColor)
     ) {
-        val hasTitle = !title.isNullOrBlank()
-        if (hasTitle) {
-            // ...existing two-column layout with title on top, URL below...
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 12.dp, vertical = 10.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                Surface(
-                    color = MaterialTheme.colorScheme.primaryContainer,
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Text(
-                        text = "URL",
-                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                        color = MaterialTheme.colorScheme.onPrimaryContainer,
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
-                    )
-                }
-                Column(
-                    modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
+         val hasTitle = !title.isNullOrBlank()
+         if (hasTitle) {
+             // ...existing two-column layout with title on top, URL below...
+             Row(
+                 modifier = Modifier
+                     .fillMaxWidth()
+                     .padding(horizontal = 12.dp, vertical = 10.dp),
+                 verticalAlignment = Alignment.CenterVertically,
+                 horizontalArrangement = Arrangement.spacedBy(10.dp)
+             ) {
+                 Surface(
+                     color = MaterialTheme.colorScheme.primaryContainer,
+                     shape = RoundedCornerShape(12.dp)
+                 ) {
+                     Text(
+                         text = "URL",
+                         style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                         color = MaterialTheme.colorScheme.onPrimaryContainer,
+                         modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                     )
+                 }
+                 Column(
+                     modifier = Modifier.weight(1f),
+                     verticalArrangement = Arrangement.spacedBy(4.dp)
+                 ) {
                     Text(
                         text = title!!,
                         style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.SemiBold),
-                        color = Color(0xFF202124),
+                        color = textColor,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
                     Text(
                         text = url,
                         style = MaterialTheme.typography.bodyMedium,
-                        color = Color(0xFF202124),
+                        color = textColor,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
-                }
-                Icon(
-                    imageVector = Icons.Rounded.Star,
-                    contentDescription = null,
-                    modifier = Modifier
-                        .size(24.dp)
-                        .padding(4.dp),
-                    tint = Color(0xFFFFD700)
-                )
-            }
-        } else {
-            // Fallback: single-line layout with label and URL in one row
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 12.dp, vertical = 12.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                Surface(
-                    color = MaterialTheme.colorScheme.primaryContainer,
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Text(
-                        text = "URL",
-                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                        color = MaterialTheme.colorScheme.onPrimaryContainer,
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
-                    )
-                }
+                 }
+                 Icon(
+                     imageVector = Icons.Rounded.Star,
+                     contentDescription = null,
+                     modifier = Modifier
+                         .size(24.dp)
+                         .padding(4.dp),
+                     tint = Color(0xFFFFD700)
+                 )
+             }
+         } else {
+             // Fallback: single-line layout with label and URL in one row
+             Row(
+                 modifier = Modifier
+                     .fillMaxWidth()
+                     .padding(horizontal = 12.dp, vertical = 12.dp),
+                 verticalAlignment = Alignment.CenterVertically,
+                 horizontalArrangement = Arrangement.spacedBy(10.dp)
+             ) {
+                 Surface(
+                     color = MaterialTheme.colorScheme.primaryContainer,
+                     shape = RoundedCornerShape(12.dp)
+                 ) {
+                     Text(
+                         text = "URL",
+                         style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                         color = MaterialTheme.colorScheme.onPrimaryContainer,
+                         modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                     )
+                 }
                 Text(
                     text = url,
                     style = MaterialTheme.typography.bodyMedium,
-                    color = Color(0xFF202124),
+                    color = textColor,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f)
                 )
-                Icon(
-                    imageVector = Icons.Rounded.Star,
-                    contentDescription = null,
-                    modifier = Modifier
-                        .size(24.dp)
-                        .padding(4.dp),
-                    tint = Color(0xFFFFD700)
-                )
-            }
-        }
-    }
+                 Icon(
+                     imageVector = Icons.Rounded.Star,
+                     contentDescription = null,
+                     modifier = Modifier
+                         .size(24.dp)
+                         .padding(4.dp),
+                     tint = Color(0xFFFFD700)
+                 )
+             }
+         }
+     }
 }
 
 @Composable
@@ -2171,20 +2176,29 @@ private fun CampusNoteTextAligned(
     val density = LocalDensity.current
     val lineHeightPx = with(density) { lineHeight.toPx() }
     val shape = RoundedCornerShape(12.dp)
+    // Obtain the background color in the @Composable scope so it can be captured
+    // and used inside drawBehind (drawBehind is not a @Composable lambda).
+    val bgColor = colorResource(id = R.color.campus_note_bg)
+    // Obtain the text color from resources so it follows light/dark variants.
+    val textColor = colorResource(id = R.color.campus_note_text)
+    // Obtain line colors from resources so they adapt to light/dark themes
+    val verticalLineColor = colorResource(id = R.color.campus_note_line_vertical)
+    val horizontalLineColor = colorResource(id = R.color.campus_note_line_horizontal)
     Text(
         text = text,
         style = MaterialTheme.typography.bodyMedium.copy(lineHeight = lineHeight),
-        color = Color(0xFF111111),
+        color = textColor,
         maxLines = 6,
         overflow = TextOverflow.Ellipsis,
         modifier = modifier
             .shadow(6.dp, shape)
             .clip(shape)
             .drawBehind {
-                drawRect(Color(0xFFF9FAFB))
+                // Use the captured bgColor (retrieved in composable scope)
+                drawRect(bgColor)
                 val marginX = 28.dp.toPx()
                 drawLine(
-                    color = Color(0xFFFF9AA2),
+                    color = verticalLineColor,
                     start = Offset(marginX, 0f),
                     end = Offset(marginX, size.height),
                     strokeWidth = 2.dp.toPx()
@@ -2193,7 +2207,7 @@ private fun CampusNoteTextAligned(
                 var y = lineHeightPx - lineOffset
                 while (y < size.height) {
                     drawLine(
-                        color = Color(0xFFB7D7FF),
+                        color = horizontalLineColor,
                         start = Offset(0f, y),
                         end = Offset(size.width, y),
                         strokeWidth = 1.dp.toPx()
