@@ -1,5 +1,6 @@
 package com.machi.memoiz.ui.screens
 
+import android.content.ContentResolver
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -1977,6 +1978,30 @@ private fun ImageThumbnailFrame(
 ) {
     val outerShape = RoundedCornerShape(10.dp)
     val innerShape = RoundedCornerShape(8.dp)
+    val context = LocalContext.current
+
+    // Determine whether this URI represents a local copy created by the app.
+    // ImageUriManager returns a FileProvider URI for copied files with authority
+    // equal to "${packageName}.fileprovider". Treat file:// URIs as local as well.
+    val uri = runCatching { Uri.parse(imageUri) }.getOrNull()
+    val authority = uri?.authority ?: ""
+    val scheme = uri?.scheme ?: ""
+    val appFileProviderAuthority = "${context.packageName}.fileprovider"
+    val hasLocalCopy = when {
+        scheme == ContentResolver.SCHEME_FILE -> true
+        scheme == ContentResolver.SCHEME_CONTENT && authority == appFileProviderAuthority -> true
+        else -> false
+    }
+
+    // Choose pin color: red for local copy, blue for URI-only. Default kept for safety.
+    val pinColor = if (hasLocalCopy) {
+        // Use theme's error color for a clear red; matches "red for copy" requirement.
+        MaterialTheme.colorScheme.error
+    } else {
+        // Explicit blue for URI-only images.
+        Color(0xFF1976D2)
+    }
+
     Box(
         modifier = modifier
             .graphicsLayer(rotationZ = 2.5f)
@@ -2013,19 +2038,19 @@ private fun ImageThumbnailFrame(
         PinThumbtack(
             modifier = Modifier
                 .align(Alignment.TopCenter)
-                .offset(y = 4.dp) // move pin down further
+                .offset(y = 4.dp),
+            pinColor = pinColor
         )
     }
 }
 
 @Composable
-private fun PinThumbtack(modifier: Modifier = Modifier) {
+private fun PinThumbtack(modifier: Modifier = Modifier, pinColor: Color = Color(0xFF2E7D32)) {
     Canvas(
         modifier = modifier
             .size(width = 11.dp, height = 17.dp) // slightly smaller pin
             .graphicsLayer(rotationX = 26f, rotationZ = -18f)
     ) {
-        val pinColor = Color(0xFF2E7D32)
         val shadowColor = Color.Black.copy(alpha = 0.26f)
         val centerX = size.width / 2f
         val headRadius = size.width * 0.34f
