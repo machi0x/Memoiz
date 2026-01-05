@@ -22,10 +22,10 @@ Root
     - `data/` (Room entities, DAOs, repositories, database)
     - `domain/` (`Memo`, `MemoGroup`, DTOs)
     - `processtext/` and `share/` entry activities
-    - `service/` (`AiCategorizationService`, `MlKitCategorizer`, `CategoryMergeService`, helpers)
+    - `service/` (`AiCategorizationService`, `MlKitCategorizer`, `CategoryMergeService`, helpers) — contains model management and download logic
     - `worker/` (`ClipboardProcessingWorker` etc.)
     - `ui/`
-      - `screens/` (`MainScreen`, `SettingsScreen`, view models)
+      - `screens/` (`MainScreen`, `SettingsScreen`), view models — `SettingsScreen` now displays AI feature status (Enabled/Disabled/Downloading/Error)
       - `theme/` (Material 3 theme tokens)
       - `ViewModelFactory.kt`
     - `util/` (`UsageStatsHelper`, `ImageUriManager`, formatters)
@@ -42,4 +42,3 @@ Auxiliary
 ---------
 - `genai_sample/` (sample ML Kit reference)
 - `.github/` (CI workflows)
-

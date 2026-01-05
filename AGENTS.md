@@ -20,8 +20,8 @@ This document explains the internal responsibilities for assistants working on M
    - Offload heavy work to `ClipboardProcessingWorker`; handle failures by queueing re-analysis jobs.
 
 ## UI Agent Responsibilities
-- **MainScreen**: Maintains search/filter state, shows filter note banner, drag-to-reorder headers, manual category dialog.
-- **SettingsScreen**: (Future work) will host toggles for cloud opt-ins, diagnostics, and custom category management.
+- **MainScreen**: Maintains search/filter state, shows filter note banner, drag-to-reorder headers, manual category dialog. Also responsible for initiating on-device AI model downloads when required, and for presenting download progress and error states to users.
+- **SettingsScreen**: Exposes current AI feature status (Enabled / Disabled / Downloading / Error) so users can quickly see whether AI features are available. Also hosts toggles for cloud opt-ins, diagnostics, and custom category management.
 - **Manual Category Dialog**: Must keep text field + existing-category dropdown in sync; new names auto-register as "My Category".
 - **Re-analyze UX**: Show confirm dialog explaining that memo type stays fixed while category/summary may change.
 
@@ -30,5 +30,5 @@ This document explains the internal responsibilities for assistants working on M
 - Log only anonymized metrics derived from category counts or system locale—never raw memo content.
 
 ## Future Considerations
-- Add agent coverage for Settings enhancements (cloud toggles, model download inspector).
+- Model management: agents should monitor model download lifecycle (start/progress/success/failure) and provide retry/rollback behavior.
 - Evaluate background prefetch of ML models with user consent.
