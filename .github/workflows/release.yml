@@ -1,0 +1,250 @@
+name: Official release build (AAB + APK)
+
+on:
+  workflow_dispatch:
+    inputs:
+      create_release:
+        description: 'Create GitHub Release and attach assets'
+        required: false
+        default: 'true'
+      attach_assets:
+        description: 'Attach built AAB/APK to the GitHub Release'
+        required: false
+        default: 'true'
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+  packages: write
+  pull-requests: write
+
+jobs:
+  build-release:
+    name: Build, upload artifacts, tag and (optionally) create release
+    runs-on: ubuntu-latest
+    env:
+      # CI 用 upload keystore と既存 release keystore のパスを分離
+      UPLOAD_KEYSTORE_PATH: ${{ github.workspace }}/app/upload.keystore
+      RELEASE_KEYSTORE_PATH: ${{ github.workspace }}/app/release.keystore
+      RELEASE_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: gradle
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - name: Ensure required secrets are present
+        env:
+          GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
+          # upload key (CI 用)
+          UPLOAD_KEYSTORE_BASE64: ${{ secrets.UPLOAD_KEYSTORE_BASE64 }}
+          UPLOAD_KEYSTORE_PASSWORD: ${{ secrets.UPLOAD_KEYSTORE_PASSWORD }}
+          UPLOAD_KEY_ALIAS: ${{ secrets.UPLOAD_KEY_ALIAS }}
+          UPLOAD_KEY_PASSWORD: ${{ secrets.UPLOAD_KEY_PASSWORD }}
+          # existing release keystore (pr-build と同じ)
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          missing=false
+          for v in GOOGLE_SERVICES_JSON UPLOAD_KEYSTORE_BASE64 UPLOAD_KEYSTORE_PASSWORD UPLOAD_KEY_ALIAS UPLOAD_KEY_PASSWORD KEYSTORE_BASE64 KEYSTORE_PASSWORD KEY_ALIAS KEY_PASSWORD; do
+            if [ -z "${!v}" ]; then
+              echo "Missing secret: $v"
+              missing=true
+            fi
+          done
+          if [ "$missing" = true ]; then
+            echo "One or more required secrets are missing. Aborting."
+            exit 1
+          fi
+
+      - name: Create google-services.json
+        env:
+          GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
+        run: |
+          mkdir -p app
+          echo "$GOOGLE_SERVICES_JSON" > app/google-services.json
+
+      - name: Decode upload keystore (CI upload key)
+        env:
+          UPLOAD_KEYSTORE_BASE64: ${{ secrets.UPLOAD_KEYSTORE_BASE64 }}
+          UPLOAD_KEYSTORE_PATH: ${{ env.UPLOAD_KEYSTORE_PATH }}
+        run: |
+          printf '%s' "$UPLOAD_KEYSTORE_BASE64" | base64 --decode > "$UPLOAD_KEYSTORE_PATH"
+          ls -l "$UPLOAD_KEYSTORE_PATH"
+
+      - name: Decode release keystore (existing key for APK signing)
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          RELEASE_KEYSTORE_PATH: ${{ env.RELEASE_KEYSTORE_PATH }}
+        run: |
+          printf '%s' "$KEYSTORE_BASE64" | base64 --decode > "$RELEASE_KEYSTORE_PATH"
+          ls -l "$RELEASE_KEYSTORE_PATH"
+
+      - name: Show upload key certificate fingerprints (SHA-1 / SHA-256)
+        env:
+          UPLOAD_KEYSTORE_PASSWORD: ${{ secrets.UPLOAD_KEYSTORE_PASSWORD }}
+          UPLOAD_KEY_ALIAS: ${{ secrets.UPLOAD_KEY_ALIAS }}
+          UPLOAD_KEYSTORE_PATH: ${{ env.UPLOAD_KEYSTORE_PATH }}
+        run: |
+          echo "=== Upload key (CI) certificate info ==="
+          keytool -list -v -keystore "$UPLOAD_KEYSTORE_PATH" -alias "$UPLOAD_KEY_ALIAS" -storepass "$UPLOAD_KEYSTORE_PASSWORD" | awk '/SHA1:/{print $0} /SHA256:/{print $0}' || true
+
+      - name: Show release key certificate fingerprints (SHA-1 / SHA-256)
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          RELEASE_KEYSTORE_PATH: ${{ env.RELEASE_KEYSTORE_PATH }}
+        run: |
+          echo "=== Release key (existing) certificate info ==="
+          keytool -list -v -keystore "$RELEASE_KEYSTORE_PATH" -alias "$KEY_ALIAS" -storepass "$KEYSTORE_PASSWORD" | awk '/SHA1:/{print $0} /SHA256:/{print $0}' || true
+
+      - name: Build AAB (bundleRelease) signed with upload key
+        env:
+          KEYSTORE_PATH: ${{ env.UPLOAD_KEYSTORE_PATH }}
+          KEYSTORE_PASSWORD: ${{ secrets.UPLOAD_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.UPLOAD_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.UPLOAD_KEY_PASSWORD }}
+        run: |
+          ./gradlew bundleRelease \
+            -Pandroid.injected.signing.store.file="$KEYSTORE_PATH" \
+            -Pandroid.injected.signing.store.password="$KEYSTORE_PASSWORD" \
+            -Pandroid.injected.signing.key.alias="$KEY_ALIAS" \
+            -Pandroid.injected.signing.key.password="$KEY_PASSWORD" \
+            --stacktrace --no-daemon
+
+      - name: Build APK (assembleRelease) signed with existing release keystore
+        env:
+          KEYSTORE_PATH: ${{ env.RELEASE_KEYSTORE_PATH }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          ./gradlew assembleRelease \
+            -Pandroid.injected.signing.store.file="$KEYSTORE_PATH" \
+            -Pandroid.injected.signing.store.password="$KEYSTORE_PASSWORD" \
+            -Pandroid.injected.signing.key.alias="$KEY_ALIAS" \
+            -Pandroid.injected.signing.key.password="$KEY_PASSWORD" \
+            --stacktrace --no-daemon
+
+      - name: Get version information
+        id: version_info
+        run: |
+          VERSION_NAME=$(./gradlew -q printVersionName | tail -n 1)
+          VERSION_CODE=$(./gradlew -q printVersionCode | tail -n 1)
+          if [ -z "$VERSION_NAME" ]; then
+            echo "Failed to read VERSION_NAME"; exit 1
+          fi
+          echo "VERSION_NAME=${VERSION_NAME}" >> $GITHUB_OUTPUT
+          echo "VERSION_CODE=${VERSION_CODE}" >> $GITHUB_OUTPUT
+          echo "Version: ${VERSION_NAME} (${VERSION_CODE})"
+
+      - name: Locate built artifacts
+        id: artifacts
+        run: |
+          AAB_PATH=$(find app/build/outputs/bundle -name "*.aab" | head -n 1 || true)
+          APK_PATH=$(find app/build/outputs/apk/release -name "*.apk" | head -n 1 || true)
+          echo "AAB_PATH=$AAB_PATH" >> $GITHUB_OUTPUT
+          echo "APK_PATH=$APK_PATH" >> $GITHUB_OUTPUT
+          if [ -z "$AAB_PATH" ] && [ -z "$APK_PATH" ]; then
+            echo "No AAB or APK found"; exit 1
+          fi
+
+      - name: Upload artifacts to GitHub
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-${{ steps.version_info.outputs.VERSION_NAME }}-aab
+          path: ${{ steps.artifacts.outputs.AAB_PATH }}
+
+      - name: Upload APK artifact to GitHub
+        if: steps.artifacts.outputs.APK_PATH != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-${{ steps.version_info.outputs.VERSION_NAME }}-apk
+          path: ${{ steps.artifacts.outputs.APK_PATH }}
+
+      - name: Create and push git tag (if not exists)
+        id: tag
+        env:
+          TAG: v${{ steps.version_info.outputs.VERSION_NAME }}
+          RELEASE_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+        run: |
+          echo "Preparing tag: $TAG"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch --tags origin
+          if git rev-parse "refs/tags/$TAG" >/dev/null 2>&1; then
+            echo "Tag $TAG already exists - skipping tag creation"
+          else
+            # If a RELEASE_TOKEN is provided, use it for push to handle protected branches
+            if [ -n "$RELEASE_TOKEN" ]; then
+              git remote set-url origin https://x-access-token:$RELEASE_TOKEN@github.com/${{ github.repository }}
+            fi
+            git tag -a "$TAG" -m "Release $TAG"
+            git push origin "refs/tags/$TAG"
+          fi
+          echo "TAG=$TAG" >> $GITHUB_OUTPUT
+
+      - name: Create GitHub Release
+        if: success() && (github.event_name == 'push' || github.event.inputs.create_release == 'true')
+        id: create_release
+        uses: actions/create-release@v1
+        with:
+          tag_name: ${{ steps.tag.outputs.TAG }}
+          release_name: ${{ steps.tag.outputs.TAG }}
+          body: "Automated release for ${{ steps.tag.outputs.TAG }} (build ${{ github.run_id }})"
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload assets to the Release
+        if: success() && steps.create_release.outputs.upload_url != '' && github.event.inputs.attach_assets == 'true'
+        uses: actions/upload-release-asset@v1
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ${{ steps.artifacts.outputs.AAB_PATH }}
+          asset_name: app-${{ steps.version_info.outputs.VERSION_NAME }}.aab
+          asset_content_type: application/octet-stream
+
+      - name: Upload APK to the Release (if exists)
+        if: success() && steps.create_release.outputs.upload_url != '' && steps.artifacts.outputs.APK_PATH != '' && github.event.inputs.attach_assets == 'true'
+        uses: actions/upload-release-asset@v1
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ${{ steps.artifacts.outputs.APK_PATH }}
+          asset_name: app-${{ steps.version_info.outputs.VERSION_NAME }}.apk
+          asset_content_type: application/vnd.android.package-archive
+
+      - name: Cleanup sensitive files
+        if: always()
+        run: |
+          shred -u "$UPLOAD_KEYSTORE_PATH" 2>/dev/null || rm -f "$UPLOAD_KEYSTORE_PATH"
+          shred -u "$RELEASE_KEYSTORE_PATH" 2>/dev/null || rm -f "$RELEASE_KEYSTORE_PATH"
+          rm -f app/google-services.json || true
+
+      - name: Notify on failure (comment to PR or issue)
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const runId = context.runId;
+            const body = `❌ Official release workflow failed. Check logs: ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${runId}`;
+            // Create an issue to track failures (optional)
+            await github.rest.issues.create({ owner: context.repo.owner, repo: context.repo.repo, title: 'Release workflow failure', body });
+
