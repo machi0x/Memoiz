@@ -49,7 +49,6 @@ fun SettingsScreen(
     onNavigateBack: () -> Unit
 ) {
     var showAboutDialog by remember { mutableStateOf(false) }
-    var showReMergeConfirm by remember { mutableStateOf(false) }
 
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -151,19 +150,6 @@ fun SettingsScreen(
 
                 item {
                     PreferenceItem(
-                        title = stringResource(R.string.settings_remerge_all_title),
-                        subtitle = stringResource(R.string.settings_remerge_all_description),
-                        leadingIcon = { Icon(Icons.Filled.Refresh, contentDescription = null) },
-                        onClick = { showReMergeConfirm = true }
-                    )
-                }
-
-                item {
-                    HorizontalDivider(modifier = Modifier.padding(start = 72.dp))
-                }
-
-                item {
-                    PreferenceItem(
                         title = stringResource(R.string.settings_oss_title),
                         subtitle = stringResource(R.string.settings_oss_description),
                         leadingIcon = {
@@ -241,25 +227,6 @@ fun SettingsScreen(
         AboutDialog(
             appVersion = appVersion,
             onDismiss = { showAboutDialog = false }
-        )
-    }
-
-    if (showReMergeConfirm) {
-        AlertDialog(
-            onDismissRequest = { showReMergeConfirm = false },
-            title = { Text(stringResource(R.string.settings_remerge_all_title)) },
-            text = { Text(stringResource(R.string.settings_remerge_all_description)) },
-            confirmButton = {
-                TextButton(onClick = {
-                    viewModel.remergeAllMemos(context)
-                    showReMergeConfirm = false
-                }) { Text(stringResource(R.string.dialog_reanalyze_confirm)) }
-            },
-            dismissButton = {
-                TextButton(onClick = { showReMergeConfirm = false }) {
-                    Text(stringResource(R.string.dialog_cancel))
-                }
-            }
         )
     }
 }

@@ -78,7 +78,6 @@ import com.machi.memoiz.data.entity.MemoType
 import com.machi.memoiz.domain.model.Memo
 import com.machi.memoiz.service.ContentProcessingLauncher
 import com.machi.memoiz.ui.theme.MemoizTheme
-import com.machi.memoiz.util.FailureCategoryHelper
 import com.machi.memoiz.util.UsageStatsHelper
 import coil.compose.AsyncImage
 import com.machi.memoiz.ui.dialog.GenAiStatusCheckDialogActivity
@@ -532,11 +531,6 @@ fun MainScreen(
                                         pendingReanalyzeMemo = memo
                                         isFabExpanded = false
                                     },
-                                    onReanalyzeCategory = {
-                                        pendingReanalyzeMemo = null
-                                        viewModel.reanalyzeFailureBatch(context)
-                                        isFabExpanded = false
-                                    },
                                     dragHandle = Modifier.detectReorder(reorderState)
                                 )
                             }
@@ -566,10 +560,6 @@ fun MainScreen(
                 viewModel.addCustomCategory(categoryName)
                 showAddCategoryDialog = false
             },
-            onConfirmWithReanalyze = { categoryName ->
-                viewModel.addCustomCategoryWithMerge(context, categoryName)
-                showAddCategoryDialog = false
-            },
             onDismiss = { showAddCategoryDialog = false }
         )
     }
@@ -587,10 +577,10 @@ fun MainScreen(
             },
             title = {
                 Text(
-                    text = if (isCategory) {
-                        stringResource(R.string.dialog_delete_category_title)
-                    } else {
-                        stringResource(R.string.dialog_delete_memo_title)
+                    text = when {
+                        isCategory && deleteTargetIsCustomCategory -> stringResource(R.string.dialog_delete_custom_category_title)
+                        isCategory -> stringResource(R.string.dialog_delete_category_title)
+                        else -> stringResource(R.string.dialog_delete_memo_title)
                     }
                 )
             },
@@ -608,14 +598,13 @@ fun MainScreen(
                             stringResource(R.string.dialog_delete_memo_message)
                         }
                     )
-                    if (isCategory) {
-                        val warningRes = if (deleteTargetIsCustomCategory) {
-                            R.string.dialog_delete_custom_category_warning
-                        } else {
-                            R.string.dialog_delete_category_warning
-                        }
+                    // For custom (My) categories we intentionally DO NOT show the red
+                    // warning line because the primary message already explains that
+                    // memos are preserved. For regular categories show the stronger
+                    // warning that memos will be deleted.
+                    if (isCategory && !deleteTargetIsCustomCategory) {
                         Text(
-                            text = stringResource(warningRes),
+                            text = stringResource(R.string.dialog_delete_category_warning),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.error
                         )
@@ -628,7 +617,7 @@ fun MainScreen(
                         when (val target = deleteTarget) {
                             is String -> {
                                 if (deleteTargetIsCustomCategory) {
-                                    viewModel.removeCustomCategoryAndReanalyze(context, target)
+                                    viewModel.removeCustomCategory(target)
                                 } else {
                                     viewModel.deleteCategory(target)
                                 }
@@ -977,7 +966,6 @@ private fun CategoryAccordion(
     onDeleteMemo: (Memo) -> Unit,
     onEditCategory: (Memo) -> Unit,
     onReanalyzeMemo: (Memo) -> Unit,
-    onReanalyzeCategory: () -> Unit,
     dragHandle: Modifier
 ) {
     val reanalyzeFailuresString = stringResource(R.string.action_reanalyze_failures)
@@ -1029,11 +1017,7 @@ private fun CategoryAccordion(
                     IconButton(onClick = onDeleteCategory) {
                         Icon(deleteIcon, deleteContentDescription)
                     }
-                    if (FailureCategoryHelper.isFailureLabel(context, group.category)) {
-                        IconButton(onClick = onReanalyzeCategory) {
-                            Icon(Icons.Default.Refresh, reanalyzeFailuresString)
-                        }
-                    }
+                    // Removed batch re-analysis button for category headers to avoid accidental quota hits
                     Icon(
                         imageVector = Icons.Default.DragHandle,
                         contentDescription = stringResource(R.string.cd_category_drag_handle),
@@ -1430,7 +1414,6 @@ private fun SortModeDialog(
 private fun AddCustomCategoryDialog(
     existingCategories: List<String>,
     onConfirm: (String) -> Unit,
-    onConfirmWithReanalyze: (String) -> Unit,
     onDismiss: () -> Unit
 ) {
     var categoryName by remember { mutableStateOf("") }
@@ -1473,13 +1456,8 @@ private fun AddCustomCategoryDialog(
             }
         },
         confirmButton = {
-            Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                TextButton(onClick = { handleSubmit(onConfirm) }) {
-                    Text(stringResource(R.string.dialog_add))
-                }
-                TextButton(onClick = { handleSubmit(onConfirmWithReanalyze) }) {
-                    Text(stringResource(R.string.dialog_add_and_remerge))
-                }
+            TextButton(onClick = { handleSubmit(onConfirm) }) {
+                Text(stringResource(R.string.dialog_add))
             }
         },
         dismissButton = {
