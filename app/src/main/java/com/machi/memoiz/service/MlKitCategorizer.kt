@@ -230,8 +230,25 @@ class MlKitCategorizer(private val context: Context, private val summarizationOn
         else -> false
     }
 
-    private fun mapPermanentErrorMessage(errorCode: Int): String =
-        context.getString(R.string.error_image_analysis_permanent_with_code, errorCode)
+    private fun mapPermanentErrorMessage(errorCode: Int): String {
+        // Look up resource-based additional message for error code
+        val additional = when (errorCode) {
+            GenAiException.ErrorCode.RESPONSE_PROCESSING_ERROR -> context.getString(R.string.error_image_additional_response_processing)
+            GenAiException.ErrorCode.REQUEST_TOO_SMALL -> context.getString(R.string.error_image_additional_request_too_small)
+            GenAiException.ErrorCode.RESPONSE_GENERATION_ERROR -> context.getString(R.string.error_image_additional_response_generation)
+            GenAiException.ErrorCode.REQUEST_TOO_LARGE -> context.getString(R.string.error_image_additional_request_too_large)
+            GenAiException.ErrorCode.REQUEST_PROCESSING_ERROR -> context.getString(R.string.error_image_additional_request_processing)
+            GenAiException.ErrorCode.INVALID_INPUT_IMAGE -> context.getString(R.string.error_image_additional_invalid_input_image)
+            else -> ""
+        }
+
+        // If we have an additional message, use the composite resource that includes it and the code.
+        return if (additional.isNotBlank()) {
+            context.getString(R.string.error_image_analysis_permanent_with_additional_code, additional, errorCode.toString())
+        } else {
+            context.getString(R.string.error_image_analysis_permanent_with_code, errorCode.toString())
+        }
+    }
 
     private suspend fun summarize(text: String): String? = withContext(Dispatchers.IO) {
         runCatching {

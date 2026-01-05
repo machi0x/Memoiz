@@ -147,6 +147,15 @@ Try sharing text or images from other apps, or use the + button at the bottom of
     <string name="fab_close_menu">Close menu</string>
     <string name="processtext_label">Save to Memoiz</string>
     <string name="error_image_analysis_permanent_with_code">Cannot analyze this memo. Error code: %1$s</string>
+    <string name="error_image_analysis_permanent_with_additional_code">Cannot analyze this memo. %1$s Error code: (%2$s)</string>
+
+    <!-- Additional short explanations for permanent image analysis errors (EN) -->
+    <string name="error_image_additional_response_processing">The analysis result did not meet expected criteria.</string>
+    <string name="error_image_additional_response_generation">The AI refused to process the image for an internal reason.</string>
+    <string name="error_image_additional_request_too_small">The input data is too small to analyze.</string>
+    <string name="error_image_additional_request_too_large">The input data is too large to analyze.</string>
+    <string name="error_image_additional_request_processing">The request failed during processing.</string>
+    <string name="error_image_additional_invalid_input_image">The image appears corrupted or is in an unsupported format.</string>
 
     <!-- GenAI status dialog/notification -->
     <string name="genai_status_title_unavailable">On-device AI unavailable</string>

@@ -132,7 +132,17 @@
     <string name="toast_copy_to_clipboard">クリップボードにコピーしました。</string>
     <string name="cd_copy_memo">メモをコピー</string>
     <string name="error_image_analysis_permanent_with_code">このメモは解析できません。エラーコード: (%1$s)</string>
-    <!-- 詳細理由の個別文言はユーザー混乱防止のため統合 -->
+    <string name="error_image_analysis_permanent_with_additional_code">このメモは解析できません。%1$s エラーコード: (%2$s)</string>
+
+    <!-- Additional short explanations for permanent image analysis errors (JA) -->
+    <string name="error_image_additional_response_processing">解析結果の内容が基準を満たしませんでした。</string>
+    <string name="error_image_additional_response_generation">何らかの理由でAIに解析を拒否されました。</string>
+    <string name="error_image_additional_request_too_small">解析するデータが小さすぎます。</string>
+    <string name="error_image_additional_request_too_large">解析するデータが大きすぎます。</string>
+    <string name="error_image_additional_request_processing">何らかの理由でAIに解析を拒否されました。</string>
+    <string name="error_image_additional_invalid_input_image">画像が破損しているかサポート外の形式です。</string>
+
+    <!-- AI model status messages -->
     <string name="genai_status_title_unavailable">端末内AIが利用できません</string>
     <string name="genai_status_message_unavailable">この端末では端末内AIが利用できないか、機能に一部制限があります。メモのカテゴリや要約が生成されない場合があります。メモの作成や手動でのカテゴリ指定は可能です。</string>
     <string name="genai_status_title_download">AIモデルのダウンロード</string>
