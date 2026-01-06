@@ -16,21 +16,37 @@ class UsageStatsHelper(private val context: Context) {
 
     /**
      * Check if Usage Stats permission is granted.
+     *
+     * Safe to call in preview/tooling or environments where the underlying
+     * AppOps service may be uninitialized; any unexpected exception returns false.
      */
     fun hasUsageStatsPermission(): Boolean {
-        val appOps = context.getSystemService(Context.APP_OPS_SERVICE) as? AppOpsManager
-            ?: return false
-        val mode = appOps.unsafeCheckOpNoThrow(
-            AppOpsManager.OPSTR_GET_USAGE_STATS,
-            Process.myUid(),
-            context.packageName
-        )
-        return when (mode) {
-            AppOpsManager.MODE_ALLOWED -> true
-            AppOpsManager.MODE_DEFAULT -> context.checkCallingOrSelfPermission(
-                Manifest.permission.PACKAGE_USAGE_STATS
-            ) == PackageManager.PERMISSION_GRANTED
-            else -> false
+        return try {
+            val appOps = context.getSystemService(Context.APP_OPS_SERVICE) as? AppOpsManager
+                ?: return false
+
+            // Some platform/testing environments may provide an AppOpsManager instance
+            // whose internal service is null, which can cause an NPE when calling
+            // unsafeCheckOpNoThrow; guard with try/catch and treat failures as no-permission.
+            val mode = try {
+                appOps.unsafeCheckOpNoThrow(
+                    AppOpsManager.OPSTR_GET_USAGE_STATS,
+                    Process.myUid(),
+                    context.packageName
+                )
+            } catch (_: Throwable) {
+                return false
+            }
+
+            when (mode) {
+                AppOpsManager.MODE_ALLOWED -> true
+                AppOpsManager.MODE_DEFAULT -> context.checkCallingOrSelfPermission(
+                    Manifest.permission.PACKAGE_USAGE_STATS
+                ) == PackageManager.PERMISSION_GRANTED
+                else -> false
+            }
+        } catch (_: Throwable) {
+            false
         }
     }
 
