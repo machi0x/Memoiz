@@ -84,14 +84,12 @@ fun SettingsScreen(
     // Collect feature states for GenAI (nullable until loaded)
     val featureStates by viewModel.featureStates.collectAsStateWithLifecycle()
 
-    // --- New state and launcher for Export/Import ---
     val scope = rememberCoroutineScope()
     var showImportProgress by remember { mutableStateOf(false) }
     var showExportProgress by remember { mutableStateOf(false) }
     var importResult by remember { mutableStateOf<ImportResult?>(null) }
     var exportFailureMessage by remember { mutableStateOf<String?>(null) }
 
-    // Password dialogs and state
     var showExportPasswordDialog by remember { mutableStateOf(false) }
     var exportPassword by remember { mutableStateOf("") }
     var exportPasswordError by remember { mutableStateOf<String?>(null) }
@@ -217,7 +215,6 @@ fun SettingsScreen(
                     HorizontalDivider(modifier = Modifier.padding(start = 72.dp))
                 }
 
-                // UI display mode item (unchanged)
                 item {
                     // collect latest user preferences to get current ui display mode
                     val userPrefs by viewModel.genAiPreferences.collectAsStateWithLifecycle(initialValue = UserPreferences())
@@ -342,7 +339,6 @@ fun SettingsScreen(
                     HorizontalDivider(modifier = Modifier.padding(start = 72.dp))
                 }
 
-                // Consolidated AI features header: use PreferenceItem so it aligns with other sections. Adjust subtitle padding if needed.
                 item {
                     PreferenceItem(
                         title = stringResource(R.string.genai_models_title),
@@ -352,7 +348,6 @@ fun SettingsScreen(
                 }
 
                 item {
-                    // Image description
                     val imageModelName = baseModelNames.first
                     val imageModelDisplay = imageModelName?.takeIf { it.isNotBlank() } ?: stringResource(R.string.genai_models_unknown)
                     AiFeatureRow(
@@ -361,7 +356,6 @@ fun SettingsScreen(
                         state = featureStates?.imageDescription ?: FeatureStatus.UNAVAILABLE
                     )
 
-                    // Text generation
                     val textModelName = baseModelNames.second
                     val textModelDisplay = textModelName?.takeIf { it.isNotBlank() } ?: stringResource(R.string.genai_models_unknown)
                     AiFeatureRow(
@@ -370,7 +364,6 @@ fun SettingsScreen(
                         state = featureStates?.textGeneration ?: FeatureStatus.UNAVAILABLE
                     )
 
-                    // Summarization
                     val sumModelName = baseModelNames.third
                     val sumModelDisplay = sumModelName?.takeIf { it.isNotBlank() } ?: stringResource(R.string.genai_models_unknown)
                     AiFeatureRow(
@@ -384,7 +377,6 @@ fun SettingsScreen(
                     HorizontalDivider(modifier = Modifier.padding(start = 72.dp))
                 }
 
-                // Export PreferenceItem — open password dialog first
                 item {
                     PreferenceItem(
                         title = stringResource(R.string.settings_export_title),

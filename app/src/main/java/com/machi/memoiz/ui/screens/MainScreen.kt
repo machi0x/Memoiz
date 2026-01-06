@@ -113,8 +113,8 @@ fun MainScreen(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var showTutorialDialog by rememberSaveable { mutableStateOf(false) }
-    // force-off flags removed; do not collect or pass any forced flags
-     // Track whether we've already shown the GenAI dialog during this Activity lifecycle.
+
+    // Track whether we've already shown the GenAI dialog during this Activity lifecycle.
     // Use `remember` (not `rememberSaveable`) so this flag is NOT persisted into
     // SavedInstanceState. If the Activity/Composable is destroyed and re-created
     // (for example, user closed UI with Back and later re-opened), we want the
@@ -1036,7 +1036,6 @@ private fun CategoryAccordion(
                     IconButton(onClick = onDeleteCategory) {
                         Icon(deleteIcon, deleteContentDescription)
                     }
-                    // Removed batch re-analysis button for category headers to avoid accidental quota hits
                     Icon(
                         imageVector = Icons.Default.DragHandle,
                         contentDescription = stringResource(R.string.cd_category_drag_handle),
