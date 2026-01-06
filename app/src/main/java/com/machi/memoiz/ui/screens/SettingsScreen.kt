@@ -165,6 +165,7 @@ fun SettingsScreen(
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(vertical = 8.dp)
             ) {
+                // 1. See Tutorial
                 item {
                     PreferenceItem(
                         title = stringResource(R.string.settings_tutorial_title),
@@ -179,10 +180,9 @@ fun SettingsScreen(
                     )
                 }
 
-                item {
-                    HorizontalDivider(modifier = Modifier.padding(start = 72.dp))
-                }
+                item { HorizontalDivider(modifier = Modifier.padding(start = 72.dp)) }
 
+                // 2. Usage stats permission
                 item {
                     PreferenceItem(
                         title = stringResource(R.string.settings_usage_title),
@@ -211,10 +211,9 @@ fun SettingsScreen(
                     )
                 }
 
-                item {
-                    HorizontalDivider(modifier = Modifier.padding(start = 72.dp))
-                }
+                item { HorizontalDivider(modifier = Modifier.padding(start = 72.dp)) }
 
+                // 3. UI display mode
                 item {
                     // collect latest user preferences to get current ui display mode
                     val userPrefs by viewModel.genAiPreferences.collectAsStateWithLifecycle(initialValue = UserPreferences())
@@ -306,39 +305,9 @@ fun SettingsScreen(
                     )
                 }
 
-                item {
-                    HorizontalDivider(modifier = Modifier.padding(start = 72.dp))
-                }
+                item { HorizontalDivider(modifier = Modifier.padding(start = 72.dp)) }
 
-                item {
-                    PreferenceItem(
-                        title = stringResource(R.string.settings_oss_title),
-                        subtitle = stringResource(R.string.settings_oss_description),
-                        leadingIcon = {
-                            Icon(Icons.Filled.Description, contentDescription = null)
-                        },
-                        onClick = { openOssLicenses(context) }
-                    )
-                }
-
-                item {
-                    HorizontalDivider(modifier = Modifier.padding(start = 72.dp))
-                }
-
-                item {
-                    PreferenceItem(
-                        title = stringResource(R.string.settings_about_button),
-                        leadingIcon = {
-                            Icon(Icons.Filled.Info, contentDescription = null)
-                        },
-                        onClick = { showAboutDialog = true }
-                    )
-                }
-
-                item {
-                    HorizontalDivider(modifier = Modifier.padding(start = 72.dp))
-                }
-
+                // 4. AI model and status
                 item {
                     PreferenceItem(
                         title = stringResource(R.string.genai_models_title),
@@ -373,10 +342,9 @@ fun SettingsScreen(
                     )
                 }
 
-                item {
-                    HorizontalDivider(modifier = Modifier.padding(start = 72.dp))
-                }
+                item { HorizontalDivider(modifier = Modifier.padding(start = 72.dp)) }
 
+                // 5. Export
                 item {
                     PreferenceItem(
                         title = stringResource(R.string.settings_export_title),
@@ -391,11 +359,9 @@ fun SettingsScreen(
                     )
                 }
 
-                item {
-                    HorizontalDivider(modifier = Modifier.padding(start = 72.dp))
-                }
+                item { HorizontalDivider(modifier = Modifier.padding(start = 72.dp)) }
 
-                // Import PreferenceItem — launch SAF picker for ZIP
+                // 6. Import
                 item {
                     PreferenceItem(
                         title = stringResource(R.string.settings_import_title),
@@ -408,9 +374,34 @@ fun SettingsScreen(
                     )
                 }
 
+                item { HorizontalDivider(modifier = Modifier.padding(start = 72.dp)) }
+
+                // 7. Open source licenses
                 item {
-                    HorizontalDivider(modifier = Modifier.padding(start = 72.dp))
+                    PreferenceItem(
+                        title = stringResource(R.string.settings_oss_title),
+                        subtitle = stringResource(R.string.settings_oss_description),
+                        leadingIcon = {
+                            Icon(Icons.Filled.Description, contentDescription = null)
+                        },
+                        onClick = { openOssLicenses(context) }
+                    )
                 }
+
+                item { HorizontalDivider(modifier = Modifier.padding(start = 72.dp)) }
+
+                // 8. About this app
+                item {
+                    PreferenceItem(
+                        title = stringResource(R.string.settings_about_button),
+                        leadingIcon = {
+                            Icon(Icons.Filled.Info, contentDescription = null)
+                        },
+                        onClick = { showAboutDialog = true }
+                    )
+                }
+
+                item { HorizontalDivider(modifier = Modifier.padding(start = 72.dp)) }
 
             }
         }
