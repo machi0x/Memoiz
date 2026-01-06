@@ -198,7 +198,7 @@
 
     <!-- Tutorial: export/import step -->
     <string name="tutorial_step_export_title">メモデータの引っ越しについて</string>
-    <string name="tutorial_step_export_body">[設定] > [メモをエクスポート]から全てのメモのデータをファイルに保存し、そのファイルを別の端末に送信した上でメモイズの[設定] > [メモをインポート]で選択することで、メモを復元することができます。エクスポート時にパスワードを設定するとファイルを暗号化できます（英数字 4～32 文字）。</string>
+    <string name="tutorial_step_export_body">[設定] > [メモをエクスポート]から全てのメモのデータをファイルに保存し、そのファイルを別の端末に送信した上で[設定] > [メモをインポート]で選択することで、メモを復元することができます。</string>
 
     <!-- Default export ZIP filename (localized) -->
     <string name="export_default_filename">メモイズのエクスポートデータ(%1$s).zip</string>

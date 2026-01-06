@@ -226,7 +226,7 @@ Try sharing text or images from other apps, or use the + button at the bottom of
 
     <!-- Tutorial: export/import step -->
     <string name="tutorial_step_export_title">Moving your memos</string>
-    <string name="tutorial_step_export_body">From [Settings] > [Export memos] you can save all your memos to a file; send that file to another device and restore via Memoiz [Settings] > [Import memos]. You can optionally set a password when exporting (alphanumeric, 4–32 characters).</string>
+    <string name="tutorial_step_export_body">From [Settings] > [Export memos] you can save all your memos to a file; send that file to another device and restore via [Settings] > [Import memos]. </string>
 
     <!-- Default export ZIP filename (localized) -->
     <string name="export_default_filename">Memoiz_export_%1$s.zip</string>
