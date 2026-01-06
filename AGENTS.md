@@ -30,6 +30,12 @@ This document explains the internal responsibilities for assistants working on M
 ## UI Agent Responsibilities
 - **MainScreen**: Maintains search/filter state, shows filter note banner, drag-to-reorder headers, manual category dialog. Also responsible for initiating on-device AI model downloads when required, and for presenting download progress and error states to users.
 - **SettingsScreen**: Exposes current AI feature status (Enabled / Disabled / Downloading / Error) so users can quickly see whether AI features are available. Also hosts toggles for cloud opt-ins, diagnostics, and custom category management.
+- **Import / Export**: The Settings screen also exposes import/export workflows for user data. Exports are produced as an optionally password-protected ZIP (encrypted) and imports accept the same format. Agents responsible for the UI should:
+  - Show clear progress and success/failure feedback during export/import operations (including an indeterminate / determinate progress UI when appropriate).
+  - Prompt for and validate passwords for encrypted exports; never log raw passwords or memo content.
+  - Surface friendly error messages for common failure modes (IO error, invalid password, insufficient storage, permission issues).
+  - Use the background worker / helper services to perform file I/O safely off the main thread and ensure imports are validated before mutating local data.
+  - Rely on the project's `zip4j`-based helpers (or equivalent) for strong, well-tested ZIP encryption/decryption.
 - **Manual Category Dialog**: Must keep text field + existing-category dropdown in sync; new names auto-register as "My Category".
 - **Re-analyze UX**: Show confirm dialog explaining that memo type stays fixed while category/summary may change.
 

@@ -23,6 +23,7 @@ Root
     - `domain/` (`Memo`, `MemoGroup`, DTOs)
     - `processtext/` and `share/` entry activities
     - `service/` (`AiCategorizationService`, `MlKitCategorizer`, `CategoryMergeService`, helpers) — contains model management, download logic, and image-analysis fallback logic (image description → prompt fallback). Batch re-analysis flows have been removed from default background workers; per-memo retries remain.
+    - `importexport/` (helpers and background workers for data import/export) — provides encrypted ZIP export/import using `zip4j` and validates archives before applying imports. The Settings UI triggers export/import flows and displays progress and friendly error messages.
     - `worker/` (`ClipboardProcessingWorker` etc.)
     - `ui/`
       - `screens/` (`MainScreen`, `SettingsScreen`), view models — `SettingsScreen` now displays AI feature status (Enabled/Disabled/Downloading/Error)
@@ -37,6 +38,7 @@ Build Output Highlights
 -----------------------
 - `app/build/outputs/apk/` → APK artifacts
 - `app/build/outputs/` (baseline profiles, metadata)
+- `app/build/exports/` (user export archives may be staged here during debug runs) — exports are ZIP archives (optionally password-protected).
 
 Auxiliary
 ---------

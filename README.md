@@ -38,6 +38,16 @@ Memoiz is a privacy-first Android clipboard companion that captures text, links,
 - **Category order** persists after drag-and-drop via `toast_category_order_saved` feedback.
 - **Filters** for memo type (Text / Web / Image) and category, accessible from the navigation drawer.
 
+### Import / Export
+- The Settings screen provides import/export tools to move user data between devices.
+- Exports are produced as an optionally password-protected ZIP file (encrypted) and imports accept the same format. The export flow:
+  - Prompts the user for an optional password to encrypt the archive.
+  - Shows progress and success/failure UI while writing the archive.
+  - Uses the `zip4j` library for strong, tested ZIP encryption/decryption.
+  - Never logs raw memo content or passwords; all file I/O runs off the UI thread and surfaces friendly error messages when needed.
+
+Use the Settings → Export / Import options to backup or restore your memos. Encrypted exports require the same password to import.
+
 ## Architecture Snapshot
 | Layer | Key Components |
 | --- | --- |
