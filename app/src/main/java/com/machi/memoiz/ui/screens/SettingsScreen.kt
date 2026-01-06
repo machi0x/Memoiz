@@ -4,7 +4,10 @@ package com.machi.memoiz.ui.screens
 
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import android.provider.Settings
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -81,6 +84,68 @@ fun SettingsScreen(
     // Collect feature states for GenAI (nullable until loaded)
     val featureStates by viewModel.featureStates.collectAsStateWithLifecycle()
 
+    // --- New state and launcher for Export/Import ---
+    val scope = rememberCoroutineScope()
+    var showImportProgress by remember { mutableStateOf(false) }
+    var showExportProgress by remember { mutableStateOf(false) }
+    var importResult by remember { mutableStateOf<ImportResult?>(null) }
+    var exportFailureMessage by remember { mutableStateOf<String?>(null) }
+
+    // Password dialogs and state
+    var showExportPasswordDialog by remember { mutableStateOf(false) }
+    var exportPassword by remember { mutableStateOf("") }
+    var exportPasswordError by remember { mutableStateOf<String?>(null) }
+
+    var showImportPasswordDialog by remember { mutableStateOf(false) }
+    var importPassword by remember { mutableStateOf("") }
+    var importPasswordError by remember { mutableStateOf<String?>(null) }
+    var pendingImportUri by remember { mutableStateOf<Uri?>(null) }
+
+    val openDocumentLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument()
+    ) { uri: Uri? ->
+        if (uri != null) {
+            scope.launch {
+                showImportProgress = true
+                try {
+                    // Persist read permission if possible
+                    try {
+                        context.contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                    } catch (_: Exception) {
+                        // ignore if not granted
+                    }
+                    val res = viewModel.importMemos(uri, context, null)
+                    if (res.message == "PASSWORD_REQUIRED") {
+                        // Prompt user for password
+                        pendingImportUri = uri
+                        importPassword = ""
+                        importPasswordError = null
+                        showImportPasswordDialog = true
+                    } else {
+                        // Map known messages to localized strings
+                        val mapped = when (res.message) {
+                            null -> null
+                            "Invalid password or corrupted file" -> context.getString(R.string.settings_import_result_bad_password)
+                            else -> {
+                                val msg = res.message
+                                when {
+                                    msg.contains("Cannot open input stream", ignoreCase = true) -> context.getString(R.string.settings_import_result_open_failed)
+                                    msg.contains("meta.json not found", ignoreCase = true) -> context.getString(R.string.settings_import_result_no_meta)
+                                    else -> context.getString(R.string.settings_import_result_failure)
+                                }
+                            }
+                        }
+                        importResult = ImportResult(res.added, res.skipped, res.errors, mapped)
+                    }
+                } catch (_: Exception) {
+                    importResult = ImportResult(0, 0, 1, context.getString(R.string.settings_import_result_failure))
+                } finally {
+                    showImportProgress = false
+                }
+            }
+        }
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -152,7 +217,7 @@ fun SettingsScreen(
                     HorizontalDivider(modifier = Modifier.padding(start = 72.dp))
                 }
 
-                // <-- Insert UI display mode here (between usage and OSS) -->
+                // UI display mode item (unchanged)
                 item {
                     // collect latest user preferences to get current ui display mode
                     val userPrefs by viewModel.genAiPreferences.collectAsStateWithLifecycle(initialValue = UserPreferences())
@@ -286,7 +351,6 @@ fun SettingsScreen(
                     )
                 }
 
-                // Show each AI feature as a two-column, no-border row: left = feature name, right = two stacked rows (model name / status)
                 item {
                     // Image description
                     val imageModelName = baseModelNames.first
@@ -320,8 +384,41 @@ fun SettingsScreen(
                     HorizontalDivider(modifier = Modifier.padding(start = 72.dp))
                 }
 
-                // UI Display Mode preference: no description, three radio rows
-                // (Removed duplicate - already present earlier between usage and OSS)
+                // Export PreferenceItem — open password dialog first
+                item {
+                    PreferenceItem(
+                        title = stringResource(R.string.settings_export_title),
+                        subtitle = stringResource(R.string.settings_export_description),
+                        leadingIcon = { Icon(Icons.Filled.Share, contentDescription = null) },
+                        onClick = {
+                            // Show optional password input dialog
+                            exportPassword = ""
+                            exportPasswordError = null
+                            showExportPasswordDialog = true
+                        }
+                    )
+                }
+
+                item {
+                    HorizontalDivider(modifier = Modifier.padding(start = 72.dp))
+                }
+
+                // Import PreferenceItem — launch SAF picker for ZIP
+                item {
+                    PreferenceItem(
+                        title = stringResource(R.string.settings_import_title),
+                        subtitle = stringResource(R.string.settings_import_description),
+                        leadingIcon = { Icon(Icons.Filled.FileOpen, contentDescription = null) },
+                        onClick = {
+                            // Launch SAF file picker for ZIP
+                            openDocumentLauncher.launch(arrayOf("application/zip", "application/*", "*/*"))
+                        }
+                    )
+                }
+
+                item {
+                    HorizontalDivider(modifier = Modifier.padding(start = 72.dp))
+                }
 
             }
         }
@@ -331,6 +428,192 @@ fun SettingsScreen(
         AboutDialog(
             appVersion = appVersion,
             onDismiss = { showAboutDialog = false }
+        )
+    }
+
+    // Export password dialog
+    if (showExportPasswordDialog) {
+        AlertDialog(
+            onDismissRequest = { showExportPasswordDialog = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    // Validate password if not empty: alphanumeric 4-32
+                    if (exportPassword.isNotEmpty()) {
+                        val ok = Regex("^[A-Za-z0-9]{4,32}$").matches(exportPassword)
+                        if (!ok) {
+                            exportPasswordError = context.getString(R.string.password_validation_error)
+                            return@TextButton
+                        }
+                    }
+                    showExportPasswordDialog = false
+                    // Start export
+                    scope.launch {
+                        showExportProgress = true
+                        try {
+                            val uri = viewModel.exportMemos(context, exportPassword.takeIf { it.isNotBlank() })
+                            if (uri == null) {
+                                exportFailureMessage = context.getString(R.string.settings_export_result_failure)
+                            } else {
+                                val sendIntent = Intent().apply {
+                                    action = Intent.ACTION_SEND
+                                    putExtra(Intent.EXTRA_STREAM, uri)
+                                    type = "application/zip"
+                                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                }
+                                val chooser = Intent.createChooser(sendIntent, null).apply {
+                                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                }
+                                try {
+                                    context.startActivity(chooser)
+                                } catch (_: Exception) {
+                                    exportFailureMessage = context.getString(R.string.settings_export_result_failure)
+                                }
+                            }
+                        } catch (e: Exception) {
+                            exportFailureMessage = context.getString(R.string.settings_export_result_failure)
+                        } finally {
+                            showExportProgress = false
+                        }
+                    }
+                }) { Text(stringResource(R.string.dialog_save)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showExportPasswordDialog = false }) { Text(stringResource(R.string.dialog_cancel)) }
+            },
+            title = { Text(text = stringResource(R.string.settings_export_title)) },
+            text = {
+                Column {
+                    // Show only the password explanation in the export confirmation dialog
+                    Text(text = stringResource(R.string.export_password_explain))
+                    Spacer(modifier = Modifier.height(12.dp))
+                    OutlinedTextField(
+                        value = exportPassword,
+                        onValueChange = { new ->
+                            // Allow only ASCII alphanumeric
+                            val filtered = new.filter { it.isLetterOrDigit() }
+                            exportPassword = if (filtered.length > 32) filtered.take(32) else filtered
+                            exportPasswordError = null
+                        },
+                        placeholder = { Text(text = stringResource(R.string.export_password_placeholder)) },
+                        singleLine = true
+                    )
+                    exportPasswordError?.let { Text(text = it, color = MaterialTheme.colorScheme.error) }
+                }
+            }
+        )
+    }
+
+    // Import password dialog: shown when import indicates password required
+    if (showImportPasswordDialog) {
+        AlertDialog(
+            onDismissRequest = { showImportPasswordDialog = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    // Validate input
+                    val ok = Regex("^[A-Za-z0-9]{4,32}$").matches(importPassword)
+                    if (!ok) {
+                        importPasswordError = context.getString(R.string.password_validation_error)
+                        return@TextButton
+                    }
+                    // Try import with password
+                    showImportPasswordDialog = false
+                    pendingImportUri?.let { uri ->
+                        scope.launch {
+                            showImportProgress = true
+                            try {
+                                val res = viewModel.importMemos(uri, context, importPassword)
+                                // Map known messages to localized strings like above
+                                val mapped = when (res.message) {
+                                    null -> null
+                                    "Invalid password or corrupted file" -> context.getString(R.string.settings_import_result_bad_password)
+                                    else -> {
+                                        val msg = res.message
+                                        when {
+                                            msg.contains("Cannot open input stream", ignoreCase = true) -> context.getString(R.string.settings_import_result_open_failed)
+                                            msg.contains("meta.json not found", ignoreCase = true) -> context.getString(R.string.settings_import_result_no_meta)
+                                            else -> context.getString(R.string.settings_import_result_failure)
+                                        }
+                                    }
+                                }
+                                importResult = ImportResult(res.added, res.skipped, res.errors, mapped)
+                            } catch (_: Exception) {
+                                importResult = ImportResult(0, 0, 1, context.getString(R.string.settings_import_result_failure))
+                            } finally {
+                                showImportProgress = false
+                                pendingImportUri = null
+                            }
+                        }
+                    }
+                }) { Text(stringResource(R.string.dialog_save)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showImportPasswordDialog = false }) { Text(stringResource(R.string.dialog_cancel)) }
+            },
+            title = { Text(text = stringResource(R.string.settings_import_title)) },
+            text = {
+                Column {
+                    Text(text = stringResource(R.string.import_password_prompt))
+                    Spacer(modifier = Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = importPassword,
+                        onValueChange = { new ->
+                            val filtered = new.filter { it.isLetterOrDigit() }
+                            importPassword = if (filtered.length > 32) filtered.take(32) else filtered
+                            importPasswordError = null
+                        },
+                        placeholder = { Text(text = stringResource(R.string.export_password_placeholder)) },
+                        singleLine = true
+                    )
+                    importPasswordError?.let { Text(text = it, color = MaterialTheme.colorScheme.error) }
+                }
+            }
+        )
+    }
+
+    // Import progress dialog
+    if (showImportProgress) {
+        AlertDialog(
+            onDismissRequest = { /* non-cancelable while processing */ },
+            confirmButton = {},
+            title = { Text(text = stringResource(R.string.dialog_progress_processing)) },
+            text = {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    CircularProgressIndicator()
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text(text = stringResource(R.string.dialog_progress_processing))
+                }
+            }
+        )
+    }
+
+    // Import result dialog
+    importResult?.let { res ->
+        AlertDialog(
+            onDismissRequest = { importResult = null },
+            confirmButton = {
+                TextButton(onClick = { importResult = null }) { Text(stringResource(R.string.dialog_close)) }
+            },
+            title = { Text(text = stringResource(R.string.settings_import_title)) },
+            text = {
+                if (res.errors > 0) {
+                    Text(text = res.message ?: stringResource(R.string.settings_import_result_failure))
+                } else {
+                    // Show a concise success message to avoid confusion: "Imported X memos."
+                    Text(text = stringResource(R.string.settings_import_result_simple, res.added))
+                }
+            }
+        )
+    }
+
+    // Export failure dialog
+    exportFailureMessage?.let { msg ->
+        AlertDialog(
+            onDismissRequest = { exportFailureMessage = null },
+            confirmButton = {
+                TextButton(onClick = { exportFailureMessage = null }) { Text(stringResource(R.string.dialog_close)) }
+            },
+            title = { Text(text = stringResource(R.string.settings_export_title)) },
+            text = { Text(text = msg) }
         )
     }
 }
@@ -523,32 +806,39 @@ private fun AiFeatureRow(featureTitle: String, modelDisplay: String, state: @Fea
 @Preview(showBackground = true)
 @Composable
 fun SettingsScreenPreview() {
-    // Use the fake view model so the preview runs the real SettingsScreen composable code path.
-    val fakeVm = remember { FakeSettingsViewModel() }
+    // Use an inline fake view model so the preview runs the real SettingsScreen composable code path.
+    val fakeVm = remember {
+        object : SettingsScreenViewModel {
+            override val genAiPreferences: kotlinx.coroutines.flow.Flow<UserPreferences> = MutableStateFlow(UserPreferences())
+            override val baseModelNames: kotlinx.coroutines.flow.StateFlow<Triple<String?, String?, String?>> = MutableStateFlow(Triple("nano-v2", "nano-text", "nano-v2"))
+            override val featureStates: kotlinx.coroutines.flow.StateFlow<GenAiFeatureStates?> = MutableStateFlow(
+                GenAiFeatureStates(
+                    imageDescription = FeatureStatus.AVAILABLE,
+                    textGeneration = FeatureStatus.DOWNLOADABLE,
+                    summarization = FeatureStatus.AVAILABLE
+                )
+            )
+
+            override fun requestTutorial() {}
+            override fun remergeAllMemos(context: Context) {}
+            override fun refreshFeatureStates() { /* preview-only: no-op */ }
+            override fun setUseImageDescription(use: Boolean) { /* preview-only: no-op */ }
+            override fun setUseTextGeneration(use: Boolean) { /* preview-only: no-op */ }
+            override fun setUseSummarization(use: Boolean) { /* preview-only: no-op */ }
+            override fun setUiDisplayMode(mode: UiDisplayMode) { /* preview-only: no-op */ }
+
+            override suspend fun exportMemos(context: Context, password: String?): Uri? {
+                return null
+            }
+
+            override suspend fun importMemos(uri: Uri, context: Context, password: String?): ImportResult {
+                return ImportResult(0, 0, 0, null)
+            }
+        }
+    }
     MemoizTheme {
         Surface {
             SettingsScreen(viewModel = fakeVm, onNavigateBack = {})
         }
     }
-}
-
-// Preview-only fake ViewModel that matches the small API surface used by SettingsScreen.
-private class FakeSettingsViewModel : SettingsScreenViewModel {
-    override val genAiPreferences: kotlinx.coroutines.flow.Flow<UserPreferences> = MutableStateFlow(UserPreferences())
-    override val baseModelNames: kotlinx.coroutines.flow.StateFlow<Triple<String?, String?, String?>> = MutableStateFlow(Triple("nano-v2", "nano-text", "nano-v2"))
-    override val featureStates: kotlinx.coroutines.flow.StateFlow<GenAiFeatureStates?> = MutableStateFlow(
-        GenAiFeatureStates(
-            imageDescription = FeatureStatus.AVAILABLE,
-            textGeneration = FeatureStatus.DOWNLOADABLE,
-            summarization = FeatureStatus.AVAILABLE
-        )
-    )
-
-    override fun requestTutorial() {}
-    override fun remergeAllMemos(context: Context) {}
-    override fun refreshFeatureStates() { /* preview-only: no-op */ }
-    override fun setUseImageDescription(use: Boolean) { /* preview-only: no-op */ }
-    override fun setUseTextGeneration(use: Boolean) { /* preview-only: no-op */ }
-    override fun setUseSummarization(use: Boolean) { /* preview-only: no-op */ }
-    override fun setUiDisplayMode(mode: UiDisplayMode) { /* preview-only: no-op */ }
 }

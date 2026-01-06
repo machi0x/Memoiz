@@ -3,8 +3,10 @@
     <files-path
         name="shared_images"
         path="shared_images/" />
+    <files-path
+        name="imported_images"
+        path="imported_images/" />
     <cache-path
         name="shared_cache"
         path="." />
 </paths>
-

@@ -22,7 +22,7 @@ Try sharing text or images from other apps, or use the + button at the bottom of
     <string name="drawer_all_categories">All</string>
     <string name="drawer_filter_by_type">Filter by Type</string>
     <string name="drawer_filter_by_category">Filter by Category</string>
-    <string name="drawer_settings">Settings</string>
+    <string name="drawer_settings">Memoiz Settings</string>
     <string name="drawer_add_category">Add My Category</string>
     <string name="drawer_category_hint">Category to show</string>
     <string name="sort_by_created">Sort by date</string>
@@ -177,7 +177,7 @@ Try sharing text or images from other apps, or use the + button at the bottom of
     <string name="genai_model_label_image">Image description feature</string>
     <string name="genai_model_label_text">Text generation feature</string>
     <string name="genai_model_label_summarization">Summarization feature</string>
-    <string name="genai_models_loading">Loading...</string>
+    <string name="genai_models_loading">Loading…</string>
     <string name="genai_models_switch_warning">Depending on device type and state, some AI features may be unavailable. In that case, Memoiz features may be restricted.</string>
     <string name="genai_status_download_cancel">Cancel download</string>
     <string name="genai_status_message_download_cancelled">Download cancelled. Some features may be restricted.</string>
@@ -201,4 +201,33 @@ Try sharing text or images from other apps, or use the + button at the bottom of
     <string name="settings_ui_display_mode_light">Light</string>
     <string name="settings_ui_display_mode_dark">Dark</string>
     <string name="settings_ui_display_mode_system">Follow system</string>
+
+    <!-- Export/Import strings -->
+    <string name="settings_export_title">Export memos</string>
+    <string name="settings_export_description">Save your categories and memos. Use this to restore on another device.</string>
+    <string name="settings_import_title">Import memos</string>
+    <string name="settings_import_description">Restore categories and memos from an exported file.</string>
+    <string name="dialog_progress_processing">Processing… please wait</string>
+    <string name="settings_import_result_success">Import completed (added: %1$d, skipped: %2$d).</string>
+    <string name="settings_import_result_simple">Imported %1$d memos.</string>
+    <string name="settings_export_result_success">Export file created. Choose an app to save or share it.</string>
+    <string name="settings_export_result_failure">Export failed. Please try again.</string>
+
+    <!-- Password / dialog strings for export/import -->
+    <string name="export_password_explain">Optionally set a password to encrypt the exported ZIP (alphanumeric, 4–32 characters). Leave empty for no encryption.</string>
+    <string name="export_password_placeholder">Password (optional)</string>
+    <string name="import_password_prompt">This file is password-protected. Enter the password (alphanumeric, 4–32 characters).</string>
+    <string name="password_validation_error">Password must be 4–32 alphanumeric characters</string>
+    <!-- Import error variants mapped from ViewModel messages -->
+    <string name="settings_import_result_bad_password">Invalid password or corrupted file. Please check the password and try again.</string>
+    <string name="settings_import_result_open_failed">Cannot open the selected file. Please check the file and the app\'s read permissions.</string>
+    <string name="settings_import_result_no_meta">Import failed: export metadata (meta.json) not found. Please select a valid export file.</string>
+    <string name="settings_import_result_failure">An error occurred during import. Please check the file format.</string>
+
+    <!-- Tutorial: export/import step -->
+    <string name="tutorial_step_export_title">Moving your memos</string>
+    <string name="tutorial_step_export_body">From [Settings] > [Export memos] you can save all your memos to a file; send that file to another device and restore via Memoiz [Settings] > [Import memos]. You can optionally set a password when exporting (alphanumeric, 4–32 characters).</string>
+
+    <!-- Default export ZIP filename (localized) -->
+    <string name="export_default_filename">Memoiz_export_%1$s.zip</string>
 </resources>

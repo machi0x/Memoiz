@@ -31,7 +31,7 @@
     <string name="label_source_app">引用元アプリ: %1$s</string>
     <string name="cd_no_memo_image">メモがまだ無いことを示すイラスト</string>
     <string name="drawer_all_categories">すべて</string>
-    <string name="drawer_settings">設定</string>
+    <string name="drawer_settings">メモイズの設定</string>
     <string name="drawer_add_category">マイカテゴリを追加</string>
     <string name="drawer_category_hint">表示するカテゴリ</string>
     <string name="search_hint">メモを検索</string>
@@ -164,7 +164,7 @@
     <string name="genai_model_label_image">画像説明機能</string>
     <string name="genai_model_label_text">テキスト生成機能</string>
     <string name="genai_model_label_summarization">要約機能</string>
-    <string name="genai_models_loading">読み込み中...</string>
+    <string name="genai_models_loading">読み込み中…</string>
     <string name="genai_models_switch_warning">デバイスの種類やその状態によって、利用できないAI機能がある場合があります。この場合、メモイズの機能が制限されます。</string>
     <string name="genai_models_unavailable">現在利用できません</string>
     <string name="genai_models_downloadable">現在利用できません</string>
@@ -183,4 +183,33 @@
     <string name="settings_ui_display_mode_light">ライト</string>
     <string name="settings_ui_display_mode_dark">ダーク</string>
     <string name="settings_ui_display_mode_system">システムに合わせる</string>
+
+    <!-- Export/Import strings -->
+    <string name="settings_export_title">メモをエクスポート</string>
+    <string name="settings_export_description">カテゴリとメモデータを別の端末で復元できるよう、ファイルにエクスポートします。</string>
+    <string name="settings_import_title">メモをインポート</string>
+    <string name="settings_import_description">エクスポートしたファイルからカテゴリとメモを復元します。タップしてファイルを選択してください。</string>
+    <string name="dialog_progress_processing">処理中…しばらくお待ちください</string>
+    <string name="settings_import_result_success">インポートが完了しました（追加: %1$d、スキップ: %2$d）。</string>
+    <string name="settings_import_result_failure">インポート中にエラーが発生しました。ファイルが正しいか確認してください。</string>
+    <string name="settings_import_result_simple">%1$d件のメモを読み込みました。</string>
+    <string name="settings_export_result_success">エクスポートファイルを作成しました。保存先のアプリを選んでください。</string>
+    <string name="settings_export_result_failure">エクスポートに失敗しました。再度お試しください。</string>
+
+    <!-- Tutorial: export/import step -->
+    <string name="tutorial_step_export_title">メモデータの引っ越しについて</string>
+    <string name="tutorial_step_export_body">[設定] > [メモをエクスポート]から全てのメモのデータをファイルに保存し、そのファイルを別の端末に送信した上でメモイズの[設定] > [メモをインポート]で選択することで、メモを復元することができます。エクスポート時にパスワードを設定するとファイルを暗号化できます（英数字 4～32 文字）。</string>
+
+    <!-- Default export ZIP filename (localized) -->
+    <string name="export_default_filename">メモイズのエクスポートデータ(%1$s).zip</string>
+
+    <!-- Password / dialog strings for export/import -->
+    <string name="export_password_explain">エクスポート時にパスワード(英数字 4～32 文字)を設定するとファイルを暗号化できます。準備ができたら[保存]ボタンを押してエクスポートファイルを保存してください。 別途、データを復元したい端末にこのファイルを送信する必要があります。</string>
+    <string name="export_password_placeholder">パスワード（省略可）</string>
+    <string name="import_password_prompt">このファイルはパスワードで保護されています。パスワードを入力してください（英数字 4～32 文字）。</string>
+    <string name="password_validation_error">パスワードは英数字 4～32 文字で入力してください</string>
+    <!-- Import error variants mapped from ViewModel messages -->
+    <string name="settings_import_result_bad_password">パスワードが間違っているか、ファイルが破損しています。パスワードを確認して再試行してください。</string>
+    <string name="settings_import_result_open_failed">選択したファイルを開けませんでした。ファイルとアプリの読み取り権限を確認してください。</string>
+    <string name="settings_import_result_no_meta">インポートに失敗しました: エクスポートメタデータ(meta.json)が見つかりません。正しいエクスポートファイルを選択してください。</string>
 </resources>

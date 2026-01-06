@@ -181,6 +181,9 @@ dependencies {
     implementation("com.google.firebase:firebase-crashlytics")
     implementation("com.google.android.gms:play-services-oss-licenses:17.2.1")
 
+    // zip4j for encrypted zip export/import
+    implementation("net.lingala.zip4j:zip4j:2.11.5")
+
     // Testing
     testImplementation("junit:junit:4.13.2")
     androidTestImplementation("androidx.test.ext:junit:1.3.0")

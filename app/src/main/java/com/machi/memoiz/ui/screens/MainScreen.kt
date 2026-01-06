@@ -833,6 +833,15 @@ private fun NavigationDrawerContent(
 
         HorizontalDivider()
 
+        // Move Settings to be directly under the banner for easier access
+        NavigationDrawerItem(
+            label = { Text(stringResource(R.string.drawer_settings)) },
+            selected = false,
+            onClick = onSettingsClick,
+            icon = { Icon(Icons.Default.Settings, contentDescription = null) },
+            modifier = Modifier.padding(12.dp)
+        )
+
         LazyColumn(
             modifier = Modifier.weight(1f),
             contentPadding = PaddingValues(vertical = 8.dp)
@@ -959,15 +968,9 @@ private fun NavigationDrawerContent(
 
         HorizontalDivider()
 
-        NavigationDrawerItem(
-            label = { Text(stringResource(R.string.drawer_settings)) },
-            selected = false,
-            onClick = onSettingsClick,
-            icon = { Icon(Icons.Default.Settings, contentDescription = null) },
-            modifier = Modifier.padding(12.dp)
-        )
-    }
-}
+        // Footer area remains for any other items (kept empty)
+     }
+ }
 
 @Composable
 private fun CategoryAccordion(
@@ -1568,7 +1571,8 @@ private fun TutorialDialog(
         TutorialStep(R.drawable.my_category, R.string.tutorial_step_my_category_title, R.string.tutorial_step_my_category_body),
         TutorialStep(R.drawable.app_usages, R.string.tutorial_step_usage_permission_title, R.string.tutorial_step_usage_permission_body),
         TutorialStep(R.drawable.main_ui, R.string.tutorial_step_main_ui_title, R.string.tutorial_step_main_ui_body),
-        TutorialStep(R.drawable.side_panel, R.string.tutorial_step_side_panel_title, R.string.tutorial_step_side_panel_body)
+        TutorialStep(R.drawable.side_panel, R.string.tutorial_step_side_panel_title, R.string.tutorial_step_side_panel_body),
+        TutorialStep(R.drawable.export, R.string.tutorial_step_export_title, R.string.tutorial_step_export_body)
     )
 
     var currentStep by rememberSaveable { mutableStateOf(initialStep.coerceIn(0, steps.lastIndex)) }
