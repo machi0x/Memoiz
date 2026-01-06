@@ -1784,6 +1784,32 @@ private fun AnalyzingIndicator() {
             ),
             label = "analyzing_rotation"
         )
+
+        // Animate hue rotation (rainbow) and alpha pulse (blinking)
+        val hue by infiniteTransition.animateFloat(
+            initialValue = 0f,
+            targetValue = 360f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(durationMillis = 1600, easing = LinearEasing),
+                repeatMode = RepeatMode.Restart
+            ),
+            label = "analyzing_hue"
+        )
+
+        val alphaPulse by infiniteTransition.animateFloat(
+            initialValue = 0.78f,
+            targetValue = 1f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(durationMillis = 700, easing = LinearEasing),
+                repeatMode = RepeatMode.Reverse
+            ),
+            label = "analyzing_alpha"
+        )
+
+        // Convert HSV to ARGB and wrap into Compose Color, then apply animated alpha
+        val baseColorInt = android.graphics.Color.HSVToColor(floatArrayOf(hue, 0.9f, 0.95f))
+        val animatedColor = Color(baseColorInt).copy(alpha = alphaPulse)
+
         Box(
             modifier = Modifier
                 .size(44.dp)
@@ -1798,7 +1824,7 @@ private fun AnalyzingIndicator() {
                     .size(40.dp)
                     .graphicsLayer { rotationZ = sweep },
                 trackColor = MaterialTheme.colorScheme.surfaceVariant,
-                color = MaterialTheme.colorScheme.primary
+                color = animatedColor
             )
             Image(
                 painter = painterResource(id = R.drawable.analyzing),
