@@ -44,8 +44,8 @@ import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.Devices
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
@@ -71,6 +71,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.sp
 import com.machi.memoiz.R
@@ -1575,6 +1576,8 @@ private fun TutorialDialog(
     val step = steps[currentStep]
     val stepTitle = stringResource(step.titleRes)
     val stepDescription = stringResource(step.descriptionRes)
+    // Remember whether we've logged the tutorial main_ui view during this Composable lifecycle
+    val hasLoggedTutorialMainUi = remember { mutableStateOf(false) }
     val tutorialCoroutineScope = rememberCoroutineScope()
     var usagePermissionJob by remember { mutableStateOf<Job?>(null) }
     val usagePermissionStepIndex = steps.indexOfFirst { it.imageRes == R.drawable.app_usages }
@@ -1637,35 +1640,14 @@ private fun TutorialDialog(
                                 .wrapContentHeight(),
                             contentScale = if (isLargeShot) ContentScale.FillWidth else ContentScale.Fit
                         )
-                    }
-                    if (isLargeShot && imageScrollState.maxValue > 0) {
-                        val contentHeightPx = viewportHeightPx + imageScrollState.maxValue.toFloat()
-                        val thumbHeightFraction = (viewportHeightPx / contentHeightPx).coerceIn(0.1f, 1f)
-                        val thumbOffsetFraction = (imageScrollState.value.toFloat() / imageScrollState.maxValue.toFloat()).coerceIn(0f, 1f)
-                        val thumbHeight = thumbHeightFraction * viewportHeightPx
-                        val thumbOffset = thumbOffsetFraction * (viewportHeightPx - thumbHeight)
-                        Box(
-                            modifier = Modifier
-                                .fillMaxHeight()
-                                .padding(vertical = 8.dp, horizontal = 6.dp)
-                                .align(Alignment.CenterEnd)
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxHeight()
-                                    .width(4.dp)
-                                    .clip(RoundedCornerShape(2.dp))
-                                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f))
-                            )
-                            Box(
-                                modifier = Modifier
-                                    .width(6.dp)
-                                    .height(with(LocalDensity.current) { thumbHeight.toDp() })
-                                    .offset(y = with(LocalDensity.current) { thumbOffset.toDp() })
-                                    .align(Alignment.TopEnd)
-                                    .clip(RoundedCornerShape(3.dp))
-                                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.8f))
-                            )
+                        // If this step is the large-shot main_ui and we haven't logged it yet, log once.
+                        // Use LaunchedEffect on currentStep to avoid repeated logs during recomposition.
+                        LaunchedEffect(currentStep) {
+                            if (step.imageRes == R.drawable.main_ui && !hasLoggedTutorialMainUi.value) {
+                                // Log analytics event (Option B: rely on Firebase unique user counting)
+                                com.machi.memoiz.analytics.AnalyticsManager.logTutorialMainUiView(context)
+                                hasLoggedTutorialMainUi.value = true
+                            }
                         }
                     }
                 }

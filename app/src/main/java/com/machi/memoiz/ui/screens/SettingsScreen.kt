@@ -16,6 +16,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
@@ -442,6 +443,16 @@ private fun AboutDialog(
                     modifier = Modifier
                         .size(200.dp)
                 )
+
+                val isInPreview = LocalInspectionMode.current
+                val aboutDialogContext = LocalContext.current
+
+                // Log analytics event once per AboutDialog composition (Preview-safe)
+                LaunchedEffect(Unit) {
+                    if (!isInPreview) {
+                        com.machi.memoiz.analytics.AnalyticsManager.logAboutThanksView(aboutDialogContext)
+                    }
+                }
 
                 Spacer(modifier = Modifier.height(8.dp))
 
