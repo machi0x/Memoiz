@@ -846,6 +846,10 @@ private fun NavigationDrawerContent(
             modifier = Modifier.weight(1f),
             contentPadding = PaddingValues(vertical = 8.dp)
         ) {
+            item {
+                HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+            }
+
             // Filter by Type section header
             item {
                 Text(
