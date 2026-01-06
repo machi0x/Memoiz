@@ -838,7 +838,8 @@ private fun NavigationDrawerContent(
             label = { Text(stringResource(R.string.drawer_settings)) },
             selected = false,
             onClick = onSettingsClick,
-            icon = { Icon(Icons.Default.Settings, contentDescription = null) }
+            icon = { Icon(Icons.Default.Settings, contentDescription = null) },
+            modifier = Modifier.padding(top = 6.dp)
         )
 
         LazyColumn(
