@@ -13,6 +13,7 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
 import androidx.core.content.ContextCompat
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
@@ -24,6 +25,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.machi.memoiz.data.MemoizDatabase
 import com.machi.memoiz.data.datastore.PreferencesDataStoreManager
+import com.machi.memoiz.data.datastore.UserPreferences
 import com.machi.memoiz.data.repository.MemoRepository
 import com.machi.memoiz.ui.ViewModelFactory
 import com.machi.memoiz.ui.screens.MainScreen
@@ -78,9 +80,19 @@ class MainActivity : ComponentActivity() {
         }
 
         setContent {
-            MemoizTheme {
+            // collect user preferences to determine UI display mode
+            val prefsState = preferencesManager.userPreferencesFlow.collectAsState(initial = UserPreferences())
+            val uiMode = prefsState.value.uiDisplayMode
+            val systemDark = isSystemInDarkTheme()
+            val darkTheme = when (uiMode) {
+                com.machi.memoiz.data.datastore.UiDisplayMode.LIGHT -> false
+                com.machi.memoiz.data.datastore.UiDisplayMode.DARK -> true
+                com.machi.memoiz.data.datastore.UiDisplayMode.SYSTEM -> systemDark
+            }
+
+            MemoizTheme(darkTheme = darkTheme) {
                 val colorScheme = MaterialTheme.colorScheme
-                val isDarkTheme = isSystemInDarkTheme()
+                val isDarkTheme = darkTheme
                 val view = window
                 val windowInsetsController = WindowCompat.getInsetsController(view, view.decorView)
                 SideEffect {

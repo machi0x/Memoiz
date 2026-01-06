@@ -19,6 +19,7 @@ class PreferencesDataStoreManager(private val context: Context) {
         private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "user_preferences")
         private val CUSTOM_CATEGORIES_KEY = stringSetPreferencesKey("custom_categories")
         private val CATEGORY_ORDER_KEY = stringPreferencesKey("category_order")
+        private val UI_DISPLAY_MODE_KEY = stringPreferencesKey("ui_display_mode")
         // NOTE: tutorial flags are now stored in SharedPreferences for immediate consistency
         private const val SP_FILE_NAME = "memoiz_shared_prefs"
         private const val SP_KEY_HAS_SEEN_TUTORIAL = "has_seen_tutorial"
@@ -56,7 +57,8 @@ class PreferencesDataStoreManager(private val context: Context) {
             customCategories = preferences[CUSTOM_CATEGORIES_KEY] ?: emptySet(),
             categoryOrder = preferences[CATEGORY_ORDER_KEY]?.split(',')?.filter { it.isNotBlank() } ?: emptyList(),
             hasSeenTutorial = spPair.first,
-            showTutorialOnNextLaunch = spPair.second
+            showTutorialOnNextLaunch = spPair.second,
+            uiDisplayMode = UiDisplayMode.fromString(preferences[UI_DISPLAY_MODE_KEY])
         )
     }.distinctUntilChanged()
 
@@ -108,5 +110,11 @@ class PreferencesDataStoreManager(private val context: Context) {
         sharedPrefs.edit().putBoolean(SP_KEY_SHOW_TUTORIAL_ON_NEXT_LAUNCH, true).apply()
         _sharedPrefFlow.value = Pair(_sharedPrefFlow.value.first, true)
         android.util.Log.d("PreferencesDataStore", "requestTutorial() completed — write finished")
+    }
+
+    suspend fun setUiDisplayMode(mode: UiDisplayMode) {
+        context.dataStore.edit { preferences ->
+            preferences[UI_DISPLAY_MODE_KEY] = mode.name
+        }
     }
 }

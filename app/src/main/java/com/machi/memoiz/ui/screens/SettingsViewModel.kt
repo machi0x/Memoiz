@@ -5,6 +5,7 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.machi.memoiz.data.datastore.PreferencesDataStoreManager
+import com.machi.memoiz.data.datastore.UiDisplayMode
 import com.machi.memoiz.service.ContentProcessingLauncher
 import com.machi.memoiz.service.GenAiStatusManager
 import com.machi.memoiz.service.GenAiFeatureStates
@@ -31,6 +32,8 @@ interface SettingsScreenViewModel {
     fun setUseImageDescription(use: Boolean)
     fun setUseTextGeneration(use: Boolean)
     fun setUseSummarization(use: Boolean)
+    // New: set UI display mode
+    fun setUiDisplayMode(mode: UiDisplayMode)
 }
 
 /**
@@ -98,6 +101,12 @@ class SettingsViewModel(
     override fun setUseSummarization(use: Boolean) {
         // No-op
         Log.d("SettingsViewModel", "setUseSummarization called but force-off flags removed; no-op")
+    }
+
+    override fun setUiDisplayMode(mode: UiDisplayMode) {
+        viewModelScope.launch {
+            preferencesManager.setUiDisplayMode(mode)
+        }
     }
 
     override fun refreshFeatureStates() {

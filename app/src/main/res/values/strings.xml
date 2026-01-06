@@ -195,4 +195,10 @@ Try sharing text or images from other apps, or use the + button at the bottom of
     <string name="genai_status_message_download_completed">AI model download completed.</string>
     <string name="genai_status_message_download_failed_dialog">AI model could not be downloaded. Please reopen the app later to retry.</string>
     <string name="toast_already_exists">Already exists</string>
+
+    <!-- new UI display mode strings -->
+    <string name="settings_ui_display_mode">UI display mode</string>
+    <string name="settings_ui_display_mode_light">Light</string>
+    <string name="settings_ui_display_mode_dark">Dark</string>
+    <string name="settings_ui_display_mode_system">Follow system</string>
 </resources>

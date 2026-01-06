@@ -29,6 +29,7 @@ import com.google.android.gms.oss.licenses.OssLicensesMenuActivity
 import com.machi.memoiz.BuildConfig
 import com.machi.memoiz.R
 import com.machi.memoiz.data.datastore.UserPreferences
+import com.machi.memoiz.data.datastore.UiDisplayMode
 import com.machi.memoiz.ui.theme.MemoizTheme
 import com.machi.memoiz.util.UsageStatsHelper
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -39,6 +40,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.*
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
 
 /**
  * Settings screen for app configuration.
@@ -148,6 +151,102 @@ fun SettingsScreen(
                     HorizontalDivider(modifier = Modifier.padding(start = 72.dp))
                 }
 
+                // <-- Insert UI display mode here (between usage and OSS) -->
+                item {
+                    // collect latest user preferences to get current ui display mode
+                    val userPrefs by viewModel.genAiPreferences.collectAsStateWithLifecycle(initialValue = UserPreferences())
+                    val currentMode = userPrefs.uiDisplayMode
+                    val ctx = LocalContext.current
+                    val scope = rememberCoroutineScope()
+
+                    PreferenceItem(
+                        title = stringResource(R.string.settings_ui_display_mode),
+                        leadingIcon = { Icon(Icons.Filled.Brightness6, contentDescription = null) },
+                        extraContent = {
+                            Column(modifier = Modifier.padding(start = 4.dp)) {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable(
+                                            interactionSource = remember { MutableInteractionSource() },
+                                            indication = null
+                                        ) {
+                                            viewModel.setUiDisplayMode(UiDisplayMode.LIGHT)
+                                            // Delay recreation slightly so DataStore write can complete
+                                            scope.launch {
+                                                kotlinx.coroutines.delay(300)
+                                                (ctx as? android.app.Activity)?.recreate()
+                                            }
+                                        }
+                                        .padding(vertical = 6.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    RadioButton(selected = currentMode == UiDisplayMode.LIGHT, onClick = {
+                                        viewModel.setUiDisplayMode(UiDisplayMode.LIGHT)
+                                        scope.launch {
+                                            kotlinx.coroutines.delay(300)
+                                            (ctx as? android.app.Activity)?.recreate()
+                                        }
+                                    })
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(text = stringResource(R.string.settings_ui_display_mode_light), style = MaterialTheme.typography.bodySmall)
+                                }
+
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable(
+                                            interactionSource = remember { MutableInteractionSource() },
+                                            indication = null
+                                        ) {
+                                            viewModel.setUiDisplayMode(UiDisplayMode.DARK)
+                                            scope.launch {
+                                                kotlinx.coroutines.delay(300)
+                                                (ctx as? android.app.Activity)?.recreate()
+                                            }
+                                        }
+                                        .padding(vertical = 6.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    RadioButton(selected = currentMode == UiDisplayMode.DARK, onClick = {
+                                        viewModel.setUiDisplayMode(UiDisplayMode.DARK)
+                                        scope.launch {
+                                            kotlinx.coroutines.delay(300)
+                                            (ctx as? android.app.Activity)?.recreate()
+                                        }
+                                    })
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(text = stringResource(R.string.settings_ui_display_mode_dark), style = MaterialTheme.typography.bodySmall)
+                                }
+
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable(
+                                            interactionSource = remember { MutableInteractionSource() },
+                                            indication = null
+                                        ) {
+                                            viewModel.setUiDisplayMode(UiDisplayMode.SYSTEM)
+                                            // For system mode, let system handle theme; no recreate necessary
+                                        }
+                                        .padding(vertical = 6.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    RadioButton(selected = currentMode == UiDisplayMode.SYSTEM, onClick = {
+                                        viewModel.setUiDisplayMode(UiDisplayMode.SYSTEM)
+                                    })
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(text = stringResource(R.string.settings_ui_display_mode_system), style = MaterialTheme.typography.bodySmall)
+                                }
+                            }
+                        }
+                    )
+                }
+
+                item {
+                    HorizontalDivider(modifier = Modifier.padding(start = 72.dp))
+                }
+
                 item {
                     PreferenceItem(
                         title = stringResource(R.string.settings_oss_title),
@@ -186,10 +285,6 @@ fun SettingsScreen(
                     )
                 }
 
-                val imageState = featureStates?.imageDescription ?: FeatureStatus.UNAVAILABLE
-                val textState = featureStates?.textGeneration ?: FeatureStatus.UNAVAILABLE
-                val sumState = featureStates?.summarization ?: FeatureStatus.UNAVAILABLE
-
                 // Show each AI feature as a two-column, no-border row: left = feature name, right = two stacked rows (model name / status)
                 item {
                     // Image description
@@ -198,7 +293,7 @@ fun SettingsScreen(
                     AiFeatureRow(
                         featureTitle = stringResource(R.string.genai_model_label_image),
                         modelDisplay = imageModelDisplay,
-                        state = imageState
+                        state = featureStates?.imageDescription ?: FeatureStatus.UNAVAILABLE
                     )
 
                     // Text generation
@@ -207,7 +302,7 @@ fun SettingsScreen(
                     AiFeatureRow(
                         featureTitle = stringResource(R.string.genai_model_label_text),
                         modelDisplay = textModelDisplay,
-                        state = textState
+                        state = featureStates?.textGeneration ?: FeatureStatus.UNAVAILABLE
                     )
 
                     // Summarization
@@ -216,9 +311,17 @@ fun SettingsScreen(
                     AiFeatureRow(
                         featureTitle = stringResource(R.string.genai_model_label_summarization),
                         modelDisplay = sumModelDisplay,
-                        state = sumState
+                        state = featureStates?.summarization ?: FeatureStatus.UNAVAILABLE
                     )
                 }
+
+                item {
+                    HorizontalDivider(modifier = Modifier.padding(start = 72.dp))
+                }
+
+                // UI Display Mode preference: no description, three radio rows
+                // (Removed duplicate - already present earlier between usage and OSS)
+
             }
         }
     }
@@ -436,4 +539,5 @@ private class FakeSettingsViewModel : SettingsScreenViewModel {
     override fun setUseImageDescription(use: Boolean) { /* preview-only: no-op */ }
     override fun setUseTextGeneration(use: Boolean) { /* preview-only: no-op */ }
     override fun setUseSummarization(use: Boolean) { /* preview-only: no-op */ }
+    override fun setUiDisplayMode(mode: UiDisplayMode) { /* preview-only: no-op */ }
 }

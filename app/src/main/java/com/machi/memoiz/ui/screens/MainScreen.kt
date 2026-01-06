@@ -985,7 +985,7 @@ private fun CategoryAccordion(
     val deleteCategoryString = stringResource(R.string.action_delete_category)
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = colorResource(id = R.color.memo_card_background))
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
     ) {
         Column {
             // Category header (always visible)
@@ -2037,7 +2037,7 @@ private fun ImageThumbnailFrame(
         Box(
             modifier = Modifier
                 .matchParentSize()
-                .background(colorResource(id = R.color.memo_card_background), shape = outerShape)
+                .background(MaterialTheme.colorScheme.surfaceVariant, shape = outerShape)
                 .padding(18.dp) // wider outer frame for more clearance
         ) {
             Box(

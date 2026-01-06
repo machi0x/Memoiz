@@ -179,4 +179,8 @@
     <string name="genai_status_message_download_cancelled">ダウンロードをキャンセルしました。機能が制限される可能性があります。</string>
     <string name="cd_refresh">更新</string>
     <string name="toast_already_exists">既に存在します</string>
+    <string name="settings_ui_display_mode">UIの表示モード</string>
+    <string name="settings_ui_display_mode_light">ライト</string>
+    <string name="settings_ui_display_mode_dark">ダーク</string>
+    <string name="settings_ui_display_mode_system">システムに合わせる</string>
 </resources>
