@@ -834,18 +834,15 @@ private fun NavigationDrawerContent(
 
         HorizontalDivider()
 
-        // Move Settings to be directly under the banner for easier access
         NavigationDrawerItem(
             label = { Text(stringResource(R.string.drawer_settings)) },
             selected = false,
             onClick = onSettingsClick,
-            icon = { Icon(Icons.Default.Settings, contentDescription = null) },
-            modifier = Modifier.padding(12.dp)
+            icon = { Icon(Icons.Default.Settings, contentDescription = null) }
         )
 
         LazyColumn(
-            modifier = Modifier.weight(1f),
-            contentPadding = PaddingValues(vertical = 8.dp)
+            modifier = Modifier.weight(1f)
         ) {
             item {
                 HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
