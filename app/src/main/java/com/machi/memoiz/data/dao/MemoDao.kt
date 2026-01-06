@@ -46,4 +46,10 @@ interface MemoDao {
 
     @Query("SELECT * FROM memos WHERE category = :categoryName")
     suspend fun getMemosByCategoryImmediate(categoryName: String): List<MemoEntity>
+
+    @Query("SELECT * FROM memos WHERE content = :content LIMIT 1")
+    suspend fun findByContent(content: String): MemoEntity?
+
+    @Query("SELECT * FROM memos WHERE imageUri = :imageUri LIMIT 1")
+    suspend fun findByImageUri(imageUri: String): MemoEntity?
 }

@@ -35,8 +35,15 @@ class ProcessTextActivity : ComponentActivity() {
         if (text.isNullOrBlank()) return false
 
         val sourceApp = determineSourceApp(this)
-        ContentProcessingLauncher.enqueueWork(this, text, null, sourceApp)
-        return true
+        // Use WithResult API so we can distinguish DuplicateIgnored and show proper toast
+        return when (ContentProcessingLauncher.enqueueWorkWithResult(this, text, null, sourceApp)) {
+            ContentProcessingLauncher.EnqueueResult.Enqueued -> true
+            ContentProcessingLauncher.EnqueueResult.NothingToCategorize -> false
+            ContentProcessingLauncher.EnqueueResult.DuplicateIgnored -> {
+                Toast.makeText(this, R.string.toast_already_exists, Toast.LENGTH_SHORT).show()
+                true
+            }
+        }
     }
 
     private fun handleSend(sendIntent: Intent): Boolean {
@@ -45,9 +52,23 @@ class ProcessTextActivity : ComponentActivity() {
         val sourceApp = determineSourceApp(this)
 
         return if (streamUri != null && sendIntent.type?.startsWith("image/") == true) {
-            ContentProcessingLauncher.enqueueWork(this, text, streamUri, sourceApp)
+            when (ContentProcessingLauncher.enqueueWorkWithResult(this, text, streamUri, sourceApp, forceCopyImage = true)) {
+                ContentProcessingLauncher.EnqueueResult.Enqueued -> true
+                ContentProcessingLauncher.EnqueueResult.NothingToCategorize -> false
+                ContentProcessingLauncher.EnqueueResult.DuplicateIgnored -> {
+                    Toast.makeText(this, R.string.toast_already_exists, Toast.LENGTH_SHORT).show()
+                    true
+                }
+            }
         } else if (!text.isNullOrBlank()) {
-            ContentProcessingLauncher.enqueueWork(this, text, null, sourceApp)
+            when (ContentProcessingLauncher.enqueueWorkWithResult(this, text, null, sourceApp)) {
+                ContentProcessingLauncher.EnqueueResult.Enqueued -> true
+                ContentProcessingLauncher.EnqueueResult.NothingToCategorize -> false
+                ContentProcessingLauncher.EnqueueResult.DuplicateIgnored -> {
+                    Toast.makeText(this, R.string.toast_already_exists, Toast.LENGTH_SHORT).show()
+                    true
+                }
+            }
         } else {
             false
         }

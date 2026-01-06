@@ -285,9 +285,13 @@ fun MainScreen(
         contract = ActivityResultContracts.PickVisualMedia()
     ) { uri: Uri? ->
         if (uri != null) {
-            val enqueued = ContentProcessingLauncher.enqueueWork(context, null, uri, forceCopyImage = true)
-            if (!enqueued) {
-                Toast.makeText(context, R.string.nothing_to_categorize, Toast.LENGTH_SHORT).show()
+            val result = ContentProcessingLauncher.enqueueWorkWithResult(context, null, uri, forceCopyImage = true)
+            when (result) {
+                ContentProcessingLauncher.EnqueueResult.Enqueued -> { /* no-op */ }
+                ContentProcessingLauncher.EnqueueResult.NothingToCategorize ->
+                    Toast.makeText(context, R.string.nothing_to_categorize, Toast.LENGTH_SHORT).show()
+                ContentProcessingLauncher.EnqueueResult.DuplicateIgnored ->
+                    Toast.makeText(context, R.string.toast_already_exists, Toast.LENGTH_SHORT).show()
             }
         }
     }
@@ -426,11 +430,15 @@ fun MainScreen(
                                     text = { Text(text = fabPasteLabel) },
                                     icon = { Icon(Icons.Default.ContentPaste, contentDescription = null) },
                                     onClick = {
-                                        val enqueued = ContentProcessingLauncher.enqueueFromClipboard(context)
-                                        if (!enqueued) {
-                                            Toast.makeText(context, R.string.nothing_to_categorize, Toast.LENGTH_SHORT).show()
+                                        val result = ContentProcessingLauncher.enqueueFromClipboardWithResult(context)
+                                        when (result) {
+                                            ContentProcessingLauncher.EnqueueResult.Enqueued -> { /* no-op */ }
+                                            ContentProcessingLauncher.EnqueueResult.NothingToCategorize ->
+                                                Toast.makeText(context, R.string.nothing_to_categorize, Toast.LENGTH_SHORT).show()
+                                            ContentProcessingLauncher.EnqueueResult.DuplicateIgnored ->
+                                                Toast.makeText(context, R.string.toast_already_exists, Toast.LENGTH_SHORT).show()
                                         }
-                                        isFabExpanded = false
+                                         isFabExpanded = false
                                     }
                                 )
                                 SmallFloatingActionButton(onClick = { isFabExpanded = false }) {
@@ -751,14 +759,19 @@ fun MainScreen(
                         createMemoError = context.getString(R.string.dialog_create_memo_error_empty)
                         return@TextButton
                     }
-                    val enqueued = ContentProcessingLauncher.enqueueManualMemo(context, trimmed)
-                    if (!enqueued) {
-                        Toast.makeText(context, R.string.nothing_to_categorize, Toast.LENGTH_SHORT).show()
+                    val result = ContentProcessingLauncher.enqueueManualMemoWithResult(context, trimmed)
+                    when (result) {
+                        ContentProcessingLauncher.EnqueueResult.Enqueued -> { /* no-op */ }
+                        ContentProcessingLauncher.EnqueueResult.NothingToCategorize ->
+                            Toast.makeText(context, R.string.nothing_to_categorize, Toast.LENGTH_SHORT).show()
+                        ContentProcessingLauncher.EnqueueResult.DuplicateIgnored ->
+                            Toast.makeText(context, R.string.toast_already_exists, Toast.LENGTH_SHORT).show()
                     }
-                    showCreateMemoDialog = false
-                    createMemoText = ""
-                    createMemoError = null
-                }) {
+                     showCreateMemoDialog = false
+                     createMemoText = ""
+                     createMemoError = null
+                 }) {
+
                     Text(stringResource(R.string.dialog_add))
                 }
             },

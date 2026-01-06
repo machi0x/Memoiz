@@ -81,4 +81,14 @@ class MemoRepository(private val memoDao: MemoDao) {
             isCategoryLocked = isCategoryLocked
         )
     }
+
+    // New: Immediate (suspending) helper to find memo by content
+    suspend fun getMemoByContentImmediate(content: String): Memo? {
+        return memoDao.findByContent(content)?.toDomain()
+    }
+
+    // New: Immediate (suspending) helper to find memo by imageUri
+    suspend fun getMemoByImageUriImmediate(imageUri: String): Memo? {
+        return memoDao.findByImageUri(imageUri)?.toDomain()
+    }
 }
