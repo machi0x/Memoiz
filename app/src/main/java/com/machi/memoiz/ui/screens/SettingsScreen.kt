@@ -46,6 +46,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.*
 import androidx.compose.runtime.rememberCoroutineScope
 import kotlinx.coroutines.launch
+import androidx.compose.ui.text.TextStyle
 
 /**
  * Settings screen for app configuration.
@@ -673,7 +674,7 @@ private fun PreferenceItem(
     trailingContent: (@Composable () -> Unit)? = null,
     extraContent: (@Composable () -> Unit)? = null,
     onClick: (() -> Unit)? = null,
-    headlineStyle: androidx.compose.ui.text.TextStyle? = null,
+    headlineStyle: TextStyle? = null,
     compact: Boolean = false,
 ) {
     val verticalPad = if (compact) 0.dp else 8.dp
