@@ -42,7 +42,7 @@ android {
         targetSdk = 36
         val gitCount = getGitCommitCount()
         versionCode = gitCount
-        versionName = "1.1.0"
+        versionName = "1.1.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
