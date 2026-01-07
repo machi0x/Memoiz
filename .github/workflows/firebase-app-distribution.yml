@@ -1,14 +1,11 @@
 name: Build APK and Deploy to Firebase App Distribution
 
 on:
-  # Trigger on push to main or develop branches
-  push:
+  pull_request:
+    types: [opened, synchronize]
     branches:
       - main
       - develop
-    tags:
-      - 'v*'
-  
   # Allow manual workflow dispatch
   workflow_dispatch:
     inputs:
@@ -19,6 +16,7 @@ on:
 
 jobs:
   build-and-deploy:
+    if: github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     
     steps:
