@@ -609,7 +609,7 @@ fun SettingsScreen(
                             importPassword = if (filtered.length > 32) filtered.take(32) else filtered
                             importPasswordError = null
                         },
-                        placeholder = { Text(text = stringResource(R.string.export_password_placeholder)) },
+                        placeholder = { Text(text = stringResource(R.string.import_password_placeholder)) },
                         singleLine = true
                     )
                     importPasswordError?.let { Text(text = it, color = MaterialTheme.colorScheme.error) }

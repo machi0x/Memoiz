@@ -216,8 +216,11 @@ Try sharing text or images from other apps, or use the + button at the bottom of
     <!-- Password / dialog strings for export/import -->
     <string name="export_password_explain">Optionally set a password to encrypt the exported ZIP (alphanumeric, 4–32 characters). Leave empty for no encryption.</string>
     <string name="export_password_placeholder">Password (optional)</string>
+    <!-- Placeholder for import dialog where password is required -->
+    <string name="import_password_placeholder">Password</string>
     <string name="import_password_prompt">This file is password-protected. Enter the password (alphanumeric, 4–32 characters).</string>
     <string name="password_validation_error">Password must be 4–32 alphanumeric characters</string>
+
     <!-- Import error variants mapped from ViewModel messages -->
     <string name="settings_import_result_bad_password">Invalid password or corrupted file. Please check the password and try again.</string>
     <string name="settings_import_result_open_failed">Cannot open the selected file. Please check the file and the app\'s read permissions.</string>
