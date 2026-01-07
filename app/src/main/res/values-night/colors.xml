@@ -19,4 +19,8 @@
     <!-- Campus note line colors: use same as light theme so lines look identical in both modes -->
     <color name="campus_note_line_vertical">#FF9AA2</color>
     <color name="campus_note_line_horizontal">#B7D7FF</color>
+
+    <!-- Speech bubble background color (dark theme: neutral gray) -->
+    <color name="speech_bubble_bg">#3A3C3F</color>
+    <color name="speech_bubble_bg_dark">#3A3C3F</color>
 </resources>

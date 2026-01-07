@@ -48,6 +48,7 @@ import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.annotation.DrawableRes
+import androidx.compose.ui.graphics.Path
 import androidx.annotation.StringRes
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
@@ -70,10 +71,11 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.unit.Dp
 import com.machi.memoiz.R
 import com.machi.memoiz.data.entity.MemoType
 import com.machi.memoiz.domain.model.Memo
@@ -110,6 +112,7 @@ fun MainScreen(
     val shouldShowTutorial by viewModel.shouldShowTutorial.collectAsState()
     val preferencesLoaded by viewModel.preferencesLoaded.collectAsState()
     val isProcessing by viewModel.isProcessing.collectAsState()
+    val uiDisplayModeSetting by viewModel.uiDisplayMode.collectAsState()
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var showTutorialDialog by rememberSaveable { mutableStateOf(false) }
@@ -541,7 +544,8 @@ fun MainScreen(
                                         pendingReanalyzeMemo = memo
                                         isFabExpanded = false
                                     },
-                                    dragHandle = Modifier.detectReorder(reorderState)
+                                    dragHandle = Modifier.detectReorder(reorderState),
+                                    uiDisplayMode = uiDisplayModeSetting
                                 )
                             }
                         }
@@ -986,7 +990,8 @@ private fun CategoryAccordion(
     onDeleteMemo: (Memo) -> Unit,
     onEditCategory: (Memo) -> Unit,
     onReanalyzeMemo: (Memo) -> Unit,
-    dragHandle: Modifier
+    dragHandle: Modifier,
+    uiDisplayMode: com.machi.memoiz.data.datastore.UiDisplayMode? = null
 ) {
     val reanalyzeFailuresString = stringResource(R.string.action_reanalyze_failures)
     val deleteCategoryString = stringResource(R.string.action_delete_category)
@@ -1058,7 +1063,8 @@ private fun CategoryAccordion(
                             memo = memo,
                             onDelete = { onDeleteMemo(memo) },
                             onEditCategory = { onEditCategory(memo) },
-                            onReanalyze = { onReanalyzeMemo(memo) }
+                            onReanalyze = { onReanalyzeMemo(memo) },
+                            appUiDisplayMode = uiDisplayMode
                         )
                     }
                 }
@@ -1073,7 +1079,8 @@ private fun MemoCard(
     onDelete: () -> Unit,
     onEditCategory: () -> Unit,
     onReanalyze: () -> Unit,
-    readOnly: Boolean = false
+    readOnly: Boolean = false,
+    appUiDisplayMode: com.machi.memoiz.data.datastore.UiDisplayMode? = null
 ) {
     val context = LocalContext.current
     val clipboardManager = LocalClipboardManager.current
@@ -1303,7 +1310,8 @@ private fun MemoCard(
                         ChromeStyleUrlBar(
                             url = displayText,
                             title = webTitle,
-                            modifier = Modifier.fillMaxWidth()
+                            modifier = Modifier.fillMaxWidth(),
+                            appUiDisplayMode = appUiDisplayMode
                         )
                         if (memo.content.length > displayText.length) {
                             Spacer(modifier = Modifier.height(4.dp))
@@ -1314,6 +1322,11 @@ private fun MemoCard(
                             )
                         }
                         summaryOverride = webSummary
+                    }
+                    MemoType.IMAGE -> {
+                        // For IMAGE memos we intentionally do not render the inline surface
+                        // with the AI prefix here, because we render the description in the
+                        // speech bubble below to avoid duplicated text.
                     }
                     else -> {
                         if (memo.content.isNotBlank()) {
@@ -1336,7 +1349,40 @@ private fun MemoCard(
                     }
                 }
 
-                if (!memo.summary.isNullOrBlank() && memo.memoType != MemoType.IMAGE) {
+                // After the when/memo content block, show a speech bubble for IMAGE and WEB_SITE types
+                val bubbleText = remember(memo.memoType, memo.content, summaryOverride, memo.summary) {
+                    when (memo.memoType) {
+                        MemoType.IMAGE -> memo.content
+                        MemoType.WEB_SITE -> summaryOverride ?: memo.summary ?: memo.content
+                        else -> null
+                    }
+                }
+
+                if (!bubbleText.isNullOrBlank() && (memo.memoType == MemoType.IMAGE || memo.memoType == MemoType.WEB_SITE)) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.Start) {
+                        // Bubble contains the raw sentence (no emoji prefix)
+                        SpeechBubble(
+                            text = bubbleText,
+                            // remove the right padding so the bubble can reach closer to the
+                            // card's right edge, and allow a larger max width for wider screens
+                            modifier = Modifier.fillMaxWidth().padding(start = 24.dp, end = 0.dp),
+                            maxWidthDp = 420.dp,
+                            appUiDisplayMode = appUiDisplayMode
+                        )
+                        // Robot emoji: slightly up and positioned near the tail
+                        Text(
+                            text = "🤖",
+                            style = MaterialTheme.typography.bodyLarge,
+                            modifier = Modifier
+                                // robot x position left as requested
+                                .offset(x = 0.dp, y = 4.dp)
+                        )
+                    }
+                }
+
+                // Only show AiSummaryBlock when there is a summary AND we did not already render it
+                if (!memo.summary.isNullOrBlank() && memo.memoType != MemoType.IMAGE && bubbleText.isNullOrBlank()) {
                     val cleaned = remember(memo.summary) { cleanSummary(summaryOverride ?: memo.summary) }
                     val prefixedSummary = remember(cleaned, memo.memoType) {
                         val needsPrefix = memo.memoType == MemoType.IMAGE || memo.memoType == MemoType.WEB_SITE
@@ -1881,12 +1927,39 @@ private const val AI_ROBOT_PREFIX = "🤖"
 private fun ChromeStyleUrlBar(
     url: String,
     title: String? = null,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    appUiDisplayMode: com.machi.memoiz.data.datastore.UiDisplayMode? = null
 ) {
-    // Use color resources so Android automatically resolves night variants from values-night.
-    val bgColor = colorResource(id = R.color.chrome_omnibox_bg)
-    val borderColor = colorResource(id = R.color.chrome_omnibox_border)
-    val textColor = colorResource(id = R.color.chrome_omnibox_text)
+    // Create a configuration-aware Context so resources (including values-night)
+    // are resolved according to the current uiMode; remember by configuration so
+    // re-resolution runs when uiMode changes.
+    val ctx = LocalContext.current
+    val configuration = LocalConfiguration.current
+    // If the app has an explicit UiDisplayMode setting, create a modified
+    // Configuration that forces nightMode accordingly so resource qualifiers
+    // (values-night) resolve based on the app setting rather than system.
+    val effectiveConfig = remember(configuration, appUiDisplayMode) {
+        if (appUiDisplayMode == null || appUiDisplayMode == com.machi.memoiz.data.datastore.UiDisplayMode.SYSTEM) {
+            configuration
+        } else {
+            val copy = android.content.res.Configuration(configuration)
+            // Clear the night-mode bits, then set explicitly to YES or NO so
+            // resource lookup (values-night) follows the app setting instead of system.
+            copy.uiMode = copy.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK.inv()
+            copy.uiMode = when (appUiDisplayMode) {
+                com.machi.memoiz.data.datastore.UiDisplayMode.DARK ->
+                    copy.uiMode or android.content.res.Configuration.UI_MODE_NIGHT_YES
+                com.machi.memoiz.data.datastore.UiDisplayMode.LIGHT ->
+                    copy.uiMode or android.content.res.Configuration.UI_MODE_NIGHT_NO
+                else -> copy.uiMode
+            }
+            copy
+        }
+    }
+    val themedCtx = remember(effectiveConfig) { ctx.createConfigurationContext(effectiveConfig) }
+    val bgColor = Color(themedCtx.resources.getColor(R.color.chrome_omnibox_bg, themedCtx.theme))
+    val borderColor = Color(themedCtx.resources.getColor(R.color.chrome_omnibox_border, themedCtx.theme))
+    val textColor = Color(themedCtx.resources.getColor(R.color.chrome_omnibox_text, themedCtx.theme))
 
     Surface(
         modifier = modifier
@@ -2044,8 +2117,7 @@ private fun ImageThumbnailFrame(
                 AsyncImage(
                     model = Uri.parse(imageUri),
                     contentDescription = contentDescription,
-                    modifier = Modifier
-                        .fillMaxSize()
+                    modifier = Modifier                        .fillMaxSize()
                         .clip(RoundedCornerShape(6.dp)),
                     contentScale = ContentScale.Crop
                 )
@@ -2129,10 +2201,42 @@ private fun PreviewCampusNoteFrame() {
 private fun PreviewChromeStyleUrlBar() {
     MemoizTheme {
         Surface(modifier = Modifier.fillMaxWidth()) {
+            // Default (system) preview
             ChromeStyleUrlBar(
                 url = "https://news.example.com/articles/awesome-updates",
                 title = "Awesome Updates - Example News",
-                modifier = Modifier.padding(16.dp)
+                modifier = Modifier.padding(16.dp),
+                appUiDisplayMode = null
+            )
+        }
+    }
+}
+
+@Preview(name = "Web URL Frame - Forced Dark", showBackground = true)
+@Composable
+private fun PreviewChromeStyleUrlBarDark() {
+    MemoizTheme {
+        Surface(modifier = Modifier.fillMaxWidth()) {
+            ChromeStyleUrlBar(
+                url = "https://news.example.com/articles/awesome-updates",
+                title = "Awesome Updates - Example News",
+                modifier = Modifier.padding(16.dp),
+                appUiDisplayMode = com.machi.memoiz.data.datastore.UiDisplayMode.DARK
+            )
+        }
+    }
+}
+
+@Preview(name = "Web URL Frame - Forced Light", showBackground = true)
+@Composable
+private fun PreviewChromeStyleUrlBarLight() {
+    MemoizTheme {
+        Surface(modifier = Modifier.fillMaxWidth()) {
+            ChromeStyleUrlBar(
+                url = "https://news.example.com/articles/awesome-updates",
+                title = "Awesome Updates - Example News",
+                modifier = Modifier.padding(16.dp),
+                appUiDisplayMode = com.machi.memoiz.data.datastore.UiDisplayMode.LIGHT
             )
         }
     }
@@ -2271,3 +2375,168 @@ private fun MemoTypeIcon(memoType: String?) {
         Icon(icon, contentDescription = null, tint = tint)
     }
 }
+
+@Composable
+private fun SpeechBubble(
+    text: String,
+    modifier: Modifier = Modifier,
+    maxWidthDp: Dp = 320.dp, // smaller line spacing
+    appUiDisplayMode: com.machi.memoiz.data.datastore.UiDisplayMode? = null
+) {
+    // Resolve bubble background using a configuration-aware Context so the
+    // app's UiDisplayMode (light/dark/system) controls values vs values-night.
+    val ctx = LocalContext.current
+    val configuration = LocalConfiguration.current
+    val effectiveConfig = remember(configuration, appUiDisplayMode) {
+        if (appUiDisplayMode == null || appUiDisplayMode == com.machi.memoiz.data.datastore.UiDisplayMode.SYSTEM) {
+            configuration
+        } else {
+            val copy = android.content.res.Configuration(configuration)
+            // Clear the night-mode bits, then set explicitly to YES or NO so
+            // resource lookup (values-night) follows the app setting instead of system.
+            copy.uiMode = copy.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK.inv()
+            copy.uiMode = when (appUiDisplayMode) {
+                com.machi.memoiz.data.datastore.UiDisplayMode.DARK -> copy.uiMode or android.content.res.Configuration.UI_MODE_NIGHT_YES
+                com.machi.memoiz.data.datastore.UiDisplayMode.LIGHT -> copy.uiMode or android.content.res.Configuration.UI_MODE_NIGHT_NO
+                else -> copy.uiMode
+            }
+            copy
+        }
+    }
+    val themedCtx = remember(effectiveConfig) { ctx.createConfigurationContext(effectiveConfig) }
+    val bubbleColor = Color(themedCtx.resources.getColor(R.color.speech_bubble_bg, themedCtx.theme))
+
+    Box(modifier = modifier) {
+        // Bubble body
+        Surface(
+            shape = RoundedCornerShape(12.dp),
+            color = bubbleColor,
+            // shift the rectangular body slightly left so the tail appears closer
+            // to the rectangle (reduces the visual gap between tail and rectangle)
+            modifier = Modifier
+                .widthIn(max = maxWidthDp)
+                .offset(x = (-12).dp) // move rectangle left relative to the outer Box
+                .padding(4.dp)
+        ) {
+            Text(
+                text = text,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 5,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
+            )
+        }
+
+        // Tail
+        // Align the tail with the robot emoji by using a smaller x offset
+        Canvas(
+            modifier = Modifier
+                .size(18.dp)
+                .align(Alignment.BottomStart)
+                // raise the tail a bit (smaller y) and shift x negatively so the tail
+                // lands above the robot's right ear (absolute x = startPadding + (-6.dp) )
+                .offset(x = (-6).dp, y = 7.dp)
+        ) {
+            val p = Path().apply {
+                moveTo(0f, 0f)
+                lineTo(size.width, 0f)
+                lineTo(0f, size.height)
+                close()
+            }
+            // draw only the filled tail (no outline) so it matches the bubble body
+            drawPath(p, color = bubbleColor)
+        }
+    }
+}
+
+@Preview(name = "MemoCard - Image Bubble", showBackground = true, device = Devices.PIXEL_4)
+@Composable
+private fun PreviewMemoCardImageBubble() {
+    MemoizTheme {
+        Surface(modifier = Modifier.fillMaxWidth()) {
+            MemoCard(
+                memo = Memo(
+                    id = 1,
+                    content = "This is an auto-generated description for the image. It may be long but should be truncated in the bubble.",
+                    imageUri = "https://picsum.photos/seed/memoizPreview/600",
+                    memoType = MemoType.IMAGE,
+                    category = "Unsorted",
+                    summary = "A scenic photo of mountains and lake."
+                ),
+                onDelete = {},
+                onEditCategory = {},
+                onReanalyze = {}
+            )
+        }
+    }
+}
+
+@Preview(name = "MemoCard - Web Bubble", showBackground = true, device = Devices.PIXEL_4)
+@Composable
+private fun PreviewMemoCardWebBubble() {
+    MemoizTheme {
+        Surface(modifier = Modifier.fillMaxWidth()) {
+            MemoCard(
+                memo = Memo(
+                    id = 2,
+                    content = "https://news.example.com/article/compose-bubble",
+                    imageUri = null,
+                    memoType = MemoType.WEB_SITE,
+                    category = "Reading",
+                    summary = "Compose-Bubble を使ったサンプル記事\n詳細はリンク先を参照してください。"
+                ),
+                onDelete = {},
+                onEditCategory = {},
+                onReanalyze = {}
+            )
+        }
+    }
+}
+
+@Preview(name = "MemoCard - Image Bubble - Dark", showBackground = true, device = Devices.PIXEL_4)
+@Composable
+private fun PreviewMemoCardImageBubbleDark() {
+    MemoizTheme {
+        Surface(modifier = Modifier.fillMaxWidth()) {
+            MemoCard(
+                memo = Memo(
+                    id = 1,
+                    content = "This is an auto-generated description for the image. It may be long but should be truncated in the bubble.",
+                    imageUri = "https://picsum.photos/seed/memoizPreview/600",
+                    memoType = MemoType.IMAGE,
+                    category = "Unsorted",
+                    summary = "A scenic photo of mountains and lake."
+                ),
+                onDelete = {},
+                onEditCategory = {},
+                onReanalyze = {},
+                appUiDisplayMode = com.machi.memoiz.data.datastore.UiDisplayMode.DARK
+            )
+        }
+    }
+}
+
+@Preview(name = "MemoCard - Image Bubble - Light", showBackground = true, device = Devices.PIXEL_4)
+@Composable
+private fun PreviewMemoCardImageBubbleLight() {
+    MemoizTheme {
+        Surface(modifier = Modifier.fillMaxWidth()) {
+            MemoCard(
+                memo = Memo(
+                    id = 1,
+                    content = "This is an auto-generated description for the image. It may be long but should be truncated in the bubble.",
+                    imageUri = "https://picsum.photos/seed/memoizPreview/600",
+                    memoType = MemoType.IMAGE,
+                    category = "Unsorted",
+                    summary = "A scenic photo of mountains and lake."
+                ),
+                onDelete = {},
+                onEditCategory = {},
+                onReanalyze = {},
+                appUiDisplayMode = com.machi.memoiz.data.datastore.UiDisplayMode.LIGHT
+            )
+        }
+    }
+}
+

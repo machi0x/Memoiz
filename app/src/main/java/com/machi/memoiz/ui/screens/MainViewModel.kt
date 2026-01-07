@@ -14,6 +14,7 @@ import androidx.work.WorkInfo
 import com.machi.memoiz.R
 import com.machi.memoiz.worker.WORK_TAG_MEMO_PROCESSING
 import com.machi.memoiz.data.datastore.UserPreferences
+import com.machi.memoiz.data.datastore.UiDisplayMode
 import com.machi.memoiz.service.ContentProcessingLauncher
 
 data class MemoGroup(val category: String, val memos: List<Memo>)
@@ -61,6 +62,12 @@ class MainViewModel(
 
     private val userPreferencesFlow = preferencesManager.userPreferencesFlow
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), UserPreferences())
+
+    // Expose the UiDisplayMode so composables can adapt resource resolution to the
+    // app's user-selected display mode (LIGHT/DARK/SYSTEM).
+    val uiDisplayMode = userPreferencesFlow
+        .map { it.uiDisplayMode }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), UiDisplayMode.SYSTEM)
 
     // Indicates whether we've observed the first real preferences emission from DataStore.
     private val _preferencesLoaded = MutableStateFlow(false)
