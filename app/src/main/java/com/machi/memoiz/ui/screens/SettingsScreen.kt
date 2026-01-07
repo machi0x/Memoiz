@@ -226,6 +226,9 @@ fun SettingsScreen(
                         leadingIcon = { Icon(Icons.Filled.Brightness6, contentDescription = null) },
                         extraContent = {
                             Column(modifier = Modifier.padding(start = 4.dp)) {
+                                // Track in-progress state for DataStore write
+                                var writeInProgress by remember { mutableStateOf(false) }
+
                                 Row(
                                     modifier = Modifier
                                         .fillMaxWidth()
@@ -233,25 +236,42 @@ fun SettingsScreen(
                                             interactionSource = remember { MutableInteractionSource() },
                                             indication = null
                                         ) {
-                                            viewModel.setUiDisplayMode(UiDisplayMode.LIGHT)
-                                            // Delay recreation slightly so DataStore write can complete
-                                            scope.launch {
-                                                kotlinx.coroutines.delay(300)
-                                                (ctx as? android.app.Activity)?.recreate()
+                                            if (!writeInProgress) {
+                                                scope.launch {
+                                                    writeInProgress = true
+                                                    try {
+                                                        viewModel.setUiDisplayMode(UiDisplayMode.LIGHT)
+                                                    } catch (_: Exception) {
+                                                        // ignore - error logged in ViewModel; could show Toast/Snackbar here
+                                                    } finally {
+                                                        writeInProgress = false
+                                                    }
+                                                }
                                             }
                                         }
                                         .padding(vertical = 6.dp),
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     RadioButton(selected = currentMode == UiDisplayMode.LIGHT, onClick = {
-                                        viewModel.setUiDisplayMode(UiDisplayMode.LIGHT)
-                                        scope.launch {
-                                            kotlinx.coroutines.delay(300)
-                                            (ctx as? android.app.Activity)?.recreate()
+                                        if (!writeInProgress) {
+                                            scope.launch {
+                                                writeInProgress = true
+                                                try {
+                                                    viewModel.setUiDisplayMode(UiDisplayMode.LIGHT)
+                                                } catch (_: Exception) {
+                                                    // ignore
+                                                } finally {
+                                                    writeInProgress = false
+                                                }
+                                            }
                                         }
                                     })
                                     Spacer(modifier = Modifier.width(8.dp))
                                     Text(text = stringResource(R.string.settings_ui_display_mode_light), style = MaterialTheme.typography.bodySmall)
+                                    if (writeInProgress) {
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        CircularProgressIndicator(modifier = Modifier.size(12.dp), strokeWidth = 2.dp)
+                                    }
                                 }
 
                                 Row(
@@ -261,24 +281,42 @@ fun SettingsScreen(
                                             interactionSource = remember { MutableInteractionSource() },
                                             indication = null
                                         ) {
-                                            viewModel.setUiDisplayMode(UiDisplayMode.DARK)
-                                            scope.launch {
-                                                kotlinx.coroutines.delay(300)
-                                                (ctx as? android.app.Activity)?.recreate()
+                                            if (!writeInProgress) {
+                                                scope.launch {
+                                                    writeInProgress = true
+                                                    try {
+                                                        viewModel.setUiDisplayMode(UiDisplayMode.DARK)
+                                                    } catch (_: Exception) {
+                                                        // ignore
+                                                    } finally {
+                                                        writeInProgress = false
+                                                    }
+                                                }
                                             }
                                         }
                                         .padding(vertical = 6.dp),
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     RadioButton(selected = currentMode == UiDisplayMode.DARK, onClick = {
-                                        viewModel.setUiDisplayMode(UiDisplayMode.DARK)
-                                        scope.launch {
-                                            kotlinx.coroutines.delay(300)
-                                            (ctx as? android.app.Activity)?.recreate()
+                                        if (!writeInProgress) {
+                                            scope.launch {
+                                                writeInProgress = true
+                                                try {
+                                                    viewModel.setUiDisplayMode(UiDisplayMode.DARK)
+                                                } catch (_: Exception) {
+                                                    // ignore
+                                                } finally {
+                                                    writeInProgress = false
+                                                }
+                                            }
                                         }
                                     })
                                     Spacer(modifier = Modifier.width(8.dp))
                                     Text(text = stringResource(R.string.settings_ui_display_mode_dark), style = MaterialTheme.typography.bodySmall)
+                                    if (writeInProgress) {
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        CircularProgressIndicator(modifier = Modifier.size(12.dp), strokeWidth = 2.dp)
+                                    }
                                 }
 
                                 Row(
@@ -288,17 +326,43 @@ fun SettingsScreen(
                                             interactionSource = remember { MutableInteractionSource() },
                                             indication = null
                                         ) {
-                                            viewModel.setUiDisplayMode(UiDisplayMode.SYSTEM)
+                                            if (!writeInProgress) {
+                                                scope.launch {
+                                                    writeInProgress = true
+                                                    try {
+                                                        viewModel.setUiDisplayMode(UiDisplayMode.SYSTEM)
+                                                    } catch (_: Exception) {
+                                                        // ignore
+                                                    } finally {
+                                                        writeInProgress = false
+                                                    }
+                                                }
+                                            }
                                             // For system mode, let system handle theme; no recreate necessary
                                         }
                                         .padding(vertical = 6.dp),
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     RadioButton(selected = currentMode == UiDisplayMode.SYSTEM, onClick = {
-                                        viewModel.setUiDisplayMode(UiDisplayMode.SYSTEM)
+                                        if (!writeInProgress) {
+                                            scope.launch {
+                                                writeInProgress = true
+                                                try {
+                                                    viewModel.setUiDisplayMode(UiDisplayMode.SYSTEM)
+                                                } catch (_: Exception) {
+                                                    // ignore
+                                                } finally {
+                                                    writeInProgress = false
+                                                }
+                                            }
+                                        }
                                     })
                                     Spacer(modifier = Modifier.width(8.dp))
                                     Text(text = stringResource(R.string.settings_ui_display_mode_system), style = MaterialTheme.typography.bodySmall)
+                                    if (writeInProgress) {
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        CircularProgressIndicator(modifier = Modifier.size(12.dp), strokeWidth = 2.dp)
+                                    }
                                 }
                             }
                         }
@@ -808,7 +872,7 @@ fun SettingsScreenPreview() {
             override fun setUseImageDescription(use: Boolean) { /* preview-only: no-op */ }
             override fun setUseTextGeneration(use: Boolean) { /* preview-only: no-op */ }
             override fun setUseSummarization(use: Boolean) { /* preview-only: no-op */ }
-            override fun setUiDisplayMode(mode: UiDisplayMode) { /* preview-only: no-op */ }
+            override suspend fun setUiDisplayMode(mode: UiDisplayMode) { /* preview-only: no-op */ }
 
             override suspend fun exportMemos(context: Context, password: String?): Uri? {
                 return null

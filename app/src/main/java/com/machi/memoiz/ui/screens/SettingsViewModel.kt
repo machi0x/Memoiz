@@ -54,8 +54,8 @@ interface SettingsScreenViewModel {
     fun setUseImageDescription(use: Boolean)
     fun setUseTextGeneration(use: Boolean)
     fun setUseSummarization(use: Boolean)
-    // New: set UI display mode
-    fun setUiDisplayMode(mode: UiDisplayMode)
+    // New: set UI display mode — make suspend so callers can wait for DataStore write to complete
+    suspend fun setUiDisplayMode(mode: UiDisplayMode)
 
     // Export / Import API
     // Returns content Uri for the created ZIP file on success, or null on failure
@@ -136,9 +136,14 @@ class SettingsViewModel(
         Log.d("SettingsViewModel", "setUseSummarization called but force-off flags removed; no-op")
     }
 
-    override fun setUiDisplayMode(mode: UiDisplayMode) {
-        viewModelScope.launch {
+    // Make this suspend so caller (UI) can await DataStore write completion
+    override suspend fun setUiDisplayMode(mode: UiDisplayMode) {
+        try {
             preferencesManager.setUiDisplayMode(mode)
+            Log.d("SettingsViewModel", "setUiDisplayMode completed: $mode")
+        } catch (e: Exception) {
+            Log.e("SettingsViewModel", "Failed to set UI display mode: $mode", e)
+            throw e
         }
     }
 
