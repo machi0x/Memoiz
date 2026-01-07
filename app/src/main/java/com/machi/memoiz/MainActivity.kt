@@ -36,6 +36,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import androidx.compose.ui.graphics.toArgb
 import androidx.work.WorkManager
+import com.machi.memoiz.data.datastore.UiDisplayMode
 
 class MainActivity : ComponentActivity() {
 
@@ -84,9 +85,9 @@ class MainActivity : ComponentActivity() {
             val uiMode = prefsState.value.uiDisplayMode
             val systemDark = isSystemInDarkTheme()
             val darkTheme = when (uiMode) {
-                com.machi.memoiz.data.datastore.UiDisplayMode.LIGHT -> false
-                com.machi.memoiz.data.datastore.UiDisplayMode.DARK -> true
-                com.machi.memoiz.data.datastore.UiDisplayMode.SYSTEM -> systemDark
+                UiDisplayMode.LIGHT -> false
+                UiDisplayMode.DARK -> true
+                UiDisplayMode.SYSTEM -> systemDark
             }
 
             MemoizTheme(darkTheme = darkTheme) {

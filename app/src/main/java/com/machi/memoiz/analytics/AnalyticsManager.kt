@@ -11,6 +11,9 @@ import com.google.firebase.analytics.FirebaseAnalytics
 object AnalyticsManager {
     private const val EVENT_TUTORIAL_MAIN_UI = "tutorial_main_ui_view"
     private const val EVENT_ABOUT_THANKS = "about_thanks_view"
+    private const val EVENT_MEMO_STATS = "memo_stats"
+    private const val EVENT_USAGE_STATS_PERMISSION = "usage_stats_permission_status"
+
 
     fun logEvent(context: Context, name: String, params: Bundle? = null) {
         try {
@@ -29,5 +32,20 @@ object AnalyticsManager {
     fun logAboutThanksView(context: Context) {
         logEvent(context, EVENT_ABOUT_THANKS)
     }
-}
 
+    fun logMemoStats(context: Context, textCount: Int, webCount: Int, imageCount: Int) {
+        val params = Bundle().apply {
+            putInt("text_memo_count", textCount)
+            putInt("web_memo_count", webCount)
+            putInt("image_memo_count", imageCount)
+        }
+        logEvent(context, EVENT_MEMO_STATS, params)
+    }
+
+    fun logUsageStatsPermission(context: Context, isGranted: Boolean) {
+        val params = Bundle().apply {
+            putString("is_granted", isGranted.toString())
+        }
+        logEvent(context, EVENT_USAGE_STATS_PERMISSION, params)
+    }
+}
