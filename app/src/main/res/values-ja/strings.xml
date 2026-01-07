@@ -208,6 +208,7 @@
     <string name="export_password_placeholder">パスワード（省略可）</string>
     <string name="import_password_placeholder">パスワード（必須）</string>
     <string name="import_password_prompt">このファイルはパスワードで保護されています。パスワードを入力してください（英数字 4～32 文字）。</string>
+    <string name="settings_usage_select_app_toast">メモイズを選んで許可してください</string>
     <string name="password_validation_error">パスワードは英数字 4～32 文字で入力してください</string>
     <!-- Import error variants mapped from ViewModel messages -->
     <string name="settings_import_result_bad_password">パスワードが間違っているか、ファイルが破損しています。パスワードを確認して再試行してください。</string>

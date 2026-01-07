@@ -1836,6 +1836,13 @@ private fun formatTimestamp(timestamp: Long): String {
 }
 
 private fun launchUsageAccessSettings(context: Context) {
+    // Show guidance toast (Japanese text available via resources) before opening system settings
+    try {
+        Toast.makeText(context, context.getString(R.string.settings_usage_select_app_toast), Toast.LENGTH_LONG).show()
+    } catch (_: Exception) {
+        // ignore if toast fails
+    }
+
     context.startActivity(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS).apply {
         addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
     })
