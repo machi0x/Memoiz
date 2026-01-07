@@ -836,25 +836,30 @@ private fun NavigationDrawerContent(
             contentScale = ContentScale.Fit
         )
 
-        HorizontalDivider()
+        NavigationDrawerItem(
+             label = { Text(stringResource(R.string.drawer_settings)) },
+             selected = false,
+             onClick = onSettingsClick,
+             icon = { Icon(Icons.Default.Settings, contentDescription = null) },
+             modifier = Modifier.height(45.dp).padding(top = 5.dp)
+         )
 
         NavigationDrawerItem(
-            label = { Text(stringResource(R.string.drawer_settings)) },
+            label = { Text(stringResource(R.string.drawer_add_category)) },
             selected = false,
-            onClick = onSettingsClick,
-            icon = { Icon(Icons.Default.Settings, contentDescription = null) },
-            modifier = Modifier.padding(top = 6.dp)
+            onClick = onAddCategoryClick,
+            icon = { Icon(Icons.Default.Add, contentDescription = null) },
+            modifier = Modifier.height(45.dp)
         )
+
+        // Divider between persistent items and the scrollable list
+        HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
 
         LazyColumn(
             modifier = Modifier.weight(1f)
         ) {
             item {
-                HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-            }
-
-            // Filter by Type section header
-            item {
+                // Filter by Type section header
                 Text(
                     text = stringResource(R.string.drawer_filter_by_type),
                     style = MaterialTheme.typography.labelMedium,
@@ -905,10 +910,6 @@ private fun NavigationDrawerContent(
                 )
             }
 
-            item {
-                HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-            }
-
             // Filter by Category section header
             item {
                 Text(
@@ -954,20 +955,6 @@ private fun NavigationDrawerContent(
                     selected = currentFilter == category,
                     onClick = { onFilterSelected(category) },
                     icon = { Icon(leadingIcon, contentDescription = null) },
-                    modifier = Modifier.padding(horizontal = 12.dp)
-                )
-            }
-
-            item {
-                Spacer(modifier = Modifier.height(8.dp))
-            }
-
-            item {
-                NavigationDrawerItem(
-                    label = { Text(stringResource(R.string.drawer_add_category)) },
-                    selected = false,
-                    onClick = onAddCategoryClick,
-                    icon = { Icon(Icons.Default.Add, contentDescription = null) },
                     modifier = Modifier.padding(horizontal = 12.dp)
                 )
             }
