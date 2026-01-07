@@ -355,9 +355,14 @@ fun MainScreen(
                                     value = searchQuery,
                                     onValueChange = { viewModel.setSearchQuery(it) },
                                     placeholder = { Text(stringResource(R.string.search_hint)) },
+                                    // Make the field narrower while analyzing so it doesn't wrap;
+                                    // use a smaller weight and slightly reduced end padding.
                                     modifier = Modifier
-                                        .weight(if (isProcessing) 0.85f else 1f)
-                                        .padding(end = if (isProcessing) 8.dp else 0.dp),
+                                        .weight(if (isProcessing) 0.65f else 1f)
+                                        // Allow the composable to shrink below its default min width
+                                        // so it won't force a line wrap when the indicator appears.
+                                        .defaultMinSize(minWidth = 0.dp)
+                                        .padding(end = if (isProcessing) 4.dp else 0.dp),
                                     singleLine = true,
                                     shape = RoundedCornerShape(24.dp),
                                     colors = OutlinedTextFieldDefaults.colors(
