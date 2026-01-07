@@ -995,7 +995,7 @@ private fun CategoryAccordion(
                         indication = null,
                         interactionSource = remember { MutableInteractionSource() }
                     ) { onHeaderClick() }
-                    .padding(16.dp),
+                    .padding(start = 16.dp, end = 16.dp, top = 2.dp, bottom = 2.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -1135,7 +1135,7 @@ private fun MemoCard(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(16.dp)
+            .padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 14.dp)
     ) {
         var summaryOverride by remember { mutableStateOf<String?>(null) }
 
