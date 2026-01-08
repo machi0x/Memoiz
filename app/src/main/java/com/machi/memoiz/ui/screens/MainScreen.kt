@@ -2361,7 +2361,7 @@ private fun CampusNoteTextAligned(
     val horizontalLineColor = colorResource(id = R.color.campus_note_line_horizontal)
     Text(
         text = text,
-        style = MaterialTheme.typography.bodyMedium.copy(lineHeight = lineHeight),
+        style = MaterialTheme.typography.bodyMedium.copy(lineHeight = lineHeight, fontFamily = com.machi.memoiz.ui.theme.Yomogi),
         color = textColor,
         maxLines = 6,
         overflow = TextOverflow.Ellipsis,

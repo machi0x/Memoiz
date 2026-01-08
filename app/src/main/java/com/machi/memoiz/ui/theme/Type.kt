@@ -16,16 +16,18 @@ val Yomogi = FontFamily(
     Font(R.font.yomogi_regular)
 )
 
+// Use system/default font for app typography so custom fonts are only applied
+// where explicitly requested (SpeechBubble uses SmartFontUi; campus note uses Yomogi).
 val Typography = Typography(
     bodyLarge = TextStyle(
-        fontFamily = SmartFontUi,
+        fontFamily = FontFamily.Default,
         fontWeight = FontWeight.Normal,
         fontSize = 16.sp,
         lineHeight = 24.sp,
         letterSpacing = 0.5.sp
     ),
     bodyMedium = TextStyle(
-        fontFamily = Yomogi,
+        fontFamily = FontFamily.Default,
         fontWeight = FontWeight.Normal,
         fontSize = 16.sp,
         lineHeight = 24.sp,
