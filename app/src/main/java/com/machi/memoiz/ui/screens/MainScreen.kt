@@ -84,6 +84,7 @@ import com.machi.memoiz.ui.theme.MemoizTheme
 import com.machi.memoiz.util.UsageStatsHelper
 import coil.compose.AsyncImage
 import com.machi.memoiz.ui.dialog.GenAiStatusCheckDialogActivity
+import com.machi.memoiz.ui.theme.SmartFontUi
 import java.text.DateFormat
 import java.util.*
 import kotlinx.coroutines.Job
@@ -2444,7 +2445,7 @@ private fun SpeechBubble(
         ) {
             Text(
                 text = text,
-                style = MaterialTheme.typography.bodyMedium,
+                style = MaterialTheme.typography.bodyMedium.copy(fontFamily = SmartFontUi),
                 color = MaterialTheme.colorScheme.onSurface,
                 maxLines = 5,
                 overflow = TextOverflow.Ellipsis,
