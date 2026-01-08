@@ -175,10 +175,10 @@ Try sharing text or images from other apps, or use the + button at the bottom of
     <string name="genai_status_notification_text">Some AI features are unavailable. Tap for details.</string>
     <string name="genai_status_shrunk_mode">Fallback: using summarization only; categories may be missing.</string>
     <string name="genai_status_message_download_failed">Download failed. Some features may be restricted. Please reopen the app later.</string>
-    <string name="genai_models_title">AI models and status in use</string>
-    <string name="genai_model_label_image">Image description feature</string>
-    <string name="genai_model_label_text">Text generation feature</string>
-    <string name="genai_model_label_summarization">Summarization feature</string>
+    <string name="genai_models_title">Model and status of AI features in use</string>
+    <string name="genai_model_label_image">Image description</string>
+    <string name="genai_model_label_text">Text generation</string>
+    <string name="genai_model_label_summarization">Text summarization</string>
     <string name="genai_models_loading">Loading…</string>
     <string name="genai_models_switch_warning">Depending on device type and state, some AI features may be unavailable. In that case, Memoiz features may be restricted.</string>
     <string name="genai_status_download_cancel">Cancel download</string>
@@ -238,8 +238,10 @@ Try sharing text or images from other apps, or use the + button at the bottom of
 
     <!-- Privacy consent strings (aligned with Japanese wording) -->
     <string name="tutorial_step_consent_title">Collecting usage information</string>
-    <string name="tutorial_step_consent_body">To help improve Memoiz\'s features, please turn this ON to allow sending usage information. The contents of your memos and any private information will not be sent. You can change this setting later from the app settings.</string>
-    <string name="label_send_usage_stats">Send usage stats</string>
+    <string name="tutorial_step_consent_body">Allow sending usage data to improve Memoiz? Memo contents and private information will not be sent. You can change this later in Settings.</string>
     <string name="settings_send_usage_title">Send usage stats</string>
     <string name="settings_send_usage_description">Send usage information to help improve Memoiz\'s features. The contents of your memos and any private information will not be sent.</string>
+
+    <string name="ok">OK</string>
+    <string name="no">No</string>
 </resources>

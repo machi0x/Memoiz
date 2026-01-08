@@ -162,9 +162,9 @@
     <string name="genai_status_message_download_completed">AIモデルのダウンロードが完了しました</string>
     <string name="genai_status_message_download_failed_dialog">AIモデルのダウンロードができませんでした。後でアプリを開きなおしてリトライしてください。</string>
     <string name="genai_models_title">利用するAI機能のモデルと状態</string>
-    <string name="genai_model_label_image">画像説明機能</string>
-    <string name="genai_model_label_text">テキスト生成機能</string>
-    <string name="genai_model_label_summarization">要約機能</string>
+    <string name="genai_model_label_image">画像の解説</string>
+    <string name="genai_model_label_text">テキスト生成</string>
+    <string name="genai_model_label_summarization">テキスト要約</string>
     <string name="genai_models_loading">読み込み中…</string>
     <string name="genai_models_switch_warning">デバイスの種類やその状態によって、利用できないAI機能がある場合があります。この場合、メモイズの機能が制限されます。</string>
     <string name="genai_models_unavailable">現在利用できません</string>
@@ -217,8 +217,10 @@
 
     <!-- Privacy consent (Japanese) -->
     <string name="tutorial_step_consent_title">メモイズの利用状況の収集について</string>
-    <string name="tutorial_step_consent_body">メモイズの機能改善のため、利用状況についての情報を送信してもよい場合はONにしてください。作成したメモの内容やプライバシーに関わる情報は送信されません。この設定はあとで設定画面からも切り替えられます。</string>
-    <string name="label_send_usage_stats">利用状況を送信する</string>
+    <string name="tutorial_step_consent_body">メモイズの機能改善のため、利用状況についての情報を送信してもよろしいですか？ 作成したメモの内容やプライバシーに関わる情報は送信されません。この設定はあとで設定画面からも切り替えられます。</string>
     <string name="settings_send_usage_title">利用状況を送信する</string>
     <string name="settings_send_usage_description">メモイズの機能改善のため、利用状況についての情報を送信します。作成したメモの内容やプライバシーに関わる情報は送信されません。</string>
+
+    <string name="ok">はい</string>
+    <string name="no">いいえ</string>
 </resources>
