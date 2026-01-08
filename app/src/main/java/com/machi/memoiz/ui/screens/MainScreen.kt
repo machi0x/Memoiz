@@ -2429,7 +2429,12 @@ private fun SpeechBubble(
     val themedCtx = remember(effectiveConfig) { ctx.createConfigurationContext(effectiveConfig) }
     val bubbleColor = Color(themedCtx.resources.getColor(R.color.speech_bubble_bg, themedCtx.theme))
 
-    Box(modifier = modifier) {
+    val robotXOffset = startPadding - 20.dp
+    val robotYOffset = 30.dp
+    val tailXOffset = startPadding - 4.dp
+    val tailYOffset = 12.dp
+
+    Box(modifier = modifier.padding(bottom = robotYOffset)) {
         // Make the bubble expand horizontally to the available space so it uses
         // left and right room. Keep a small horizontal inset so text doesn't hit
         // the screen edges.
@@ -2454,8 +2459,6 @@ private fun SpeechBubble(
 
         // Tail: align near the start padding position so it visually points to the
         // robot; offset uses the same horizontal base so it moves together.
-        val tailXOffset = startPadding - 4.dp
-        val tailYOffset = 12.dp
         Canvas(
             modifier = Modifier
                 .size(18.dp)
@@ -2476,8 +2479,6 @@ private fun SpeechBubble(
         // horizontally with the bubble and tail. Move it further down and slightly
         // left so it no longer overlays the bubble on Pixel 9.
         if (showRobotEmoji) {
-            val robotXOffset = startPadding - 20.dp
-            val robotYOffset = 27.dp
             Text(
                 text = "🤖",
                 style = MaterialTheme.typography.bodyLarge,
