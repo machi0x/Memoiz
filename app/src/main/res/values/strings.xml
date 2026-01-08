@@ -12,7 +12,7 @@
     <string name="memo_type_image">Image</string>
     
     <string name="fab_paste_clipboard">Paste from clipboard</string>
-    <string name="empty_state_message">You don&apos;t have any memos yet.
+    <string name="empty_state_message">You don\'t have any memos yet.
 Try sharing text or images from other apps, or use the + button at the bottom of this screen to add your first memo.</string>
     <string name="nothing_to_categorize">No text or image in clipboard to categorize.</string>
     <string name="categorization_started">Saved to Memoiz and started AI categorization in background.</string>
@@ -92,7 +92,7 @@ Try sharing text or images from other apps, or use the + button at the bottom of
     <string name="dialog_delete_category_warning">Memos in this category cannot be restored.</string>
     <string name="dialog_delete_custom_category_title">Delete My Category</string>
     <string name="dialog_delete_custom_category_message">If memos exist in this category, the memos will be kept and not deleted. If needed, re-analyze or change its category manually by the menu of each memo.</string>
-    <string name="dialog_delete_custom_category_warning">Memos are preserved; manually re-analyze or change categories via each memo&apos;s menu if required.</string>
+    <string name="dialog_delete_custom_category_warning">Memos are preserved; manually re-analyze or change categories via each memo\'s menu if required.</string>
     <string name="dialog_delete_memo_title">Delete Memo</string>
     <string name="dialog_delete_memo_message">Are you sure you want to delete this memo?</string>
     <string name="cd_remove_custom_category">Remove this My Category</string>
@@ -105,9 +105,9 @@ Try sharing text or images from other apps, or use the + button at the bottom of
     <string name="dialog_reanalyze_title">Re-analyze memo?</string>
     <string name="dialog_reanalyze_message">Re-analyzing may change the category or summary of this memo, but the memo type stays the same.</string>
     <string name="dialog_reanalyze_confirm">Re-analyze</string>
-    <string name="filter_note_type_and_category">Filtering by type "%1$s" and category "%2$s"</string>
-    <string name="filter_note_type_only">Filtering by type "%1$s"</string>
-    <string name="filter_note_category_only">Filtering by category "%1$s"</string>
+    <string name="filter_note_type_and_category">Filtering by type \"%1$s\" and category \"%2$s\"</string>
+    <string name="filter_note_type_only">Filtering by type \"%1$s\"</string>
+    <string name="filter_note_category_only">Filtering by category \"%1$s\"</string>
     <string name="dialog_edit_category_title">Edit Category</string>
     <string name="dialog_edit_category_message">Choose a category from the list or type a new name.</string>
     <string name="dialog_edit_category_auto_hint">New names are saved automatically as My Categories.</string>
@@ -225,7 +225,7 @@ Try sharing text or images from other apps, or use the + button at the bottom of
 
     <!-- Import error variants mapped from ViewModel messages -->
     <string name="settings_import_result_bad_password">Invalid password or corrupted file. Please check the password and try again.</string>
-    <string name="settings_import_result_open_failed">Cannot open the selected file. Please check the file and the app&apos;s read permissions.</string>
+    <string name="settings_import_result_open_failed">Cannot open the selected file. Please check the file and the app\'s read permissions.</string>
     <string name="settings_import_result_no_meta">Import failed: export metadata (meta.json) not found. Please select a valid export file.</string>
     <string name="settings_import_result_failure">An error occurred during import. Please check the file format.</string>
 
@@ -238,8 +238,8 @@ Try sharing text or images from other apps, or use the + button at the bottom of
 
     <!-- Privacy consent strings (aligned with Japanese wording) -->
     <string name="tutorial_step_consent_title">Collecting usage information</string>
-    <string name="tutorial_step_consent_body">To help improve Memoiz&apos;s features, please turn this ON to allow sending usage information. The contents of your memos and any private information will not be sent. You can change this setting later from the app settings.</string>
+    <string name="tutorial_step_consent_body">To help improve Memoiz\'s features, please turn this ON to allow sending usage information. The contents of your memos and any private information will not be sent. You can change this setting later from the app settings.</string>
     <string name="label_send_usage_stats">Send usage stats</string>
     <string name="settings_send_usage_title">Send usage stats</string>
-    <string name="settings_send_usage_description">Send usage information to help improve Memoiz&apos;s features. The contents of your memos and any private information will not be sent.</string>
+    <string name="settings_send_usage_description">Send usage information to help improve Memoiz\'s features. The contents of your memos and any private information will not be sent.</string>
 </resources>

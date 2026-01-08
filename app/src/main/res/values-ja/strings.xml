@@ -4,7 +4,7 @@
     <string name="failure_category">分類失敗</string>
     <string name="settings_about_title">このアプリについて</string>
     <string name="genai_status_download_cancel">キャンセル</string>
-    <string name="settings_about_description">メモイズはテキストや画像をスマホ内のAIでカテゴリ分けして保存し、後で参照・再利用できる備忘録です。 データは端末内で処理され外部には送信されません。\n *このアプリで使用している一部のイラストはAIで生成しています。</string>
+    <string name="settings_about_description">メモイズはテキストや画像をスマホ内のAIでカテゴリ分けして保存し、後で参照・再利用できる備忘録です。 データは端末内で処理され外部には送信されません。&#10;*このアプリで使用している一部のイラストはAIで生成しています。</string>
     <string name="settings_about_button">このアプリについて</string>
     <string name="settings_about_version">バージョン %1$s</string>
     <string name="dialog_close">閉じる</string>
@@ -198,8 +198,7 @@
     <string name="settings_export_result_failure">エクスポートに失敗しました。再度お試しください。</string>
 
     <!-- Tutorial: export/import step -->
-    <string name="tutorial_step_export_title">メモデータの引っ越しについて</string>
-    <string name="tutorial_step_export_body">[設定] > [メモをエクスポート]から全てのメモのデータをファイルに保存し、そのファイルを別の端末に送信した上で[設定] > [メモをインポート]で選択することで、メモを復元することができます。</string>
+    <string name="tutorial_step_export_body">[設定] &gt; [メモをエクスポート]から全てのメモのデータをファイルに保存し、そのファイルを別の端末に送信した上で[設定] &gt; [メモをインポート]で選択することで、メモを復元することができます。</string>
 
     <!-- Default export ZIP filename (localized) -->
     <string name="export_default_filename">メモイズのエクスポートデータ(%1$s).zip</string>
