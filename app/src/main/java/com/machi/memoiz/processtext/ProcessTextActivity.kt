@@ -36,7 +36,7 @@ class ProcessTextActivity : ComponentActivity() {
 
         val sourceApp = determineSourceApp(this)
         // Use WithResult API so we can distinguish DuplicateIgnored and show proper toast
-        return when (ContentProcessingLauncher.enqueueWorkWithResult(this, text, null, sourceApp)) {
+        return when (ContentProcessingLauncher.enqueueWorkWithResult(this, text, null, sourceApp, creationSource = "external_process_text")) {
             ContentProcessingLauncher.EnqueueResult.Enqueued -> true
             ContentProcessingLauncher.EnqueueResult.NothingToCategorize -> false
             ContentProcessingLauncher.EnqueueResult.DuplicateIgnored -> {
@@ -52,7 +52,7 @@ class ProcessTextActivity : ComponentActivity() {
         val sourceApp = determineSourceApp(this)
 
         return if (streamUri != null && sendIntent.type?.startsWith("image/") == true) {
-            when (ContentProcessingLauncher.enqueueWorkWithResult(this, text, streamUri, sourceApp, forceCopyImage = true)) {
+            when (ContentProcessingLauncher.enqueueWorkWithResult(this, text, streamUri, sourceApp, forceCopyImage = true, creationSource = "external_send")) {
                 ContentProcessingLauncher.EnqueueResult.Enqueued -> true
                 ContentProcessingLauncher.EnqueueResult.NothingToCategorize -> false
                 ContentProcessingLauncher.EnqueueResult.DuplicateIgnored -> {
@@ -61,7 +61,7 @@ class ProcessTextActivity : ComponentActivity() {
                 }
             }
         } else if (!text.isNullOrBlank()) {
-            when (ContentProcessingLauncher.enqueueWorkWithResult(this, text, null, sourceApp)) {
+            when (ContentProcessingLauncher.enqueueWorkWithResult(this, text, null, sourceApp, creationSource = "external_send")) {
                 ContentProcessingLauncher.EnqueueResult.Enqueued -> true
                 ContentProcessingLauncher.EnqueueResult.NothingToCategorize -> false
                 ContentProcessingLauncher.EnqueueResult.DuplicateIgnored -> {

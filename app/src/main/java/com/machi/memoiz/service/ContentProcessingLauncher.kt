@@ -63,7 +63,7 @@ object ContentProcessingLauncher {
      * Reads the current clipboard content and enqueues background categorization if possible.
      * @return true when work was enqueued, false if clipboard was empty.
      */
-    fun enqueueFromClipboard(context: Context, showDialog: Boolean = true): Boolean {
+    fun enqueueFromClipboard(context: Context, showDialog: Boolean = true, creationSource: String? = "main_ui_clipboard"): Boolean {
         val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
         val clipData = clipboard.primaryClip ?: return false
         if (clipData.itemCount == 0) return false
@@ -71,11 +71,11 @@ object ContentProcessingLauncher {
         val item = clipData.getItemAt(0)
         val text = item.coerceToText(context)?.toString()?.takeIf { it.isNotBlank() }
         val uri = item.uri
-        return enqueueWork(context, text, uri, showDialog = showDialog)
+        return enqueueWork(context, text, uri, null, showDialog = showDialog, forceCopyImage = false, showStatusDialogOnUnavailable = false, creationSource = creationSource)
     }
 
     // New: WithResult version for UI callers to inspect duplicate vs nothing-to-categorize
-    fun enqueueFromClipboardWithResult(context: Context, showDialog: Boolean = true): EnqueueResult {
+    fun enqueueFromClipboardWithResult(context: Context, showDialog: Boolean = true, creationSource: String? = "main_ui_clipboard"): EnqueueResult {
         val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
         val clipData = clipboard.primaryClip ?: return EnqueueResult.NothingToCategorize
         if (clipData.itemCount == 0) return EnqueueResult.NothingToCategorize
@@ -83,7 +83,7 @@ object ContentProcessingLauncher {
         val item = clipData.getItemAt(0)
         val text = item.coerceToText(context)?.toString()?.takeIf { it.isNotBlank() }
         val uri = item.uri
-        return enqueueWorkWithResult(context, text, uri, showDialog = showDialog)
+        return enqueueWorkWithResult(context, text, uri, null, showDialog = showDialog, forceCopyImage = false, showStatusDialogOnUnavailable = false, creationSource = creationSource)
     }
 
     /**
@@ -96,9 +96,10 @@ object ContentProcessingLauncher {
         sourceApp: String? = null,
         showDialog: Boolean = true,
         forceCopyImage: Boolean = false,
-        showStatusDialogOnUnavailable: Boolean = false
+        showStatusDialogOnUnavailable: Boolean = false,
+        creationSource: String? = null
     ): Boolean {
-        return enqueueWorkWithResult(context, text, imageUri, sourceApp, showDialog, forceCopyImage, showStatusDialogOnUnavailable) == EnqueueResult.Enqueued
+        return enqueueWorkWithResult(context, text, imageUri, sourceApp, showDialog, forceCopyImage, showStatusDialogOnUnavailable, creationSource) == EnqueueResult.Enqueued
     }
 
     // New: WithResult API
@@ -109,7 +110,8 @@ object ContentProcessingLauncher {
         sourceApp: String? = null,
         showDialog: Boolean = true,
         forceCopyImage: Boolean = false,
-        showStatusDialogOnUnavailable: Boolean = false
+        showStatusDialogOnUnavailable: Boolean = false,
+        creationSource: String? = null
     ): EnqueueResult {
         // Quick validation
         if (text.isNullOrBlank() && imageUri == null) {
@@ -153,6 +155,7 @@ object ContentProcessingLauncher {
             text?.let { putString(ClipboardProcessingWorker.KEY_CLIPBOARD_CONTENT, it) }
             persistedUriString?.let { putString(ClipboardProcessingWorker.KEY_IMAGE_URI, it) }
             sourceApp?.let { putString(ClipboardProcessingWorker.KEY_SOURCE_APP, it) }
+            creationSource?.let { putString(ClipboardProcessingWorker.KEY_CREATION_SOURCE, it) }
         }.build()
         if (!workData.keyValueMap.containsKey(ClipboardProcessingWorker.KEY_CLIPBOARD_CONTENT)
             && !workData.keyValueMap.containsKey(ClipboardProcessingWorker.KEY_IMAGE_URI)
@@ -179,12 +182,12 @@ object ContentProcessingLauncher {
     }
 
     fun enqueueManualMemo(context: Context, text: String): Boolean {
-        return enqueueWork(context, text, null, showDialog = true, showStatusDialogOnUnavailable = true)
+        return enqueueWork(context, text, null, showDialog = true, showStatusDialogOnUnavailable = true, creationSource = "main_ui_fab")
     }
 
     // New: WithResult for manual memo
     fun enqueueManualMemoWithResult(context: Context, text: String): EnqueueResult {
-        return enqueueWorkWithResult(context, text, null, showDialog = true, showStatusDialogOnUnavailable = true)
+        return enqueueWorkWithResult(context, text, null, showDialog = true, showStatusDialogOnUnavailable = true, creationSource = "main_ui_fab")
     }
 
     fun enqueueMergeWork(context: Context, targetCategory: String?) {

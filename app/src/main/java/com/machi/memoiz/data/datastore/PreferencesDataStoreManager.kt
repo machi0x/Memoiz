@@ -131,7 +131,7 @@ class PreferencesDataStoreManager(private val context: Context) {
         }
     }
 
-    suspend fun markTutorialSeen() {
+    fun markTutorialSeen() {
         android.util.Log.d("PreferencesDataStore", "markTutorialSeen() called — writing has_seen_tutorial = true to SharedPreferences")
         sharedPrefs.edit().putBoolean(SP_KEY_HAS_SEEN_TUTORIAL, true).putBoolean(SP_KEY_SHOW_TUTORIAL_ON_NEXT_LAUNCH, false).apply()
         // update the flow immediately (SharedPreferences listener will also update it)
@@ -139,7 +139,7 @@ class PreferencesDataStoreManager(private val context: Context) {
         android.util.Log.d("PreferencesDataStore", "markTutorialSeen() completed — write finished")
     }
 
-    suspend fun requestTutorial() {
+    fun requestTutorial() {
         android.util.Log.d("PreferencesDataStore", "requestTutorial() called — writing show_tutorial_on_next_launch = true to SharedPreferences")
         sharedPrefs.edit().putBoolean(SP_KEY_SHOW_TUTORIAL_ON_NEXT_LAUNCH, true).apply()
         _sharedPrefFlow.value = Pair(_sharedPrefFlow.value.first, true)

@@ -11,6 +11,7 @@ import com.machi.memoiz.service.CategoryMergeService
 import com.machi.memoiz.domain.model.Memo
 import com.machi.memoiz.util.UsageStatsHelper
 import com.machi.memoiz.worker.WORK_TAG_MEMO_PROCESSING
+import com.machi.memoiz.analytics.AnalyticsManager
 
 /**
  * WorkManager worker for processing clipboard content in background.
@@ -25,6 +26,7 @@ class ClipboardProcessingWorker(
         const val KEY_CLIPBOARD_CONTENT = "clipboard_content"
         const val KEY_IMAGE_URI = "image_uri"
         const val KEY_SOURCE_APP = "source_app"
+        const val KEY_CREATION_SOURCE = "creation_source"
     }
 
     override suspend fun doWork(): Result {
@@ -35,6 +37,7 @@ class ClipboardProcessingWorker(
             val content = inputData.getString(KEY_CLIPBOARD_CONTENT)
             val imageUri = inputData.getString(KEY_IMAGE_URI)
             val providedSourceApp = inputData.getString(KEY_SOURCE_APP)
+            val creationSource = inputData.getString(KEY_CREATION_SOURCE)
 
             if (content.isNullOrBlank() && imageUri.isNullOrBlank()) {
                 return Result.failure()
@@ -65,6 +68,13 @@ class ClipboardProcessingWorker(
                     createdAt = memoEntity.createdAt
                 )
             )
+
+            // Log analytics event for memo creation with the provided creation source
+            try {
+                AnalyticsManager.logMemoCreated(applicationContext, creationSource)
+            } catch (_: Exception) {
+                // ignore analytics failure
+            }
 
             return Result.success()
 

@@ -30,6 +30,7 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import androidx.core.content.FileProvider
+import com.machi.memoiz.analytics.AnalyticsManager
 
 // zip4j imports
 import net.lingala.zip4j.ZipFile
@@ -444,7 +445,10 @@ class SettingsViewModel(
                         )
 
                         repo.insertMemo(newMemo)
-                        added++
+                        try {
+                            AnalyticsManager.logMemoCreated(context, "import")
+                        } catch (_: Exception) { }
+                         added++
                     } catch (e: Exception) {
                         Log.w("SettingsViewModel", "failed to import a memo item", e)
                         errors++

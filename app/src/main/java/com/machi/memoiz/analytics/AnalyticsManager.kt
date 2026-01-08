@@ -12,16 +12,15 @@ import com.google.mlkit.genai.common.FeatureStatus
 object AnalyticsManager {
     private const val EVENT_TUTORIAL_MAIN_UI = "tutorial_main_ui_view"
     private const val EVENT_ABOUT_THANKS = "about_thanks_view"
-    private const val EVENT_MEMO_STATS = "memo_stats"
     private const val EVENT_USAGE_STATS_PERMISSION = "usage_stats_permission_status"
 
     // New startup-specific events
     private const val EVENT_STARTUP_SORT_KEY = "startup_sort_key"
     private const val EVENT_STARTUP_MY_CATEGORY_COUNT = "startup_my_category_count"
     private const val EVENT_STARTUP_MEMO_STATS_RANGES = "startup_memo_stats_ranges"
-    private const val EVENT_STARTUP_GENAI_IMAGE = "startup_genai_image_status"
-    private const val EVENT_STARTUP_GENAI_TEXT = "startup_genai_text_status"
-    private const val EVENT_STARTUP_GENAI_SUMMARY = "startup_genai_summarization_status"
+
+    // Memo create event
+    private const val EVENT_MEMO_CREATED = "memo_created"
 
 
     fun logEvent(context: Context, name: String, params: Bundle? = null) {
@@ -42,15 +41,6 @@ object AnalyticsManager {
         logEvent(context, EVENT_ABOUT_THANKS)
     }
 
-    fun logMemoStats(context: Context, textCount: Int, webCount: Int, imageCount: Int) {
-        val params = Bundle().apply {
-            putInt("text_memo_count", textCount)
-            putInt("web_memo_count", webCount)
-            putInt("image_memo_count", imageCount)
-        }
-        logEvent(context, EVENT_MEMO_STATS, params)
-    }
-
     fun logUsageStatsPermission(context: Context, isGranted: Boolean) {
         val params = Bundle().apply {
             putString("is_granted", isGranted.toString())
@@ -59,6 +49,13 @@ object AnalyticsManager {
     }
 
     // --- New helpers & startup logging ---
+
+    fun logMemoCreated(context: Context, creationSource: String?) {
+        val params = Bundle().apply {
+            putString("creation_source", creationSource ?: "unknown")
+        }
+        logEvent(context, EVENT_MEMO_CREATED, params)
+    }
 
     /**
      * Convert an integer count into the project's predefined range labels.
@@ -116,21 +113,5 @@ object AnalyticsManager {
             putString("status", status)
         }
         logEvent(context, featureEventName, params)
-    }
-
-    // Convenience wrappers for the three GenAI features so callers don't need to know event names
-    fun logStartupGenAiImageStatus(context: Context, status: String) {
-        val params = Bundle().apply { putString("status", status) }
-        logEvent(context, EVENT_STARTUP_GENAI_IMAGE, params)
-    }
-
-    fun logStartupGenAiTextStatus(context: Context, status: String) {
-        val params = Bundle().apply { putString("status", status) }
-        logEvent(context, EVENT_STARTUP_GENAI_TEXT, params)
-    }
-
-    fun logStartupGenAiSummaryStatus(context: Context, status: String) {
-        val params = Bundle().apply { putString("status", status) }
-        logEvent(context, EVENT_STARTUP_GENAI_SUMMARY, params)
     }
 }

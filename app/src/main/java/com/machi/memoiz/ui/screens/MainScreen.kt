@@ -289,7 +289,7 @@ fun MainScreen(
         contract = ActivityResultContracts.PickVisualMedia()
     ) { uri: Uri? ->
         if (uri != null) {
-            val result = ContentProcessingLauncher.enqueueWorkWithResult(context, null, uri, forceCopyImage = true)
+            val result = ContentProcessingLauncher.enqueueWorkWithResult(context, null, uri, forceCopyImage = true, creationSource = "main_ui_image_picker")
             when (result) {
                 ContentProcessingLauncher.EnqueueResult.Enqueued -> { /* no-op */ }
                 ContentProcessingLauncher.EnqueueResult.NothingToCategorize ->
