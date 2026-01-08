@@ -215,4 +215,11 @@
     <string name="settings_import_result_bad_password">パスワードが間違っているか、ファイルが破損しています。パスワードを確認して再試行してください。</string>
     <string name="settings_import_result_open_failed">選択したファイルを開けませんでした。ファイルとアプリの読み取り権限を確認してください。</string>
     <string name="settings_import_result_no_meta">インポートに失敗しました: エクスポートメタデータ(meta.json)が見つかりません。正しいエクスポートファイルを選択してください。</string>
+
+    <!-- Privacy consent (Japanese) -->
+    <string name="tutorial_step_consent_title">メモイズの利用状況の収集について</string>
+    <string name="tutorial_step_consent_body">メモイズの機能改善のため、利用状況についての情報を送信してもよい場合はONにしてください。作成したメモの内容やプライバシーに関わる情報は送信されません。この設定はあとで設定画面からも切り替えられます。</string>
+    <string name="label_send_usage_stats">利用状況を送信する</string>
+    <string name="settings_send_usage_title">利用状況を送信する</string>
+    <string name="settings_send_usage_description">メモイズの機能改善のため、利用状況についての情報を送信します。作成したメモの内容やプライバシーに関わる情報は送信されません。</string>
 </resources>

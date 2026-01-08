@@ -84,6 +84,8 @@ fun SettingsScreen(
     val baseModelNames by viewModel.baseModelNames.collectAsStateWithLifecycle()
     // Collect feature states for GenAI (nullable until loaded)
     val featureStates by viewModel.featureStates.collectAsStateWithLifecycle()
+    // Collect persisted user preferences (including sendUsageStats)
+    val userPrefs by viewModel.genAiPreferences.collectAsStateWithLifecycle(initialValue = UserPreferences())
 
     val scope = rememberCoroutineScope()
     var showImportProgress by remember { mutableStateOf(false) }
@@ -467,6 +469,26 @@ fun SettingsScreen(
                 }
 
                 item { HorizontalDivider(modifier = Modifier.padding(start = 72.dp)) }
+
+                // 9. Send usage stats (consent toggle)
+                item {
+                    PreferenceItem(
+                        title = stringResource(R.string.settings_send_usage_title),
+                        subtitle = stringResource(R.string.settings_send_usage_description),
+                        leadingIcon = { Icon(Icons.Filled.Send, contentDescription = null) },
+                        trailingContent = {
+                            // Small switch on the right
+                            var checked by remember { mutableStateOf(userPrefs.sendUsageStats) }
+                            // Keep checked in sync when preferences change
+                            LaunchedEffect(userPrefs.sendUsageStats) { checked = userPrefs.sendUsageStats }
+                            Switch(checked = checked, onCheckedChange = { newChecked ->
+                                checked = newChecked
+                                viewModel.setSendUsageStats(newChecked)
+                                com.machi.memoiz.analytics.AnalyticsManager.setCollectionEnabled(context, newChecked)
+                            })
+                        }
+                    )
+                }
 
             }
         }
@@ -873,7 +895,8 @@ fun SettingsScreenPreview() {
             override fun setUseImageDescription(use: Boolean) { /* preview-only: no-op */ }
             override fun setUseTextGeneration(use: Boolean) { /* preview-only: no-op */ }
             override fun setUseSummarization(use: Boolean) { /* preview-only: no-op */ }
-            override suspend fun setUiDisplayMode(mode: UiDisplayMode) { /* preview-only: no-op */ }
+            override fun setSendUsageStats(enabled: Boolean) { /* preview-only: no-op */ }
+             override suspend fun setUiDisplayMode(mode: UiDisplayMode) { /* preview-only: no-op */ }
 
             override suspend fun exportMemos(context: Context, password: String?): Uri? {
                 return null

@@ -55,6 +55,8 @@ interface SettingsScreenViewModel {
     fun setUseImageDescription(use: Boolean)
     fun setUseTextGeneration(use: Boolean)
     fun setUseSummarization(use: Boolean)
+    // New: set whether to send usage statistics (non-suspending convenience method)
+    fun setSendUsageStats(enabled: Boolean)
     // New: set UI display mode — make suspend so callers can wait for DataStore write to complete
     suspend fun setUiDisplayMode(mode: UiDisplayMode)
 
@@ -135,6 +137,22 @@ class SettingsViewModel(
     override fun setUseSummarization(use: Boolean) {
         // No-op
         Log.d("SettingsViewModel", "setUseSummarization called but force-off flags removed; no-op")
+    }
+
+    override fun setSendUsageStats(enabled: Boolean) {
+        // Mirror immediately for fast UI response and schedule DataStore persist
+        try {
+            preferencesManager.setSendUsageStatsSync(enabled)
+        } catch (e: Exception) {
+            Log.w("SettingsViewModel", "Failed to set sendUsageStats sync", e)
+        }
+        viewModelScope.launch {
+            try {
+                preferencesManager.setSendUsageStats(enabled)
+            } catch (e: Exception) {
+                Log.w("SettingsViewModel", "Failed to persist sendUsageStats to DataStore", e)
+            }
+        }
     }
 
     // Make this suspend so caller (UI) can await DataStore write completion

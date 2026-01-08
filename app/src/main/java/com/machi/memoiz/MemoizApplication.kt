@@ -20,6 +20,14 @@ class MemoizApplication : Application() {
     
     override fun onCreate() {
         super.onCreate()
+        // Initialize analytics/crashlytics collection according to stored user preference (default: false)
+        try {
+            val prefsManager = PreferencesDataStoreManager(applicationContext)
+            val sendUsage = prefsManager.isSendUsageStatsSync()
+            AnalyticsManager.setCollectionEnabled(applicationContext, sendUsage)
+        } catch (e: Exception) {
+            android.util.Log.w("MemoizApplication", "Failed to initialize analytics collection from prefs", e)
+        }
         // Future: Initialize WorkManager configurations here if needed
         // Future: Initialize AI service when Gemini Nano becomes available
 

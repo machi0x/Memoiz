@@ -12,7 +12,7 @@
     <string name="memo_type_image">Image</string>
     
     <string name="fab_paste_clipboard">Paste from clipboard</string>
-    <string name="empty_state_message">You don\'t have any memos yet.
+    <string name="empty_state_message">You don&apos;t have any memos yet.
 Try sharing text or images from other apps, or use the + button at the bottom of this screen to add your first memo.</string>
     <string name="nothing_to_categorize">No text or image in clipboard to categorize.</string>
     <string name="categorization_started">Saved to Memoiz and started AI categorization in background.</string>
@@ -92,7 +92,7 @@ Try sharing text or images from other apps, or use the + button at the bottom of
     <string name="dialog_delete_category_warning">Memos in this category cannot be restored.</string>
     <string name="dialog_delete_custom_category_title">Delete My Category</string>
     <string name="dialog_delete_custom_category_message">If memos exist in this category, the memos will be kept and not deleted. If needed, re-analyze or change its category manually by the menu of each memo.</string>
-    <string name="dialog_delete_custom_category_warning">Memos are preserved; manually re-analyze or change categories via each memo\'s menu if required.</string>
+    <string name="dialog_delete_custom_category_warning">Memos are preserved; manually re-analyze or change categories via each memo&apos;s menu if required.</string>
     <string name="dialog_delete_memo_title">Delete Memo</string>
     <string name="dialog_delete_memo_message">Are you sure you want to delete this memo?</string>
     <string name="cd_remove_custom_category">Remove this My Category</string>
@@ -225,14 +225,21 @@ Try sharing text or images from other apps, or use the + button at the bottom of
 
     <!-- Import error variants mapped from ViewModel messages -->
     <string name="settings_import_result_bad_password">Invalid password or corrupted file. Please check the password and try again.</string>
-    <string name="settings_import_result_open_failed">Cannot open the selected file. Please check the file and the app\'s read permissions.</string>
+    <string name="settings_import_result_open_failed">Cannot open the selected file. Please check the file and the app&apos;s read permissions.</string>
     <string name="settings_import_result_no_meta">Import failed: export metadata (meta.json) not found. Please select a valid export file.</string>
     <string name="settings_import_result_failure">An error occurred during import. Please check the file format.</string>
 
     <!-- Tutorial: export/import step -->
     <string name="tutorial_step_export_title">Moving your memos</string>
-    <string name="tutorial_step_export_body">From [Settings] > [Export memos] you can save all your memos to a file; send that file to another device and restore via [Settings] > [Import memos]. </string>
+    <string name="tutorial_step_export_body">From [Settings] &gt; [Export memos] you can save all your memos to a file; send that file to another device and restore via [Settings] &gt; [Import memos]. </string>
 
     <!-- Default export ZIP filename (localized) -->
     <string name="export_default_filename">Memoiz_export_%1$s.zip</string>
+
+    <!-- Privacy consent strings (aligned with Japanese wording) -->
+    <string name="tutorial_step_consent_title">Collecting usage information</string>
+    <string name="tutorial_step_consent_body">To help improve Memoiz&apos;s features, please turn this ON to allow sending usage information. The contents of your memos and any private information will not be sent. You can change this setting later from the app settings.</string>
+    <string name="label_send_usage_stats">Send usage stats</string>
+    <string name="settings_send_usage_title">Send usage stats</string>
+    <string name="settings_send_usage_description">Send usage information to help improve Memoiz&apos;s features. The contents of your memos and any private information will not be sent.</string>
 </resources>

@@ -20,6 +20,8 @@ class PreferencesDataStoreManager(private val context: Context) {
         private val CUSTOM_CATEGORIES_KEY = stringSetPreferencesKey("custom_categories")
         private val CATEGORY_ORDER_KEY = stringPreferencesKey("category_order")
         private val UI_DISPLAY_MODE_KEY = stringPreferencesKey("ui_display_mode")
+        // New: send usage stats preference stored in DataStore
+        private val SEND_USAGE_STATS_KEY = stringPreferencesKey("send_usage_stats")
         // GenAI last-check status keys
         private val GENAI_IMAGE_LAST_KEY = stringPreferencesKey("genai_last_image_status")
         private val GENAI_TEXT_LAST_KEY = stringPreferencesKey("genai_last_text_status")
@@ -28,23 +30,28 @@ class PreferencesDataStoreManager(private val context: Context) {
         private const val SP_FILE_NAME = "memoiz_shared_prefs"
         private const val SP_KEY_HAS_SEEN_TUTORIAL = "has_seen_tutorial"
         private const val SP_KEY_SHOW_TUTORIAL_ON_NEXT_LAUNCH = "show_tutorial_on_next_launch"
+        // New: immediate-sync key for send usage stats (mirror of DataStore for sync reads)
+        private const val SP_KEY_SEND_USAGE_STATS = "send_usage_stats_sp"
     }
 
     // SharedPreferences + DataStore combined flow: keep DataStore for heavier prefs and
     // SharedPreferences for immediate tutorial flags.
     private val sharedPrefs: SharedPreferences = context.getSharedPreferences(SP_FILE_NAME, Context.MODE_PRIVATE)
+    // Use a Triple to include the new sendUsageStats immediate value
     private val _sharedPrefFlow = MutableStateFlow(
-        Pair(
+        Triple(
             sharedPrefs.getBoolean(SP_KEY_HAS_SEEN_TUTORIAL, false),
-            sharedPrefs.getBoolean(SP_KEY_SHOW_TUTORIAL_ON_NEXT_LAUNCH, false)
+            sharedPrefs.getBoolean(SP_KEY_SHOW_TUTORIAL_ON_NEXT_LAUNCH, false),
+            sharedPrefs.getBoolean(SP_KEY_SEND_USAGE_STATS, false)
         )
     )
 
     private val spListener = SharedPreferences.OnSharedPreferenceChangeListener { sp, key ->
-        if (key == SP_KEY_HAS_SEEN_TUTORIAL || key == SP_KEY_SHOW_TUTORIAL_ON_NEXT_LAUNCH) {
-            _sharedPrefFlow.value = Pair(
+        if (key == SP_KEY_HAS_SEEN_TUTORIAL || key == SP_KEY_SHOW_TUTORIAL_ON_NEXT_LAUNCH || key == SP_KEY_SEND_USAGE_STATS) {
+            _sharedPrefFlow.value = Triple(
                 sp.getBoolean(SP_KEY_HAS_SEEN_TUTORIAL, false),
-                sp.getBoolean(SP_KEY_SHOW_TUTORIAL_ON_NEXT_LAUNCH, false)
+                sp.getBoolean(SP_KEY_SHOW_TUTORIAL_ON_NEXT_LAUNCH, false),
+                sp.getBoolean(SP_KEY_SEND_USAGE_STATS, false)
             )
         }
     }
@@ -62,6 +69,7 @@ class PreferencesDataStoreManager(private val context: Context) {
             categoryOrder = preferences[CATEGORY_ORDER_KEY]?.split(',')?.filter { it.isNotBlank() } ?: emptyList(),
             hasSeenTutorial = spPair.first,
             showTutorialOnNextLaunch = spPair.second,
+            sendUsageStats = preferences[SEND_USAGE_STATS_KEY]?.toBoolean() ?: spPair.third,
             uiDisplayMode = UiDisplayMode.fromString(preferences[UI_DISPLAY_MODE_KEY])
         )
     }.distinctUntilChanged()
@@ -135,14 +143,14 @@ class PreferencesDataStoreManager(private val context: Context) {
         android.util.Log.d("PreferencesDataStore", "markTutorialSeen() called — writing has_seen_tutorial = true to SharedPreferences")
         sharedPrefs.edit().putBoolean(SP_KEY_HAS_SEEN_TUTORIAL, true).putBoolean(SP_KEY_SHOW_TUTORIAL_ON_NEXT_LAUNCH, false).apply()
         // update the flow immediately (SharedPreferences listener will also update it)
-        _sharedPrefFlow.value = Pair(true, false)
+        _sharedPrefFlow.value = Triple(true, false, _sharedPrefFlow.value.third)
         android.util.Log.d("PreferencesDataStore", "markTutorialSeen() completed — write finished")
     }
 
     fun requestTutorial() {
         android.util.Log.d("PreferencesDataStore", "requestTutorial() called — writing show_tutorial_on_next_launch = true to SharedPreferences")
         sharedPrefs.edit().putBoolean(SP_KEY_SHOW_TUTORIAL_ON_NEXT_LAUNCH, true).apply()
-        _sharedPrefFlow.value = Pair(_sharedPrefFlow.value.first, true)
+        _sharedPrefFlow.value = Triple(_sharedPrefFlow.value.first, true, _sharedPrefFlow.value.third)
         android.util.Log.d("PreferencesDataStore", "requestTutorial() completed — write finished")
     }
 
@@ -150,5 +158,30 @@ class PreferencesDataStoreManager(private val context: Context) {
         context.dataStore.edit { preferences ->
             preferences[UI_DISPLAY_MODE_KEY] = mode.name
         }
+    }
+
+    /** Returns the current immediate sendUsageStats value from SharedPreferences (sync read) */
+    fun isSendUsageStatsSync(): Boolean {
+        return sharedPrefs.getBoolean(SP_KEY_SEND_USAGE_STATS, false)
+    }
+
+    /** Persist the sendUsageStats boolean into DataStore and mirror to SharedPreferences */
+    suspend fun setSendUsageStats(enabled: Boolean) {
+        // Write to DataStore
+        context.dataStore.edit { preferences ->
+            preferences[SEND_USAGE_STATS_KEY] = enabled.toString()
+        }
+        // Mirror to SharedPreferences for immediate sync reads
+        sharedPrefs.edit().putBoolean(SP_KEY_SEND_USAGE_STATS, enabled).apply()
+        // Update flow immediately
+        _sharedPrefFlow.value = Triple(_sharedPrefFlow.value.first, _sharedPrefFlow.value.second, enabled)
+    }
+
+    /** Synchronous convenience method to set SharedPreferences immediately (no DataStore write)
+     *  Use this for instant UI reaction; callers should also call suspend setSendUsageStats to persist.
+     */
+    fun setSendUsageStatsSync(enabled: Boolean) {
+        sharedPrefs.edit().putBoolean(SP_KEY_SEND_USAGE_STATS, enabled).apply()
+        _sharedPrefFlow.value = Triple(_sharedPrefFlow.value.first, _sharedPrefFlow.value.second, enabled)
     }
 }

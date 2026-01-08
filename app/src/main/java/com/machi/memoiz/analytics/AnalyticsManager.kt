@@ -3,6 +3,7 @@ package com.machi.memoiz.analytics
 import android.content.Context
 import android.os.Bundle
 import com.google.firebase.analytics.FirebaseAnalytics
+import com.google.firebase.crashlytics.FirebaseCrashlytics
 import com.google.mlkit.genai.common.FeatureStatus
 
 /**
@@ -113,5 +114,23 @@ object AnalyticsManager {
             putString("status", status)
         }
         logEvent(context, featureEventName, params)
+    }
+
+    /**
+     * Enable or disable analytics/crashlytics collection at runtime.
+     * This should be called early in application startup and whenever the user toggles consent.
+     */
+    fun setCollectionEnabled(context: Context, enabled: Boolean) {
+        try {
+            FirebaseAnalytics.getInstance(context).setAnalyticsCollectionEnabled(enabled)
+        } catch (e: Exception) {
+            android.util.Log.w("AnalyticsManager", "Failed to set analytics collection enabled=$enabled", e)
+        }
+
+        try {
+            FirebaseCrashlytics.getInstance().setCrashlyticsCollectionEnabled(enabled)
+        } catch (e: Exception) {
+            android.util.Log.w("AnalyticsManager", "Failed to set crashlytics collection enabled=$enabled", e)
+        }
     }
 }

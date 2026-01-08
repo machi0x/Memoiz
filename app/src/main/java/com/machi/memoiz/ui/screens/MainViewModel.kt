@@ -70,6 +70,11 @@ class MainViewModel(
         .map { it.uiDisplayMode }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), UiDisplayMode.SYSTEM)
 
+    // Expose whether the user has consented to sending usage stats
+    val sendUsageStats: StateFlow<Boolean> = userPreferencesFlow
+        .map { it.sendUsageStats }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+
     // Indicates whether we've observed the first real preferences emission from DataStore.
     private val _preferencesLoaded = MutableStateFlow(false)
     val preferencesLoaded: StateFlow<Boolean> = _preferencesLoaded.asStateFlow()
@@ -365,6 +370,24 @@ class MainViewModel(
     fun recordMemoUsed(memoId: Long) {
         viewModelScope.launch {
             memoRepository.incrementUsage(memoId)
+        }
+    }
+
+    /** Set user consent for sending usage stats. Updates SharedPreferences immediately and persists to DataStore asynchronously. */
+    fun setSendUsageStats(enabled: Boolean) {
+        // immediate UI reaction via SharedPreferences mirror
+        try {
+            preferencesManager.setSendUsageStatsSync(enabled)
+        } catch (e: Exception) {
+            android.util.Log.w("MainViewModel", "Failed to set sendUsageStats sync", e)
+        }
+        // persist to DataStore in background
+        viewModelScope.launch {
+            try {
+                preferencesManager.setSendUsageStats(enabled)
+            } catch (e: Exception) {
+                android.util.Log.w("MainViewModel", "Failed to persist sendUsageStats to DataStore", e)
+            }
         }
     }
 }

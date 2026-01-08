@@ -704,7 +704,7 @@ fun MainScreen(
     }
 
     if (showTutorialDialog) {
-        TutorialDialog(
+        TutorialDialog(viewModel = viewModel,
             onFinished = {
                 showTutorialDialog = false
                 viewModel.markTutorialSeen()
@@ -1608,7 +1608,8 @@ private data class TutorialStep(
 @Composable
 private fun TutorialDialog(
     onFinished: () -> Unit,
-    initialStep: Int = 0
+    initialStep: Int = 0,
+    viewModel: MainViewModel? = null
 ) {
     val context = LocalContext.current
     val steps = listOf(
@@ -1620,7 +1621,8 @@ private fun TutorialDialog(
         TutorialStep(R.drawable.app_usages, R.string.tutorial_step_usage_permission_title, R.string.tutorial_step_usage_permission_body),
         TutorialStep(R.drawable.main_ui, R.string.tutorial_step_main_ui_title, R.string.tutorial_step_main_ui_body),
         TutorialStep(R.drawable.side_panel, R.string.tutorial_step_side_panel_title, R.string.tutorial_step_side_panel_body),
-        TutorialStep(R.drawable.export, R.string.tutorial_step_export_title, R.string.tutorial_step_export_body)
+        TutorialStep(R.drawable.export, R.string.tutorial_step_export_title, R.string.tutorial_step_export_body),
+        TutorialStep(R.drawable.report, R.string.tutorial_step_consent_title, R.string.tutorial_step_consent_body)
     )
 
     var currentStep by rememberSaveable { mutableStateOf(initialStep.coerceIn(0, steps.lastIndex)) }
@@ -1640,6 +1642,12 @@ private fun TutorialDialog(
             usagePermissionGranted = UsageStatsHelper(context).hasUsageStatsPermission()
         }
     }
+
+    // Consent step index and state
+    val consentStepIndex = steps.indexOfFirst { it.titleRes == R.string.tutorial_step_consent_title }
+    val isConsentStep = currentStep == consentStepIndex && consentStepIndex >= 0
+    val sendUsageStatsState: State<Boolean> = viewModel?.sendUsageStats?.collectAsState(initial = false)
+        ?: remember { mutableStateOf(false) }
 
     AlertDialog(
         modifier = Modifier
@@ -1774,6 +1782,22 @@ private fun TutorialDialog(
                          Text(stringResource(R.string.tutorial_usage_permission_button))
                      }
                  }
+                // If this is the consent step, show a small switch to enable sending usage stats
+                if (isConsentStep) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(text = stringResource(R.string.label_send_usage_stats), modifier = Modifier.weight(1f))
+                        Switch(
+                            checked = sendUsageStatsState.value,
+                            onCheckedChange = { checked ->
+                                // Update preference via ViewModel (if provided) and toggle Firebase collection immediately
+                                viewModel?.setSendUsageStats(checked)
+                                com.machi.memoiz.analytics.AnalyticsManager.setCollectionEnabled(context, checked)
+                            }
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
             }
         },
         confirmButton = {
