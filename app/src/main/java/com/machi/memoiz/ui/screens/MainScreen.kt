@@ -1297,14 +1297,6 @@ private fun MemoCard(
                             text = displayText,
                             modifier = Modifier.fillMaxWidth()
                         )
-                         if (memo.content.length > displayText.length) {
-                             Spacer(modifier = Modifier.height(4.dp))
-                             Text(
-                                 text = stringResource(R.string.action_share),
-                                 style = MaterialTheme.typography.labelSmall,
-                                 color = MaterialTheme.colorScheme.onSurfaceVariant
-                             )
-                         }
                     }
                     MemoType.WEB_SITE -> {
                         val displayText = remember(memo.content) {
@@ -1376,19 +1368,11 @@ private fun MemoCard(
                         // Bubble contains the raw sentence (no emoji prefix)
                         SpeechBubble(
                             text = bubbleText,
-                            // remove the right padding so the bubble can reach closer to the
-                            // card's right edge, and allow a larger max width for wider screens
-                            modifier = Modifier.fillMaxWidth().padding(start = 24.dp, end = 0.dp),
+                            modifier = Modifier.fillMaxWidth(),
                             maxWidthDp = 420.dp,
-                            appUiDisplayMode = appUiDisplayMode
-                        )
-                        // Robot emoji: slightly up and positioned near the tail
-                        Text(
-                            text = "🤖",
-                            style = MaterialTheme.typography.bodyLarge,
-                            modifier = Modifier
-                                // robot x position left as requested
-                                .offset(x = 0.dp, y = 4.dp)
+                            appUiDisplayMode = appUiDisplayMode,
+                            startPadding = 24.dp,
+                            showRobotEmoji = true
                         )
                     }
                 }
@@ -2418,7 +2402,9 @@ private fun SpeechBubble(
     text: String,
     modifier: Modifier = Modifier,
     maxWidthDp: Dp = 320.dp, // smaller line spacing
-    appUiDisplayMode: com.machi.memoiz.data.datastore.UiDisplayMode? = null
+    appUiDisplayMode: com.machi.memoiz.data.datastore.UiDisplayMode? = null,
+    startPadding: Dp = 0.dp,
+    showRobotEmoji: Boolean = true
 ) {
     // Resolve bubble background using a configuration-aware Context so the
     // app's UiDisplayMode (light/dark/system) controls values vs values-night.
@@ -2444,36 +2430,37 @@ private fun SpeechBubble(
     val bubbleColor = Color(themedCtx.resources.getColor(R.color.speech_bubble_bg, themedCtx.theme))
 
     Box(modifier = modifier) {
-        // Bubble body
+        // Make the bubble expand horizontally to the available space so it uses
+        // left and right room. Keep a small horizontal inset so text doesn't hit
+        // the screen edges.
         Surface(
             shape = RoundedCornerShape(12.dp),
             color = bubbleColor,
-            // shift the rectangular body slightly left so the tail appears closer
-            // to the rectangle (reduces the visual gap between tail and rectangle)
             modifier = Modifier
-                .widthIn(max = maxWidthDp)
-                .offset(x = (-12).dp) // move rectangle left relative to the outer Box
-                .padding(4.dp)
+                .fillMaxWidth()
+                .padding(horizontal = 4.dp)
         ) {
             Text(
                 text = text,
-                style = MaterialTheme.typography.bodyMedium.copy(fontFamily = SmartFontUi),
+                // Use the custom SmartFontUi for bubble text but a slightly smaller
+                // size and tighter line height so longer descriptions fit better.
+                style = MaterialTheme.typography.bodySmall.copy(fontFamily = SmartFontUi, fontSize = 13.sp, lineHeight = 18.sp),
                 color = MaterialTheme.colorScheme.onSurface,
-                maxLines = 5,
+                maxLines = 6,
                 overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
             )
         }
 
-        // Tail
-        // Align the tail with the robot emoji by using a smaller x offset
+        // Tail: align near the start padding position so it visually points to the
+        // robot; offset uses the same horizontal base so it moves together.
+        val tailXOffset = startPadding - 4.dp
+        val tailYOffset = 12.dp
         Canvas(
             modifier = Modifier
                 .size(18.dp)
                 .align(Alignment.BottomStart)
-                // raise the tail a bit (smaller y) and shift x negatively so the tail
-                // lands above the robot's right ear (absolute x = startPadding + (-6.dp) )
-                .offset(x = (-6).dp, y = 7.dp)
+                .offset(x = tailXOffset, y = tailYOffset)
         ) {
             val p = Path().apply {
                 moveTo(0f, 0f)
@@ -2483,6 +2470,21 @@ private fun SpeechBubble(
             }
             // draw only the filled tail (no outline) so it matches the bubble body
             drawPath(p, color = bubbleColor)
+        }
+
+        // Robot emoji: position it using the same startPadding so it moves
+        // horizontally with the bubble and tail. Move it further down and slightly
+        // left so it no longer overlays the bubble on Pixel 9.
+        if (showRobotEmoji) {
+            val robotXOffset = startPadding - 20.dp
+            val robotYOffset = 27.dp
+            Text(
+                text = "🤖",
+                style = MaterialTheme.typography.bodyLarge,
+                modifier = Modifier
+                    .align(Alignment.BottomStart)
+                    .offset(x = robotXOffset, y = robotYOffset)
+            )
         }
     }
 }
