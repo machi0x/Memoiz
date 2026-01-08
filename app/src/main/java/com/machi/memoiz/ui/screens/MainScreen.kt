@@ -404,6 +404,7 @@ fun MainScreen(
                                     when (sortMode) {
                                         SortMode.CREATED_DESC -> Icons.Default.DateRange
                                         SortMode.CATEGORY_NAME -> Icons.Default.SortByAlpha
+                                        SortMode.MOST_USED -> Icons.Default.Star
                                     }
                                 },
                                 stringResource(R.string.cd_sort)
@@ -549,6 +550,7 @@ fun MainScreen(
                                         pendingReanalyzeMemo = memo
                                         isFabExpanded = false
                                     },
+                                    onMemoUsed = { id -> viewModel.recordMemoUsed(id) },
                                     dragHandle = Modifier.detectReorder(reorderState),
                                     uiDisplayMode = uiDisplayModeSetting
                                 )
@@ -982,6 +984,7 @@ private fun CategoryAccordion(
     onDeleteMemo: (Memo) -> Unit,
     onEditCategory: (Memo) -> Unit,
     onReanalyzeMemo: (Memo) -> Unit,
+    onMemoUsed: (Long) -> Unit = {},
     dragHandle: Modifier,
     uiDisplayMode: com.machi.memoiz.data.datastore.UiDisplayMode? = null
 ) {
@@ -1056,6 +1059,7 @@ private fun CategoryAccordion(
                             onDelete = { onDeleteMemo(memo) },
                             onEditCategory = { onEditCategory(memo) },
                             onReanalyze = { onReanalyzeMemo(memo) },
+                            onUsed = { id -> onMemoUsed(id) },
                             appUiDisplayMode = uiDisplayMode
                         )
                     }
@@ -1072,6 +1076,7 @@ private fun MemoCard(
     onEditCategory: () -> Unit,
     onReanalyze: () -> Unit,
     readOnly: Boolean = false,
+    onUsed: (Long) -> Unit = {},
     appUiDisplayMode: com.machi.memoiz.data.datastore.UiDisplayMode? = null
 ) {
     val context = LocalContext.current
@@ -1183,6 +1188,7 @@ private fun MemoCard(
                         textToCopy?.let {
                             clipboardManager.setText(AnnotatedString(it))
                             Toast.makeText(context, copiedToast, Toast.LENGTH_SHORT).show()
+                            onUsed(memo.id)
                         }
                     },
                     enabled = !readOnly
@@ -1193,6 +1199,7 @@ private fun MemoCard(
                 if (primaryAction.enabled) {
                     IconButton(onClick = {
                         primaryAction.onInvoke()
+                        onUsed(memo.id)
                         menuExpanded = false
                     }, enabled = primaryAction.enabled) {
                         Icon(primaryAction.icon, contentDescription = primaryAction.label)
@@ -1453,6 +1460,7 @@ private fun SortModeDialog(
                             text = when (mode) {
                                 SortMode.CREATED_DESC -> stringResource(R.string.sort_by_created)
                                 SortMode.CATEGORY_NAME -> stringResource(R.string.sort_by_category_name)
+                                SortMode.MOST_USED -> stringResource(R.string.sort_by_most_used)
                             }
                         )
                     }

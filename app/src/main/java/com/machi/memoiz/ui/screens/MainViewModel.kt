@@ -21,7 +21,8 @@ data class MemoGroup(val category: String, val memos: List<Memo>)
 
 enum class SortMode {
     CREATED_DESC,  // Category groups ordered by latest memo timestamp
-    CATEGORY_NAME  // Category groups ordered alphabetically
+    CATEGORY_NAME, // Category groups ordered alphabetically
+    MOST_USED      // Category groups ordered by highest usageCount in the group
 }
 
 private data class MemoFilterState(
@@ -181,6 +182,7 @@ class MainViewModel(
         // Group by category
         val grouped = filtered.groupBy { it.category }
             .map { (category, memos) ->
+                // Default inner order by createdAt; final ordering may change based on SortMode
                 MemoGroup(category, memos.sortedByDescending { it.createdAt })
             }
 
@@ -196,10 +198,22 @@ class MainViewModel(
             orderedGroups
         } else {
             when (state.sortMode) {
-                SortMode.CREATED_DESC -> orderedGroups.sortedByDescending { group ->
-                    group.memos.maxOfOrNull { it.createdAt } ?: 0L
-                }
-                SortMode.CATEGORY_NAME -> orderedGroups.sortedBy { it.category }
+                SortMode.CREATED_DESC -> orderedGroups
+                    .map { g -> g.copy(memos = g.memos.sortedByDescending { it.createdAt }) }
+                    .sortedByDescending { group -> group.memos.maxOfOrNull { it.createdAt } ?: 0L }
+
+                SortMode.CATEGORY_NAME -> orderedGroups
+                    .map { g -> g.copy(memos = g.memos.sortedByDescending { it.createdAt }) }
+                    .sortedBy { it.category }
+
+                SortMode.MOST_USED -> orderedGroups
+                    .map { g ->
+                        // sort memos within group by usageCount desc, fallback to createdAt
+                        g.copy(memos = g.memos.sortedWith(compareByDescending<Memo> { it.usageCount }.thenByDescending { it.createdAt }))
+                    }
+                    .sortedByDescending { group ->
+                        group.memos.maxOfOrNull { it.usageCount } ?: 0
+                    }
             }
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
@@ -344,6 +358,13 @@ class MainViewModel(
         if (trimmed.isEmpty()) return
         viewModelScope.launch {
             preferencesManager.addCustomCategory(trimmed)
+        }
+    }
+
+    // Record that a memo was used (copy/share/open). This increments usageCount in DB.
+    fun recordMemoUsed(memoId: Long) {
+        viewModelScope.launch {
+            memoRepository.incrementUsage(memoId)
         }
     }
 }

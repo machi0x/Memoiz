@@ -52,4 +52,8 @@ interface MemoDao {
 
     @Query("SELECT * FROM memos WHERE imageUri = :imageUri LIMIT 1")
     suspend fun findByImageUri(imageUri: String): MemoEntity?
+
+    // Atomic increment for usage count
+    @Query("UPDATE memos SET usageCount = usageCount + 1 WHERE id = :memoId")
+    suspend fun incrementUsageCount(memoId: Long)
 }

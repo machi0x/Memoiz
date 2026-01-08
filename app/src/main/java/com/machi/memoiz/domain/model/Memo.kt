@@ -16,5 +16,6 @@ data class Memo(
     val summary: String? = null,
     val sourceApp: String? = null,
     val createdAt: Long = System.currentTimeMillis(),
-    val isCategoryLocked: Boolean = false
+    val isCategoryLocked: Boolean = false,
+    val usageCount: Int = 0
 )

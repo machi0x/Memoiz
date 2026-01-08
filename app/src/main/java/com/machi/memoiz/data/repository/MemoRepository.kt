@@ -63,7 +63,8 @@ class MemoRepository(private val memoDao: MemoDao) {
             summary = summary,
             sourceApp = sourceApp,
             createdAt = createdAt,
-            isCategoryLocked = isCategoryLocked
+            isCategoryLocked = isCategoryLocked,
+            usageCount = usageCount
         )
     }
 
@@ -78,7 +79,8 @@ class MemoRepository(private val memoDao: MemoDao) {
             summary = summary,
             sourceApp = sourceApp,
             createdAt = createdAt,
-            isCategoryLocked = isCategoryLocked
+            isCategoryLocked = isCategoryLocked,
+            usageCount = usageCount
         )
     }
 
@@ -90,5 +92,10 @@ class MemoRepository(private val memoDao: MemoDao) {
     // New: Immediate (suspending) helper to find memo by imageUri
     suspend fun getMemoByImageUriImmediate(imageUri: String): Memo? {
         return memoDao.findByImageUri(imageUri)?.toDomain()
+    }
+
+    // Increment usage count atomically via DAO
+    suspend fun incrementUsage(memoId: Long) {
+        memoDao.incrementUsageCount(memoId)
     }
 }

@@ -27,6 +27,7 @@ Try sharing text or images from other apps, or use the + button at the bottom of
     <string name="drawer_category_hint">Category to show</string>
     <string name="sort_by_created">Sort by date</string>
     <string name="sort_by_category_name">Sort by category name</string>
+    <string name="sort_by_most_used">Sort by most used</string>
     <string name="sort_mode_label">Sort mode</string>
     
     <!-- Memo actions -->

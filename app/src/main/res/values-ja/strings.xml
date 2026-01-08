@@ -35,8 +35,9 @@
     <string name="drawer_add_category">マイカテゴリを追加</string>
     <string name="drawer_category_hint">表示するカテゴリ</string>
     <string name="search_hint">メモを検索</string>
-    <string name="sort_by_created">日時順に並べる</string>
-    <string name="sort_by_category_name">カテゴリ名で並べる</string>
+    <string name="sort_by_created">作成日時が新しい順に並べる</string>
+    <string name="sort_by_category_name">カテゴリ名で辞書順に並べる</string>
+    <string name="sort_by_most_used">よく使われる順に並べる</string>
     <string name="sort_mode_label">並び替え</string>
     <string name="action_share">共有</string>
     <string name="action_open">開く</string>
