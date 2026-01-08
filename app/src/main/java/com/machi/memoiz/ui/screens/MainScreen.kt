@@ -83,6 +83,7 @@ import com.machi.memoiz.service.ContentProcessingLauncher
 import com.machi.memoiz.ui.theme.MemoizTheme
 import com.machi.memoiz.util.UsageStatsHelper
 import coil.compose.AsyncImage
+import com.google.firebase.crashlytics.FirebaseCrashlytics
 import com.machi.memoiz.ui.dialog.GenAiStatusCheckDialogActivity
 import com.machi.memoiz.ui.theme.SmartFontUi
 import java.text.DateFormat
@@ -117,6 +118,7 @@ fun MainScreen(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var showTutorialDialog by rememberSaveable { mutableStateOf(false) }
+    var showConsentDialogBeforeTutorial by rememberSaveable { mutableStateOf(false) }
 
     // Track whether we've already shown the GenAI dialog during this Activity lifecycle.
     // Use `remember` (not `rememberSaveable`) so this flag is NOT persisted into
@@ -147,7 +149,18 @@ fun MainScreen(
     // `preferencesLoaded` is true to rely on the real stored value.
     LaunchedEffect(shouldShowTutorial, preferencesLoaded) {
         if (preferencesLoaded && shouldShowTutorial) {
-            showTutorialDialog = true
+            // Only show the pre-tutorial consent dialog when all of the following are true:
+            // 1) the user hasn't already answered the consent dialog (persisted),
+            // 2) the tutorial was NOT explicitly requested from Settings (in that case skip consent),
+            // and 3) preferences are loaded and shouldShowTutorial is true.
+            val alreadyAnswered = viewModel.isConsentDialogShownSync()
+            val requestedFromSettings = viewModel.isShowTutorialOnNextLaunchSync()
+            if (alreadyAnswered || requestedFromSettings) {
+                // Skip consent dialog and show tutorial directly
+                showTutorialDialog = true
+            } else {
+                showConsentDialogBeforeTutorial = true
+            }
         }
     }
 
@@ -701,6 +714,76 @@ fun MainScreen(
             },
             onDismiss = clearManualCategoryState,
             onSave = handleManualCategorySave
+        )
+    }
+
+    // Consent dialog shown once before tutorial on first-run
+    if (showConsentDialogBeforeTutorial) {
+        AlertDialog(
+            onDismissRequest = {
+                // Treat dismissal as No. Mark dialog as answered so we never show it again.
+                viewModel.setSendUsageStats(false)
+                com.machi.memoiz.analytics.AnalyticsManager.setCollectionEnabled(context, false)
+                try {
+                    FirebaseCrashlytics.getInstance().setCrashlyticsCollectionEnabled(false)
+                } catch (e: Exception) {
+                    Log.w("MainScreen", "Failed to set Crashlytics collection: ${e.message}")
+                }
+                viewModel.setConsentDialogShownSync(true)
+                showConsentDialogBeforeTutorial = false
+                showTutorialDialog = true
+            },
+            title = { Text(stringResource(R.string.tutorial_step_consent_title)) },
+            text = {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Image(
+                        painter = painterResource(R.drawable.report),
+                        contentDescription = null,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(max = 180.dp)
+                            .clip(RoundedCornerShape(8.dp)),
+                        contentScale = ContentScale.Crop
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text(stringResource(R.string.tutorial_step_consent_body))
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    // OK: enable analytics & crashlytics
+                    viewModel.setSendUsageStats(true)
+                    com.machi.memoiz.analytics.AnalyticsManager.setCollectionEnabled(context, true)
+                    try {
+                        FirebaseCrashlytics.getInstance().setCrashlyticsCollectionEnabled(true)
+                    } catch (e: Exception) {
+                        Log.w("MainScreen", "Failed to enable Crashlytics: ${e.message}")
+                    }
+                    // Mark the consent dialog as shown (persist) so it's never shown again
+                    viewModel.setConsentDialogShownSync(true)
+                    showConsentDialogBeforeTutorial = false
+                    showTutorialDialog = true
+                }) {
+                    Text(stringResource(R.string.ok))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = {
+                    // No: disable analytics & crashlytics, and mark answered
+                    viewModel.setSendUsageStats(false)
+                    com.machi.memoiz.analytics.AnalyticsManager.setCollectionEnabled(context, false)
+                    try {
+                        FirebaseCrashlytics.getInstance().setCrashlyticsCollectionEnabled(false)
+                    } catch (e: Exception) {
+                        Log.w("MainScreen", "Failed to disable Crashlytics: ${e.message}")
+                    }
+                    viewModel.setConsentDialogShownSync(true)
+                    showConsentDialogBeforeTutorial = false
+                    showTutorialDialog = true
+                }) {
+                    Text(stringResource(R.string.no))
+                }
+            }
         )
     }
 
@@ -1618,9 +1701,8 @@ private fun TutorialDialog(
         TutorialStep(R.drawable.app_usages, R.string.tutorial_step_usage_permission_title, R.string.tutorial_step_usage_permission_body),
         TutorialStep(R.drawable.main_ui, R.string.tutorial_step_main_ui_title, R.string.tutorial_step_main_ui_body),
         TutorialStep(R.drawable.side_panel, R.string.tutorial_step_side_panel_title, R.string.tutorial_step_side_panel_body),
-        TutorialStep(R.drawable.export, R.string.tutorial_step_export_title, R.string.tutorial_step_export_body),
-        TutorialStep(R.drawable.report, R.string.tutorial_step_consent_title, R.string.tutorial_step_consent_body)
-    )
+        TutorialStep(R.drawable.export, R.string.tutorial_step_export_title, R.string.tutorial_step_export_body)
+     )
 
     var currentStep by rememberSaveable { mutableStateOf(initialStep.coerceIn(0, steps.lastIndex)) }
     val isLastStep = currentStep == steps.lastIndex
@@ -1639,12 +1721,6 @@ private fun TutorialDialog(
             usagePermissionGranted = UsageStatsHelper(context).hasUsageStatsPermission()
         }
     }
-
-    // Consent step index and state
-    val consentStepIndex = steps.indexOfFirst { it.titleRes == R.string.tutorial_step_consent_title }
-    val isConsentStep = currentStep == consentStepIndex && consentStepIndex >= 0
-    val sendUsageStatsState: State<Boolean> = viewModel?.sendUsageStats?.collectAsState(initial = false)
-        ?: remember { mutableStateOf(false) }
 
     AlertDialog(
         modifier = Modifier
@@ -1779,24 +1855,8 @@ private fun TutorialDialog(
                          Text(stringResource(R.string.tutorial_usage_permission_button))
                      }
                  }
-                // If this is the consent step, show a small switch to enable sending usage stats
-                if (isConsentStep) {
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(text = stringResource(R.string.label_send_usage_stats), modifier = Modifier.weight(1f))
-                        Switch(
-                            checked = sendUsageStatsState.value,
-                            onCheckedChange = { checked ->
-                                // Update preference via ViewModel (if provided) and toggle Firebase collection immediately
-                                viewModel?.setSendUsageStats(checked)
-                                com.machi.memoiz.analytics.AnalyticsManager.setCollectionEnabled(context, checked)
-                            }
-                        )
-                    }
-                    Spacer(modifier = Modifier.height(8.dp))
-                }
-            }
-        },
+             }
+         },
         confirmButton = {
             TextButton(onClick = {
                 if (isLastStep) {

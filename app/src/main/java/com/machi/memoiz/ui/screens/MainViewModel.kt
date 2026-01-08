@@ -390,4 +390,33 @@ class MainViewModel(
             }
         }
     }
+
+    /** Synchronous check whether the pre-tutorial consent dialog was already shown. */
+    fun isConsentDialogShownSync(): Boolean {
+        return try {
+            preferencesManager.isConsentDialogShownSync()
+        } catch (e: Exception) {
+            android.util.Log.w("MainViewModel", "Failed to read consent dialog shown flag sync", e)
+            false
+        }
+    }
+
+    /** Mark the consent dialog as shown synchronously (so it won't be shown again). */
+    fun setConsentDialogShownSync(shown: Boolean) {
+        try {
+            preferencesManager.setConsentDialogShownSync(shown)
+        } catch (e: Exception) {
+            android.util.Log.w("MainViewModel", "Failed to set consent dialog shown flag sync", e)
+        }
+    }
+
+    /** Synchronous check whether tutorial was requested via settings (show_on_next_launch). */
+    fun isShowTutorialOnNextLaunchSync(): Boolean {
+        return try {
+            preferencesManager.isShowTutorialOnNextLaunchSync()
+        } catch (e: Exception) {
+            android.util.Log.w("MainViewModel", "Failed to read showTutorialOnNextLaunchSync", e)
+            false
+        }
+    }
 }

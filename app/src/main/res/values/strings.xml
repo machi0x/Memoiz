@@ -230,7 +230,7 @@ Try sharing text or images from other apps, or use the + button at the bottom of
     <string name="settings_import_result_failure">An error occurred during import. Please check the file format.</string>
 
     <!-- Tutorial: export/import step -->
-    <string name="tutorial_step_export_title">Moving your memos</string>
+    <string name="tutorial_step_export_title">Export your memos</string>
     <string name="tutorial_step_export_body">From [Settings] &gt; [Export memos] you can save all your memos to a file; send that file to another device and restore via [Settings] &gt; [Import memos]. </string>
 
     <!-- Default export ZIP filename (localized) -->

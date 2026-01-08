@@ -204,6 +204,7 @@
     <string name="export_default_filename">メモイズのエクスポートデータ(%1$s).zip</string>
 
     <!-- Password / dialog strings for export/import -->
+    <string name="tutorial_step_export_title">メモのエクスポート</string>
     <string name="export_password_explain">エクスポート時にパスワード(英数字 4～32 文字)を設定するとファイルを暗号化できます。準備ができたら[保存]ボタンを押してエクスポートファイルを保存してください。 別途、データを復元したい端末にこのファイルを送信する必要があります。</string>
     <string name="export_password_placeholder">パスワード（省略可）</string>
     <string name="import_password_placeholder">パスワード（必須）</string>

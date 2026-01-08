@@ -32,6 +32,7 @@ class PreferencesDataStoreManager(private val context: Context) {
         private const val SP_KEY_SHOW_TUTORIAL_ON_NEXT_LAUNCH = "show_tutorial_on_next_launch"
         // New: immediate-sync key for send usage stats (mirror of DataStore for sync reads)
         private const val SP_KEY_SEND_USAGE_STATS = "send_usage_stats_sp"
+        private const val SP_KEY_CONSENT_DIALOG_SHOWN = "consent_dialog_shown"
     }
 
     // SharedPreferences + DataStore combined flow: keep DataStore for heavier prefs and
@@ -163,6 +164,22 @@ class PreferencesDataStoreManager(private val context: Context) {
     /** Returns the current immediate sendUsageStats value from SharedPreferences (sync read) */
     fun isSendUsageStatsSync(): Boolean {
         return sharedPrefs.getBoolean(SP_KEY_SEND_USAGE_STATS, false)
+    }
+
+    /** Synchronous getter for whether the pre-tutorial consent dialog has been shown/answered. */
+    fun isConsentDialogShownSync(): Boolean {
+        return sharedPrefs.getBoolean(SP_KEY_CONSENT_DIALOG_SHOWN, false)
+    }
+
+    /** Synchronous setter to mark the consent dialog as shown (mirror to SharedPreferences). */
+    fun setConsentDialogShownSync(shown: Boolean) {
+        sharedPrefs.edit().putBoolean(SP_KEY_CONSENT_DIALOG_SHOWN, shown).apply()
+        // No flow update needed; this is only used as a guard to avoid re-showing the dialog.
+    }
+
+    /** Synchronous getter for whether tutorial was requested from settings (show_on_next_launch). */
+    fun isShowTutorialOnNextLaunchSync(): Boolean {
+        return sharedPrefs.getBoolean(SP_KEY_SHOW_TUTORIAL_ON_NEXT_LAUNCH, false)
     }
 
     /** Persist the sendUsageStats boolean into DataStore and mirror to SharedPreferences */
