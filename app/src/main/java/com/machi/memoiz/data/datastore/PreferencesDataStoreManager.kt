@@ -20,6 +20,10 @@ class PreferencesDataStoreManager(private val context: Context) {
         private val CUSTOM_CATEGORIES_KEY = stringSetPreferencesKey("custom_categories")
         private val CATEGORY_ORDER_KEY = stringPreferencesKey("category_order")
         private val UI_DISPLAY_MODE_KEY = stringPreferencesKey("ui_display_mode")
+        // GenAI last-check status keys
+        private val GENAI_IMAGE_LAST_KEY = stringPreferencesKey("genai_last_image_status")
+        private val GENAI_TEXT_LAST_KEY = stringPreferencesKey("genai_last_text_status")
+        private val GENAI_SUMMARY_LAST_KEY = stringPreferencesKey("genai_last_summary_status")
         // NOTE: tutorial flags are now stored in SharedPreferences for immediate consistency
         private const val SP_FILE_NAME = "memoiz_shared_prefs"
         private const val SP_KEY_HAS_SEEN_TUTORIAL = "has_seen_tutorial"
@@ -62,6 +66,35 @@ class PreferencesDataStoreManager(private val context: Context) {
         )
     }.distinctUntilChanged()
 
+    // Convenience flows for GenAI last-check status (nullable string: "unknown" or one of available/downloadable/unavailable)
+    @Suppress("unused")
+    val genAiImageLastCheckFlow: Flow<String?> = context.dataStore.data.map { it[GENAI_IMAGE_LAST_KEY] }
+    @Suppress("unused")
+    val genAiTextLastCheckFlow: Flow<String?> = context.dataStore.data.map { it[GENAI_TEXT_LAST_KEY] }
+    @Suppress("unused")
+    val genAiSummaryLastCheckFlow: Flow<String?> = context.dataStore.data.map { it[GENAI_SUMMARY_LAST_KEY] }
+
+    @Suppress("unused")
+    suspend fun setGenAiImageLastCheck(status: String) {
+        context.dataStore.edit { preferences ->
+            preferences[GENAI_IMAGE_LAST_KEY] = status
+        }
+    }
+
+    @Suppress("unused")
+    suspend fun setGenAiTextLastCheck(status: String) {
+        context.dataStore.edit { preferences ->
+            preferences[GENAI_TEXT_LAST_KEY] = status
+        }
+    }
+
+    @Suppress("unused")
+    suspend fun setGenAiSummaryLastCheck(status: String) {
+        context.dataStore.edit { preferences ->
+            preferences[GENAI_SUMMARY_LAST_KEY] = status
+        }
+    }
+
     suspend fun addCustomCategory(categoryName: String) {
         context.dataStore.edit { preferences ->
             val current = preferences[CUSTOM_CATEGORIES_KEY] ?: emptySet()
@@ -76,6 +109,7 @@ class PreferencesDataStoreManager(private val context: Context) {
         }
     }
 
+    @Suppress("unused")
     suspend fun clearCustomCategories() {
         context.dataStore.edit { preferences ->
             preferences.remove(CUSTOM_CATEGORIES_KEY)
