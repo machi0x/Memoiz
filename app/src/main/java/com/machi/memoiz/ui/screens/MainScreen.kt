@@ -1180,16 +1180,28 @@ private fun MemoCard(
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                 IconButton(
                     onClick = {
-                        val textToCopy = when {
-                            memo.memoType == MemoType.IMAGE && !memo.imageUri.isNullOrBlank() -> memo.imageUri
-                            memo.content.isNotBlank() -> memo.content
-                            !memo.summary.isNullOrBlank() -> memo.summary
-                            else -> null
-                        }
-                        textToCopy?.let {
-                            clipboardManager.setText(AnnotatedString(it))
-                            Toast.makeText(context, copiedToast, Toast.LENGTH_SHORT).show()
-                            onUsed(memo.id)
+                        when {
+                            memo.memoType == MemoType.IMAGE && !memo.imageUri.isNullOrBlank() -> {
+                                // Copy image URI as a ClipData uri so clipboard consumers can obtain item.uri
+                                val uri = runCatching { Uri.parse(memo.imageUri) }.getOrNull()
+                                uri?.let {
+                                    val sysClipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+                                    val clip = android.content.ClipData.newUri(context.contentResolver, "image", it)
+                                    sysClipboard.setPrimaryClip(clip)
+                                    Toast.makeText(context, copiedToast, Toast.LENGTH_SHORT).show()
+                                }
+                            }
+                            memo.content.isNotBlank() -> {
+                                clipboardManager.setText(AnnotatedString(memo.content))
+                                Toast.makeText(context, copiedToast, Toast.LENGTH_SHORT).show()
+                            }
+                            !memo.summary.isNullOrBlank() -> {
+                                clipboardManager.setText(AnnotatedString(memo.summary))
+                                Toast.makeText(context, copiedToast, Toast.LENGTH_SHORT).show()
+                            }
+                            else -> {
+                                // nothing to copy
+                            }
                         }
                     },
                     enabled = !readOnly
