@@ -50,8 +50,27 @@ Memoiz（以下「本アプリ」）は、ユーザーのプライバシーを�
   - Firebase のプライバシー情報: [https://firebase.google.com/support/privacy](https://firebase.google.com/support/privacy)
   - Google のプライバシー情報: [https://policies.google.com/privacy](https://policies.google.com/privacy)
 
-## ユーザーの権利（アクセス・削除など）
-- ご自身のデータの開示、訂正、削除を希望される場合は、まず専用メール（[jmowase@gmail.com](mailto:jmowase@gmail.com)）または [GitHub Issues](https://github.com/machi0x/Memoiz/issues) でご連絡ください。対応には時間を要する場合があります。また、サーバー側（Firebase/Google）に保存されたデータの削除は、当方から Firebase の管理画面を通じて対応しますが、Firebase の仕様や保持期間のため即時にすべて削除できない場合があります。
+## データ収集の形式と無効化について
+
+当アプリでは個人を識別できない形式で、当アプリの利用に関する統計的・診断的なデータを収集しています。Firebase（Google）によるデータ収集は、Google のプライバシーポリシーおよび Firebase の利用規約に従って行われます。詳しくは以下を参照してください：
+
+- Google プライバシーポリシー: https://policies.google.com/privacy
+- Firebase のプライバシー情報: https://firebase.google.com/support/privacy
+
+当アプリから送信されるデータは統計的・診断的な情報に限定され、メモ本文や画像などの個別コンテンツや、Google アカウント情報を紐付けるようなデータは送信されません。
+
+データ収集の無効化はアプリ内で可能です：アプリの「設定」→「送信する（Send usage stats）」トグルをオフにしてください。
+
+## Your data collection (brief)
+
+We collect aggregate, non-identifying usage and diagnostic data. Firebase's data collection and cookie usage follow Google's privacy policy and Firebase terms. See:
+
+- Google privacy: https://policies.google.com/privacy
+- Firebase privacy: https://firebase.google.com/support/privacy
+
+Data sent from the app is limited to statistical/diagnostic information and does not include memo texts, images, or data linked to your Google account.
+
+You can disable collection in-app: Settings → "Send usage stats" (toggle off).
 
 ## OSS とソースコード
 - 本アプリはオープンソースです： [https://github.com/machi0x/Memoiz](https://github.com/machi0x/Memoiz)
@@ -101,8 +120,16 @@ Memoiz ("the app") respects user privacy. This page explains what data the app c
   - Firebase privacy: [https://firebase.google.com/support/privacy](https://firebase.google.com/support/privacy)
   - Google privacy: [https://policies.google.com/privacy](https://policies.google.com/privacy)
 
-## Your rights (access, deletion)
-- If you request access, correction, or deletion of data, contact [jmowase@gmail.com](mailto:jmowase@gmail.com) or open a [GitHub Issue](https://github.com/machi0x/Memoiz/issues). We will assist and, when applicable, request deletion via Firebase. Note that deletion may be subject to Firebase retention rules and may not be instantaneous.
+## Your data collection (brief)
+
+We collect aggregate, non-identifying usage and diagnostic data. Firebase's data collection and cookie usage follow Google's privacy policy and Firebase terms. See:
+
+- Google privacy: https://policies.google.com/privacy
+- Firebase privacy: https://firebase.google.com/support/privacy
+
+Data sent from the app is limited to statistical/diagnostic information and does not include memo texts, images, or data linked to your Google account.
+
+You can disable collection in-app: Settings → "Send usage stats" (toggle off).
 
 ## Open source
 - Source code: [https://github.com/machi0x/Memoiz](https://github.com/machi0x/Memoiz)

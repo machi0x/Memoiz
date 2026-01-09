@@ -25,7 +25,6 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.rounded.Star
 import androidx.compose.material3.*
@@ -741,68 +740,57 @@ fun MainScreen(
                     Text(stringResource(R.string.tutorial_step_consent_body))
 
                     Spacer(modifier = Modifier.height(12.dp))
-                    val privacyUrl = stringResource(R.string.privacy_policy_url)
-                    val privacyLabel = stringResource(R.string.privacy_policy)
-                    val privacyCd = stringResource(R.string.cd_privacy_policy)
-
-                    // Bottom-centered privacy policy link
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 8.dp)
-                            .clickable(indication = null, interactionSource = remember { MutableInteractionSource() }) {
-                                try {
-                                    val uri = android.net.Uri.parse(privacyUrl)
-                                    val intent = Intent(Intent.ACTION_VIEW, uri).apply { addFlags(Intent.FLAG_ACTIVITY_NEW_TASK) }
-                                    context.startActivity(intent)
-                                } catch (_: Exception) { }
-                            },
-                        horizontalArrangement = Arrangement.Center,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = privacyLabel,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = privacyCd, tint = MaterialTheme.colorScheme.primary)
-                    }
                 }
             },
             confirmButton = {
-                TextButton(onClick = {
-                    // OK: enable analytics & crashlytics
-                    viewModel.setAnalyticsCollectionEnabled(true)
-                    com.machi.memoiz.analytics.AnalyticsManager.setCollectionEnabled(context, true)
-                    try {
-                        FirebaseCrashlytics.getInstance().setCrashlyticsCollectionEnabled(true)
-                    } catch (e: Exception) {
-                        Log.w("MainScreen", "Failed to enable Crashlytics: ${e.message}")
+                 TextButton(onClick = {
+                     // OK: enable analytics & crashlytics
+                     viewModel.setAnalyticsCollectionEnabled(true)
+                     com.machi.memoiz.analytics.AnalyticsManager.setCollectionEnabled(context, true)
+                     try {
+                         FirebaseCrashlytics.getInstance().setCrashlyticsCollectionEnabled(true)
+                     } catch (e: Exception) {
+                         Log.w("MainScreen", "Failed to enable Crashlytics: ${e.message}")
+                     }
+                     // Mark the consent dialog as shown (persist) so it's never shown again
+                     viewModel.setConsentDialogShownSync(true)
+                     showConsentDialogBeforeTutorial = false
+                     showTutorialDialog = true
+                 }) {
+                     Text(stringResource(R.string.ok))
+                 }
+             },
+             dismissButton = {
+                // Compose a left-side row with Privacy Policy and No buttons
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    val privacyUrl = stringResource(R.string.privacy_policy_url)
+                    TextButton(onClick = {
+                        try {
+                            val uri = android.net.Uri.parse(privacyUrl)
+                            val intent = Intent(Intent.ACTION_VIEW, uri).apply { addFlags(Intent.FLAG_ACTIVITY_NEW_TASK) }
+                            context.startActivity(intent)
+                        } catch (_: Exception) { }
+                    }) {
+                        Text(stringResource(R.string.privacy_policy_init))
                     }
-                    // Mark the consent dialog as shown (persist) so it's never shown again
-                    viewModel.setConsentDialogShownSync(true)
-                    showConsentDialogBeforeTutorial = false
-                    showTutorialDialog = true
-                }) {
-                    Text(stringResource(R.string.ok))
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = {
-                    // No: disable analytics & crashlytics, and mark answered
-                    viewModel.setAnalyticsCollectionEnabled(false)
-                    AnalyticsManager.setCollectionEnabled(context, false)
-                    try {
-                        FirebaseCrashlytics.getInstance().isCrashlyticsCollectionEnabled = false
-                    } catch (e: Exception) {
-                        Log.w("MainScreen", "Failed to disable Crashlytics: ${e.message}")
+
+                    Spacer(modifier = Modifier.width(8.dp))
+
+                    TextButton(onClick = {
+                        // No: disable analytics & crashlytics, and mark answered
+                        viewModel.setAnalyticsCollectionEnabled(false)
+                        AnalyticsManager.setCollectionEnabled(context, false)
+                        try {
+                            FirebaseCrashlytics.getInstance().isCrashlyticsCollectionEnabled = false
+                        } catch (e: Exception) {
+                            Log.w("MainScreen", "Failed to disable Crashlytics: ${e.message}")
+                        }
+                        viewModel.setConsentDialogShownSync(true)
+                        showConsentDialogBeforeTutorial = false
+                        showTutorialDialog = true
+                    }) {
+                        Text(stringResource(R.string.no))
                     }
-                    viewModel.setConsentDialogShownSync(true)
-                    showConsentDialogBeforeTutorial = false
-                    showTutorialDialog = true
-                }) {
-                    Text(stringResource(R.string.no))
                 }
             }
         )
