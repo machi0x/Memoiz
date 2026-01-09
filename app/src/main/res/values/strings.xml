@@ -242,6 +242,11 @@ Try sharing text or images from other apps, or use the + button at the bottom of
     <string name="settings_send_usage_title">Send usage stats</string>
     <string name="settings_send_usage_description">Send usage information to help improve Memoiz\'s features. The contents of your memos and any private information will not be sent.</string>
 
+    <!-- Privacy policy (default / English) -->
+    <string name="privacy_policy">Privacy policy</string>
+    <string name="privacy_policy_url">https://machi0x.github.io/Memoiz/privacy/</string>
+    <string name="cd_privacy_policy">Open privacy policy</string>
+
     <string name="ok">OK</string>
     <string name="no">No</string>
 </resources>

@@ -41,8 +41,6 @@ import com.machi.memoiz.service.GenAiFeatureStates
 import com.google.mlkit.genai.common.FeatureStatus
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.*
 import androidx.compose.runtime.rememberCoroutineScope
 import kotlinx.coroutines.launch
@@ -154,7 +152,7 @@ fun SettingsScreen(
                 title = { Text(stringResource(R.string.settings_title)) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.cd_back))
+                        Icon(Icons.Default.ArrowBack, stringResource(R.string.cd_back))
                     }
                 }
             )
@@ -490,6 +488,26 @@ fun SettingsScreen(
                     )
                 }
 
+                item { HorizontalDivider(modifier = Modifier.padding(start = 72.dp)) }
+
+                // Bottom-centered privacy policy link
+                item {
+                    val privacyUrl = stringResource(R.string.privacy_policy_url)
+                    val privacyLabel = stringResource(R.string.privacy_policy)
+
+                    PreferenceItem(
+                        title = privacyLabel,
+                        leadingIcon = { Icon(Icons.Filled.Info, contentDescription = null) },
+                        onClick = {
+                            try {
+                                val uri = android.net.Uri.parse(privacyUrl)
+                                val intent = Intent(Intent.ACTION_VIEW, uri).apply { addFlags(Intent.FLAG_ACTIVITY_NEW_TASK) }
+                                context.startActivity(intent)
+                            } catch (_: Exception) { }
+                        }
+                    )
+                }
+
             }
         }
     }
@@ -740,7 +758,7 @@ private fun PreferenceItem(
         leadingContent = leadingIcon?.let { { it() } },
         trailingContent = trailingContent?.let { { it() } } ?: onClick?.let {
             {
-                Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null)
+                Icon(Icons.Default.ArrowForward, contentDescription = null)
             }
         }
     )

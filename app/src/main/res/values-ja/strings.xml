@@ -222,6 +222,11 @@
     <string name="settings_send_usage_title">利用状況の送信</string>
     <string name="settings_send_usage_description">メモイズの機能改善のため、利用状況についての情報を送信します。作成したメモの内容やプライバシーに関わる情報は送信されません。</string>
 
+    <!-- Privacy policy (Japanese) -->
+    <string name="privacy_policy">プライバシーポリシー</string>
+    <string name="privacy_policy_url">https://machi0x.github.io/Memoiz/privacy/</string>
+    <string name="cd_privacy_policy">プライバシーポリシーを開く</string>
+
     <string name="ok">はい</string>
     <string name="no">いいえ</string>
 </resources>
