@@ -84,6 +84,7 @@ import com.machi.memoiz.ui.theme.MemoizTheme
 import com.machi.memoiz.util.UsageStatsHelper
 import coil.compose.AsyncImage
 import com.google.firebase.crashlytics.FirebaseCrashlytics
+import com.machi.memoiz.analytics.AnalyticsManager
 import com.machi.memoiz.ui.dialog.GenAiStatusCheckDialogActivity
 import com.machi.memoiz.ui.theme.SmartFontUi
 import java.text.DateFormat
@@ -771,7 +772,7 @@ fun MainScreen(
                 TextButton(onClick = {
                     // No: disable analytics & crashlytics, and mark answered
                     viewModel.setAnalyticsCollectionEnabled(false)
-                    com.machi.memoiz.analytics.AnalyticsManager.setCollectionEnabled(context, false)
+                    AnalyticsManager.setCollectionEnabled(context, false)
                     try {
                         FirebaseCrashlytics.getInstance().isCrashlyticsCollectionEnabled = false
                     } catch (e: Exception) {

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Ensure Crashlytics automatic collection is disabled by default. App code will enable it when the user consents. -->
+    <bool name="firebase_crashlytics_collection_enabled">false</bool>
+</resources>
+
