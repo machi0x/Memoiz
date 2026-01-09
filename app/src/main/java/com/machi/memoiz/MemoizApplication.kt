@@ -1,6 +1,7 @@
 package com.machi.memoiz
 
 import android.app.Application
+import android.util.Log
 import com.machi.memoiz.analytics.AnalyticsManager
 import com.machi.memoiz.data.MemoizDatabase
 import com.machi.memoiz.data.entity.MemoType
@@ -41,12 +42,12 @@ class MemoizApplication : Application() {
             val userPrefs = try {
                 preferencesManager.userPreferencesFlow.first()
             } catch (e: Exception) {
-                android.util.Log.w("MemoizApplication", "Failed to read user prefs for analytics; skipping startup analytics", e)
+                Log.w("MemoizApplication", "Failed to read user prefs for analytics; skipping startup analytics", e)
                 null
             }
 
             if (userPrefs == null || !userPrefs.analyticsCollectionEnabled) {
-                android.util.Log.d("MemoizApplication", "Analytics disabled by user preference; skipping startup analytics events")
+                Log.d("MemoizApplication", "Analytics disabled by user preference; skipping startup analytics events")
                 return@launch
             }
 
@@ -112,10 +113,10 @@ class MemoizApplication : Application() {
 
                     manager.close()
                 } catch (e: Exception) {
-                    android.util.Log.w("MemoizApplication", "Background GenAI status check failed", e)
+                    Log.w("MemoizApplication", "Background GenAI status check failed", e)
                 }
             } catch (e: Exception) {
-                android.util.Log.w("MemoizApplication", "Startup analytics collection failed", e)
+                Log.w("MemoizApplication", "Startup analytics collection failed", e)
             }
         }
     }
