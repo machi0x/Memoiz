@@ -1,4 +1,6 @@
 import java.util.concurrent.TimeUnit
+import java.nio.file.Files
+import java.nio.file.StandardOpenOption
 
 plugins {
     id("com.android.application")
@@ -118,6 +120,96 @@ tasks.register("printVersionName") {
 tasks.register("printVersionCode") {
     doLast {
         println(android.defaultConfig.versionCode)
+    }
+}
+
+afterEvaluate {
+    // Create a task to append custom license files (app/licenses) to the generated third_party_licenses
+    tasks.register("mergeThirdPartyLicenses") {
+        doLast {
+            val genBase = file("build/generated/third_party_licenses")
+            var genLicFile: File? = null
+            var genMetaFile: File? = null
+
+            if (genBase.exists()) {
+                // Search recursively for candidate pairs and pick the one with newest license file
+                val candidates = genBase.walkTopDown().filter { it.isFile && it.name == "third_party_licenses" }.map { lic ->
+                    val meta = File(lic.parentFile.path + "/third_party_license_metadata")
+                    if (meta.exists()) lic to meta else null
+                }.mapNotNull { it }.toList()
+
+                if (candidates.isNotEmpty()) {
+                    val chosen = candidates.maxByOrNull { it.first.lastModified() }
+                    if (chosen != null) {
+                        genLicFile = chosen.first
+                        genMetaFile = chosen.second
+                    }
+                }
+            }
+
+            if (genLicFile == null || genMetaFile == null) {
+                println("[mergeThirdPartyLicenses] Generated license files not found under build/generated/third_party_licenses; skipping merge.")
+                return@doLast
+            }
+
+            println("[mergeThirdPartyLicenses] Using generated files: ${genLicFile.path} and ${genMetaFile.path}")
+
+            val baseLicBytes = genLicFile.readBytes()
+            val baseMetaText = genMetaFile.readText(Charsets.UTF_8)
+
+            val customDir = file("licenses")
+            val customFiles = if (customDir.exists()) customDir.listFiles()?.filter { it.isFile && it.name.endsWith(".txt") } ?: emptyList() else emptyList()
+
+            if (customFiles.isEmpty()) {
+                println("[mergeThirdPartyLicenses] No custom license files found in app/licenses; nothing to append.")
+                return@doLast
+            }
+
+            var currentOffset = baseLicBytes.size
+            val appendedMeta = StringBuilder()
+            val appendedBytesList = mutableListOf<ByteArray>()
+
+            for (f in customFiles) {
+                val bytes = f.readBytes()
+                appendedBytesList.add(bytes)
+                appendedMeta.append("$currentOffset:${bytes.size} ${f.nameWithoutExtension}\n")
+                currentOffset += bytes.size
+            }
+
+            // Write back to the generated files (overwrite)
+            try {
+                genLicFile.outputStream().use { os ->
+                    os.write(baseLicBytes)
+                    for (b in appendedBytesList) os.write(b)
+                }
+                genMetaFile.writeText(baseMetaText.trimEnd() + "\n" + appendedMeta.toString(), Charsets.UTF_8)
+                println("[mergeThirdPartyLicenses] Updated generated files: ${genLicFile.path}")
+            } catch (e: Exception) {
+                println("[mergeThirdPartyLicenses] Unable to write to generated files: ${e.message}")
+            }
+
+            // Also write to src/main/res/raw as a backup and for tooling
+            val outDir = file("src/main/res/raw")
+            outDir.mkdirs()
+            val outLic = File(outDir, "third_party_licenses")
+            val outMeta = File(outDir, "third_party_license_metadata")
+
+            outLic.outputStream().use { os ->
+                os.write(baseLicBytes)
+                for (b in appendedBytesList) os.write(b)
+            }
+            outMeta.writeText(baseMetaText.trimEnd() + "\n" + appendedMeta.toString(), Charsets.UTF_8)
+
+            println("[mergeThirdPartyLicenses] Wrote backup files to ${outLic.path} and ${outMeta.path} with ${customFiles.size} custom entries.")
+        }
+    }
+
+    // Ensure merge runs after the OSS licenses generation tasks and before resource processing
+    tasks.matching { it.name.endsWith("OssLicensesTask") }.configureEach {
+        finalizedBy("mergeThirdPartyLicenses")
+    }
+    tasks.matching { it.name.startsWith("process") && it.name.endsWith("Resources") }.configureEach {
+        dependsOn("mergeThirdPartyLicenses")
     }
 }
 

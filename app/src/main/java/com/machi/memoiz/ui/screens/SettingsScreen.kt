@@ -754,6 +754,47 @@ private fun openUsageAccessSettings(context: Context) {
 }
 
 private fun openOssLicenses(context: Context) {
+    // Debug: dump metadata and validate offsets to Logcat so we can see what OssLicensesActivity will read
+    try {
+        val res = context.resources
+        val metaStream = res.openRawResource(R.raw.third_party_license_metadata)
+        val metaText = metaStream.bufferedReader(Charsets.UTF_8).use { it.readText() }
+        android.util.Log.i("OSS_LICENSES_DEBUG", "third_party_license_metadata:\n" + metaText.take(2000)) // limit output
+
+        val licBytes = res.openRawResource(R.raw.third_party_licenses).use { it.readBytes() }
+        android.util.Log.i("OSS_LICENSES_DEBUG", "third_party_licenses bytes=${licBytes.size}")
+
+        // Search for our font entries in metadata and validate offsets
+        val lines = metaText.lines().map { it.trim() }.filter { it.isNotEmpty() }
+        var found = 0
+        for (ln in lines) {
+            // expected format: offset:length Name
+            val parts = ln.split(" ", limit = 2)
+            if (parts.size < 2) continue
+            val offLen = parts[0]
+            val name = parts[1]
+            if (name.contains("Yomogi", ignoreCase = true) || name.contains("MPlus", ignoreCase = true) || name.contains("MPlus1", ignoreCase = true)) {
+                found++
+                try {
+                    val offLenParts = offLen.split(":")
+                    val off = offLenParts[0].toInt()
+                    val len = offLenParts[1].toInt()
+                    val ok = off >= 0 && len >= 0 && off + len <= licBytes.size
+                    android.util.Log.i("OSS_LICENSES_DEBUG", "Found font entry: name=\"$name\" offset=$off len=$len ok=$ok")
+                    if (ok) {
+                        val snippet = String(licBytes, off, Math.min(len, 512), Charsets.UTF_8)
+                        android.util.Log.i("OSS_LICENSES_DEBUG", "Snippet for $name:\n" + snippet.replace("\n", "\\n").take(1000))
+                    }
+                } catch (e: Exception) {
+                    android.util.Log.w("OSS_LICENSES_DEBUG", "Failed to parse offset/len for line: $ln", e)
+                }
+            }
+        }
+        android.util.Log.i("OSS_LICENSES_DEBUG", "Found font metadata entries: $found")
+    } catch (e: Exception) {
+        android.util.Log.w("OSS_LICENSES_DEBUG", "Failed reading third party license resources", e)
+    }
+
     val intent = Intent(context, OssLicensesMenuActivity::class.java).apply {
         addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
     }
