@@ -4,7 +4,7 @@ Memoiz is a privacy-first Android clipboard companion that captures text, links,
 
 <!-- Small Play Store icon at the top -->
 <p style="text-align:center">
-  <img src="docs/ic_launcher-playstore.png" alt="Memoiz Playstore Icon" style="max-width:64px; height:auto;" />
+  <img src="docs/ic_launcher-playstore.png" width="200px" alt="Memoiz Playstore Icon" style="max-width:64px; height:auto;" />
 </p>
 
 ## Highlights
@@ -54,12 +54,6 @@ Memoiz is a privacy-first Android clipboard companion that captures text, links,
 Use the Settings → Export / Import options to backup or restore your memos. Encrypted exports require the same password to import.
 
 ## Generated OSS license resources
-
-<!-- Feature banner inserted here as a centered, wide image -->
-<p style="text-align:center; margin-top:18px; margin-bottom:18px;">
-  <img src="docs/feature_google_play.png" alt="Memoiz on Google Play" style="max-width:900px; width:100%; height:auto;" />
-</p>
-
 The build uses Google's OSS Licenses plugin to generate `third_party_licenses` and `third_party_license_metadata` during the build. The project by default ignores the generated copies under `app/src/main/res/raw/` to avoid noisy commits. If you intentionally want to track those files in git (for example, to include the license text in the repository), run the merge task with the Gradle property `-PwriteThirdPartyRes=true` and commit the resulting files:
 
 ```powershell
@@ -108,3 +102,8 @@ Install the resulting APK (`app/build/outputs/apk/debug/`). Target devices must 
 
 ## License
 Apache License 2.0 — see `LICENSE` for details.
+
+<!-- Feature banner inserted here as a centered, wide image -->
+<p style="text-align:center; margin-top:18px; margin-bottom:18px;">
+  <img src="docs/feature_google_play.png" alt="Memoiz on Google Play" style="max-width:900px; width:100%; height:auto;" />
+</p>
