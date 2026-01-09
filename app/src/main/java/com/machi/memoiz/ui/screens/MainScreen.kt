@@ -86,6 +86,7 @@ import coil.compose.AsyncImage
 import com.google.firebase.crashlytics.FirebaseCrashlytics
 import com.machi.memoiz.analytics.AnalyticsManager
 import com.machi.memoiz.ui.dialog.GenAiStatusCheckDialogActivity
+import com.machi.memoiz.ui.dialog.TutorialDialog
 import com.machi.memoiz.ui.theme.SmartFontUi
 import java.text.DateFormat
 import java.util.*
@@ -1680,764 +1681,6 @@ private fun ManualCategoryDialog(
     )
 }
 
-private data class TutorialStep(
-    @DrawableRes val imageRes: Int,
-    @StringRes val titleRes: Int,
-    @StringRes val descriptionRes: Int
-)
-
-@Composable
-private fun TutorialDialog(
-    onFinished: () -> Unit,
-    initialStep: Int = 0,
-    viewModel: MainViewModel? = null
-) {
-    val context = LocalContext.current
-    val steps = listOf(
-        TutorialStep(R.drawable.top_banner, R.string.tutorial_step_overview_title, R.string.tutorial_step_overview_body),
-        TutorialStep(R.drawable.share_from_browser, R.string.tutorial_step_share_browser_title, R.string.tutorial_step_share_browser_body),
-        TutorialStep(R.drawable.share_from_select, R.string.tutorial_step_share_select_title, R.string.tutorial_step_share_select_body),
-        TutorialStep(R.drawable.floating_buttons, R.string.tutorial_step_fab_title, R.string.tutorial_step_fab_body),
-        TutorialStep(R.drawable.my_category, R.string.tutorial_step_my_category_title, R.string.tutorial_step_my_category_body),
-        TutorialStep(R.drawable.app_usages, R.string.tutorial_step_usage_permission_title, R.string.tutorial_step_usage_permission_body),
-        TutorialStep(R.drawable.main_ui, R.string.tutorial_step_main_ui_title, R.string.tutorial_step_main_ui_body),
-        TutorialStep(R.drawable.side_panel, R.string.tutorial_step_side_panel_title, R.string.tutorial_step_side_panel_body),
-        TutorialStep(R.drawable.export, R.string.tutorial_step_export_title, R.string.tutorial_step_export_body)
-     )
-
-    var currentStep by rememberSaveable { mutableStateOf(initialStep.coerceIn(0, steps.lastIndex)) }
-    val isLastStep = currentStep == steps.lastIndex
-    val step = steps[currentStep]
-    val stepTitle = stringResource(step.titleRes)
-    val stepDescription = stringResource(step.descriptionRes)
-    // Remember whether we've logged the tutorial main_ui view during this Composable lifecycle
-    val hasLoggedTutorialMainUi = remember { mutableStateOf(false) }
-    val tutorialCoroutineScope = rememberCoroutineScope()
-    var usagePermissionJob by remember { mutableStateOf<Job?>(null) }
-    val usagePermissionStepIndex = steps.indexOfFirst { it.imageRes == R.drawable.app_usages }
-    val isUsagePermissionStep = currentStep == usagePermissionStepIndex && usagePermissionStepIndex >= 0
-    var usagePermissionGranted by rememberSaveable { mutableStateOf(UsageStatsHelper(context).hasUsageStatsPermission()) }
-    LaunchedEffect(isUsagePermissionStep) {
-        if (isUsagePermissionStep) {
-            usagePermissionGranted = UsageStatsHelper(context).hasUsageStatsPermission()
-        }
-    }
-
-    AlertDialog(
-        modifier = Modifier
-            .fillMaxWidth(0.98f)
-            .widthIn(min = 600.dp, max = 760.dp)
-            .height(720.dp),
-        onDismissRequest = onFinished,
-        title = { Text(stringResource(R.string.tutorial_title)) },
-        text = {
-            Column(
-                modifier = Modifier.fillMaxHeight(),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                val imageScrollState = rememberScrollState()
-                var viewportHeightPx by remember { mutableStateOf(1f) }
-                val isUsageStep = step.imageRes == R.drawable.app_usages
-                val isLargeShot = step.imageRes == R.drawable.main_ui || step.imageRes == R.drawable.side_panel
-                val isSmallStep = !isUsageStep && !isLargeShot
-                val baseBoxModifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(MaterialTheme.colorScheme.surfaceVariant)
-                Box(
-                    modifier = when {
-                        isUsageStep -> baseBoxModifier
-                            .heightIn(max = 280.dp)
-                            .onSizeChanged { viewportHeightPx = it.height.toFloat() }
-                        isLargeShot -> baseBoxModifier
-                            .weight(0.55f, fill = true)
-                            .heightIn(max = 250.dp)
-                            .onSizeChanged { viewportHeightPx = it.height.toFloat() }
-                        else -> baseBoxModifier
-                            .heightIn(max = 280.dp)
-                            .onSizeChanged { viewportHeightPx = it.height.toFloat() }
-                    }
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            // Only keep scroll for large shots after permission; cut off for earlier steps.
-                            .let { m -> if (isLargeShot) m.verticalScroll(imageScrollState) else m }
-                            .padding(horizontal = 8.dp, vertical = 8.dp)
-                    ) {
-                        Image(
-                            painter = painterResource(id = step.imageRes),
-                            contentDescription = null,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .wrapContentHeight(),
-                            contentScale = if (isLargeShot) ContentScale.FillWidth else ContentScale.Fit
-                        )
-                        // If this step is the large-shot main_ui and we haven't logged it yet, log once.
-                        // Use LaunchedEffect on currentStep to avoid repeated logs during recomposition.
-                        LaunchedEffect(currentStep) {
-                            if (step.imageRes == R.drawable.main_ui && !hasLoggedTutorialMainUi.value) {
-                                // Log analytics event (Option B: rely on Firebase unique user counting)
-                                com.machi.memoiz.analytics.AnalyticsManager.logTutorialMainUiView(context)
-                                hasLoggedTutorialMainUi.value = true
-                            }
-                        }
-                    }
-                }
-
-                Text(
-                    text = stepTitle,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    textAlign = TextAlign.Center
-                )
-                val usageDescriptionForGranted = when {
-                    isUsagePermissionStep && usagePermissionGranted -> {
-                        // Only keep header part when permission is already granted
-                        stringResource(R.string.tutorial_step_usage_permission_body_header)
-                    }
-                    isUsagePermissionStep -> {
-                        // Show full text (header + hint) when not granted
-                        stringResource(R.string.tutorial_step_usage_permission_body)
-                    }
-                    else -> stepDescription
-                }
-                val descriptionToShow = if (usageDescriptionForGranted.isNotBlank()) usageDescriptionForGranted else null
-                descriptionToShow?.let {
-                    Text(
-                        text = it,
-                        style = MaterialTheme.typography.bodyMedium,
-                        textAlign = TextAlign.Center
-                    )
-                }
-                 val activeIndicatorSize = 10.dp
-                 val inactiveIndicatorSize = 8.dp
-                 Row(
-                     modifier = Modifier.fillMaxWidth(),
-                     horizontalArrangement = Arrangement.Center
-                 ) {
-                     steps.forEachIndexed { index, _ ->
-                         val color = if (index == currentStep) {
-                             MaterialTheme.colorScheme.primary
-                         } else {
-                             MaterialTheme.colorScheme.outline
-                         }
-                         Box(
-                             modifier = Modifier
-                                 .padding(horizontal = 4.dp)
-                                 .size(if (index == currentStep) activeIndicatorSize else inactiveIndicatorSize)
-                                 .clip(CircleShape)
-                                 .background(color)
-                         )
-                     }
-                 }
-                if (isUsagePermissionStep && !usagePermissionGranted) {
-                     TextButton(onClick = {
-                         usagePermissionJob?.cancel()
-                         launchUsageAccessSettings(context)
-                         usagePermissionJob = tutorialCoroutineScope.launch {
-                             val helper = UsageStatsHelper(context)
-                             val deadline = System.currentTimeMillis() + 60_000
-                             while (System.currentTimeMillis() < deadline && !helper.hasUsageStatsPermission()) {
-                                 delay(2_000)
-                             }
-                             if (helper.hasUsageStatsPermission()) {
-                                 usagePermissionGranted = true
-                                 // Bring the main UI to foreground once permission is granted.
-                                 context.packageManager.getLaunchIntentForPackage(context.packageName)?.let { intent ->
-                                     intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
-                                     context.startActivity(intent)
-                                 }
-                                 currentStep = (currentStep + 1).coerceAtMost(steps.lastIndex)
-                             }
-                         }
-                     }) {
-                         Text(stringResource(R.string.tutorial_usage_permission_button))
-                     }
-                 }
-             }
-         },
-        confirmButton = {
-            TextButton(onClick = {
-                if (isLastStep) {
-                    onFinished()
-                } else {
-                    currentStep++
-                }
-            }) {
-                Text(
-                    if (isLastStep) stringResource(R.string.tutorial_done) else stringResource(R.string.tutorial_next)
-                )
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = {
-                if (currentStep > 0) {
-                    currentStep--
-                } else {
-                    onFinished()
-                }
-            }) {
-                Text(
-                    if (currentStep > 0) stringResource(R.string.tutorial_back) else stringResource(R.string.tutorial_skip)
-                )
-            }
-        }
-    )
-}
-
-@Composable
-private fun AnalyzingIndicator() {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        val infiniteTransition = rememberInfiniteTransition(label = "analyzing")
-        val sweep by infiniteTransition.animateFloat(
-            initialValue = 0f,
-            targetValue = 360f,
-            animationSpec = infiniteRepeatable(
-                animation = tween(durationMillis = 1200, easing = LinearEasing),
-                repeatMode = RepeatMode.Restart
-            ),
-            label = "analyzing_rotation"
-        )
-
-        // Animate hue rotation (rainbow) and alpha pulse (blinking)
-        val hue by infiniteTransition.animateFloat(
-            initialValue = 0f,
-            targetValue = 360f,
-            animationSpec = infiniteRepeatable(
-                animation = tween(durationMillis = 1600, easing = LinearEasing),
-                repeatMode = RepeatMode.Restart
-            ),
-            label = "analyzing_hue"
-        )
-
-        val alphaPulse by infiniteTransition.animateFloat(
-            initialValue = 0.78f,
-            targetValue = 1f,
-            animationSpec = infiniteRepeatable(
-                animation = tween(durationMillis = 700, easing = LinearEasing),
-                repeatMode = RepeatMode.Reverse
-            ),
-            label = "analyzing_alpha"
-        )
-
-        // Convert HSV to ARGB and wrap into Compose Color, then apply animated alpha
-        val baseColorInt = android.graphics.Color.HSVToColor(floatArrayOf(hue, 0.9f, 0.95f))
-        val animatedColor = Color(baseColorInt).copy(alpha = alphaPulse)
-
-        Box(
-            modifier = Modifier
-                .size(44.dp)
-                .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.surfaceVariant),
-            contentAlignment = Alignment.Center
-        ) {
-            CircularProgressIndicator(
-                strokeWidth = 3.dp,
-                strokeCap = StrokeCap.Round,
-                modifier = Modifier
-                    .size(40.dp)
-                    .graphicsLayer { rotationZ = sweep },
-                trackColor = MaterialTheme.colorScheme.surfaceVariant,
-                color = animatedColor
-            )
-            Image(
-                painter = painterResource(id = R.drawable.analyzing),
-                contentDescription = stringResource(R.string.cd_analyzing_indicator),
-                modifier = Modifier.size(24.dp)
-            )
-        }
-        Text(
-            text = stringResource(R.string.label_analyzing),
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.padding(top = 4.dp)
-        )
-    }
-}
-
-private fun formatTimestamp(timestamp: Long): String {
-    val locale = Locale.getDefault()
-    val formatter = DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT, locale)
-    return formatter.format(Date(timestamp))
-}
-
-private fun launchUsageAccessSettings(context: Context) {
-    // Show guidance toast (Japanese text available via resources) before opening system settings
-    try {
-        Toast.makeText(context, context.getString(R.string.settings_usage_select_app_toast), Toast.LENGTH_LONG).show()
-    } catch (_: Exception) {
-        // ignore if toast fails
-    }
-
-    context.startActivity(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS).apply {
-        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-    })
-}
-
-private fun cleanSummary(raw: String?): String {
-    raw ?: return ""
-    val trimmed = raw.trimStart()
-    val prefixes = listOf("* ", "- ", "• ")
-    val matching = prefixes.firstOrNull { trimmed.startsWith(it) }
-    return matching?.let { trimmed.removePrefix(it) } ?: raw
-}
-
-@Composable
-private fun AiSummaryBlock(text: String) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
-            .background(MaterialTheme.colorScheme.inverseOnSurface.copy(alpha = 0.08f))
-            .padding(horizontal = 14.dp, vertical = 12.dp)
-    ) {
-        Text(
-            text = text,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            maxLines = 4,
-            overflow = TextOverflow.Ellipsis
-        )
-    }
-}
-
-private const val AI_ROBOT_PREFIX = "🤖"
-
-@Composable
-private fun ChromeStyleUrlBar(
-    url: String,
-    title: String? = null,
-    modifier: Modifier = Modifier,
-    appUiDisplayMode: com.machi.memoiz.data.datastore.UiDisplayMode? = null
-) {
-    // Create a configuration-aware Context so resources (including values-night)
-    // are resolved according to the current uiMode; remember by configuration so
-    // re-resolution runs when uiMode changes.
-    val ctx = LocalContext.current
-    val configuration = LocalConfiguration.current
-    // If the app has an explicit UiDisplayMode setting, create a modified
-    // Configuration that forces nightMode accordingly so resource qualifiers
-    // (values-night) resolve based on the app setting rather than system.
-    val effectiveConfig = remember(configuration, appUiDisplayMode) {
-        if (appUiDisplayMode == null || appUiDisplayMode == com.machi.memoiz.data.datastore.UiDisplayMode.SYSTEM) {
-            configuration
-        } else {
-            val copy = android.content.res.Configuration(configuration)
-            // Clear the night-mode bits, then set explicitly to YES or NO so
-            // resource lookup (values-night) follows the app setting instead of system.
-            copy.uiMode = copy.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK.inv()
-            copy.uiMode = when (appUiDisplayMode) {
-                com.machi.memoiz.data.datastore.UiDisplayMode.DARK ->
-                    copy.uiMode or android.content.res.Configuration.UI_MODE_NIGHT_YES
-                com.machi.memoiz.data.datastore.UiDisplayMode.LIGHT ->
-                    copy.uiMode or android.content.res.Configuration.UI_MODE_NIGHT_NO
-                else -> copy.uiMode
-            }
-            copy
-        }
-    }
-    val themedCtx = remember(effectiveConfig) { ctx.createConfigurationContext(effectiveConfig) }
-    val bgColor = Color(themedCtx.resources.getColor(R.color.chrome_omnibox_bg, themedCtx.theme))
-    val borderColor = Color(themedCtx.resources.getColor(R.color.chrome_omnibox_border, themedCtx.theme))
-    val textColor = Color(themedCtx.resources.getColor(R.color.chrome_omnibox_text, themedCtx.theme))
-
-    Surface(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(vertical = 4.dp),
-        shape = RoundedCornerShape(26.dp),
-        color = bgColor,
-        tonalElevation = 2.dp,
-        border = BorderStroke(1.dp, borderColor)
-    ) {
-         val hasTitle = !title.isNullOrBlank()
-         if (hasTitle) {
-             // ...existing two-column layout with title on top, URL below...
-             Row(
-                 modifier = Modifier
-                     .fillMaxWidth()
-                     .padding(horizontal = 12.dp, vertical = 10.dp),
-                 verticalAlignment = Alignment.CenterVertically,
-                 horizontalArrangement = Arrangement.spacedBy(10.dp)
-             ) {
-                 Surface(
-                     color = MaterialTheme.colorScheme.primaryContainer,
-                     shape = RoundedCornerShape(12.dp)
-                 ) {
-                     Text(
-                         text = "URL",
-                         style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                         color = MaterialTheme.colorScheme.onPrimaryContainer,
-                         modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
-                     )
-                 }
-                 Column(
-                     modifier = Modifier.weight(1f),
-                     verticalArrangement = Arrangement.spacedBy(4.dp)
-                 ) {
-                    Text(
-                        text = title!!,
-                        style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.SemiBold),
-                        color = textColor,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                    Text(
-                        text = url,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = textColor,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                 }
-                 Icon(
-                     imageVector = Icons.Rounded.Star,
-                     contentDescription = null,
-                     modifier = Modifier
-                         .size(24.dp)
-                         .padding(4.dp),
-                     tint = Color(0xFFFFD700)
-                 )
-             }
-         } else {
-             // Fallback: single-line layout with label and URL in one row
-             Row(
-                 modifier = Modifier
-                     .fillMaxWidth()
-                     .padding(horizontal = 12.dp, vertical = 12.dp),
-                 verticalAlignment = Alignment.CenterVertically,
-                 horizontalArrangement = Arrangement.spacedBy(10.dp)
-             ) {
-                 Surface(
-                     color = MaterialTheme.colorScheme.primaryContainer,
-                     shape = RoundedCornerShape(12.dp)
-                 ) {
-                     Text(
-                         text = "URL",
-                         style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                         color = MaterialTheme.colorScheme.onPrimaryContainer,
-                         modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
-                     )
-                 }
-                Text(
-                    text = url,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = textColor,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f)
-                )
-                 Icon(
-                     imageVector = Icons.Rounded.Star,
-                     contentDescription = null,
-                     modifier = Modifier
-                         .size(24.dp)
-                         .padding(4.dp),
-                     tint = Color(0xFFFFD700)
-                 )
-             }
-         }
-     }
-}
-
-@Composable
-private fun ImageThumbnailFrame(
-    imageUri: String,
-    contentDescription: String?,
-    modifier: Modifier = Modifier
-) {
-    val outerShape = RoundedCornerShape(10.dp)
-    val innerShape = RoundedCornerShape(8.dp)
-    val context = LocalContext.current
-
-    // Determine whether this URI represents a local copy created by the app.
-    // ImageUriManager returns a FileProvider URI for copied files with authority
-    // equal to "${packageName}.fileprovider". Treat file:// URIs as local as well.
-    val uri = runCatching { Uri.parse(imageUri) }.getOrNull()
-    val authority = uri?.authority ?: ""
-    val scheme = uri?.scheme ?: ""
-    val appFileProviderAuthority = "${context.packageName}.fileprovider"
-    val hasLocalCopy = when {
-        scheme == ContentResolver.SCHEME_FILE -> true
-        scheme == ContentResolver.SCHEME_CONTENT && authority == appFileProviderAuthority -> true
-        else -> false
-    }
-
-    // Choose pin color: red for local copy, blue for URI-only. Default kept for safety.
-    val pinColor = if (hasLocalCopy) {
-        // Use theme's error color for a clear red; matches "red for copy" requirement.
-        MaterialTheme.colorScheme.error
-    } else {
-        // Explicit blue for URI-only images.
-        Color(0xFF1976D2)
-    }
-
-    Box(
-        modifier = modifier
-            .graphicsLayer(rotationZ = 2.5f)
-            .shadow(
-                elevation = 10.dp,
-                ambientColor = Color.Black.copy(alpha = 0.12f),
-                spotColor = Color.Black.copy(alpha = 0.18f),
-                shape = outerShape
-            )
-    ) {
-        Box(
-            modifier = Modifier
-                .matchParentSize()
-                .background(MaterialTheme.colorScheme.surfaceVariant, shape = outerShape)
-                .padding(18.dp) // wider outer frame for more clearance
-        ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(Color(0xFFF7F7F7), shape = innerShape)
-                    .padding(6.dp)
-            ) {
-                AsyncImage(
-                    model = Uri.parse(imageUri),
-                    contentDescription = contentDescription,
-                    modifier = Modifier                        .fillMaxSize()
-                        .clip(RoundedCornerShape(6.dp)),
-                    contentScale = ContentScale.Crop
-                )
-            }
-        }
-
-        PinThumbtack(
-            modifier = Modifier
-                .align(Alignment.TopCenter)
-                .offset(y = 4.dp),
-            pinColor = pinColor
-        )
-    }
-}
-
-@Composable
-private fun PinThumbtack(modifier: Modifier = Modifier, pinColor: Color = Color(0xFF2E7D32)) {
-    Canvas(
-        modifier = modifier
-            .size(width = 11.dp, height = 17.dp) // slightly smaller pin
-            .graphicsLayer(rotationX = 26f, rotationZ = -18f)
-    ) {
-        val shadowColor = Color.Black.copy(alpha = 0.26f)
-        val centerX = size.width / 2f
-        val headRadius = size.width * 0.34f
-        val needleWidth = size.width * 0.18f
-        val needleHeight = size.height * 0.62f
-        val needleTopY = headRadius * 1.25f
-
-        drawRoundRect(
-            color = shadowColor,
-            topLeft = Offset(centerX - needleWidth * 1.1f, needleTopY + 2.2f),
-            size = Size(needleWidth * 2.2f, needleHeight + headRadius * 1.3f),
-            cornerRadius = CornerRadius(needleWidth * 1.2f),
-            alpha = 0.25f
-        )
-
-        drawRoundRect(
-            color = shadowColor,
-            topLeft = Offset(centerX - needleWidth / 2f + 1.0f, needleTopY + 1.6f),
-            size = Size(needleWidth, needleHeight),
-            cornerRadius = CornerRadius(needleWidth)
-        )
-
-        drawRoundRect(
-            color = Color(0xFF7A5D48),
-            topLeft = Offset(centerX - needleWidth / 2f, needleTopY),
-            size = Size(needleWidth, needleHeight),
-            cornerRadius = CornerRadius(needleWidth)
-        )
-
-        drawCircle(
-            color = pinColor.copy(alpha = 0.25f),
-            radius = headRadius * 1.08f,
-            center = Offset(centerX - headRadius * 0.16f, headRadius * 0.9f)
-        )
-
-        drawCircle(
-            color = pinColor,
-            radius = headRadius,
-            center = Offset(centerX, headRadius)
-        )
-    }
-}
-
-@Preview(name = "Text Frame", showBackground = true)
-@Composable
-private fun PreviewCampusNoteFrame() {
-    MemoizTheme {
-        Surface(modifier = Modifier.fillMaxWidth()) {
-            CampusNoteTextAligned(
-                text = "買い忘れ防止メモ\n・牛乳\n・卵\n・朝食用のパン",
-                modifier = Modifier.padding(16.dp)
-            )
-        }
-    }
-}
-
-@Preview(name = "Web URL Frame", showBackground = true)
-@Composable
-private fun PreviewChromeStyleUrlBar() {
-    MemoizTheme {
-        Surface(modifier = Modifier.fillMaxWidth()) {
-            // Default (system) preview
-            ChromeStyleUrlBar(
-                url = "https://news.example.com/articles/awesome-updates",
-                title = "Awesome Updates - Example News",
-                modifier = Modifier.padding(16.dp),
-                appUiDisplayMode = null
-            )
-        }
-    }
-}
-
-@Preview(name = "Web URL Frame - Forced Dark", showBackground = true)
-@Composable
-private fun PreviewChromeStyleUrlBarDark() {
-    MemoizTheme {
-        Surface(modifier = Modifier.fillMaxWidth()) {
-            ChromeStyleUrlBar(
-                url = "https://news.example.com/articles/awesome-updates",
-                title = "Awesome Updates - Example News",
-                modifier = Modifier.padding(16.dp),
-                appUiDisplayMode = com.machi.memoiz.data.datastore.UiDisplayMode.DARK
-            )
-        }
-    }
-}
-
-@Preview(name = "Web URL Frame - Forced Light", showBackground = true)
-@Composable
-private fun PreviewChromeStyleUrlBarLight() {
-    MemoizTheme {
-        Surface(modifier = Modifier.fillMaxWidth()) {
-            ChromeStyleUrlBar(
-                url = "https://news.example.com/articles/awesome-updates",
-                title = "Awesome Updates - Example News",
-                modifier = Modifier.padding(16.dp),
-                appUiDisplayMode = com.machi.memoiz.data.datastore.UiDisplayMode.LIGHT
-            )
-        }
-    }
-}
-
-@Preview(name = "Image Frame", showBackground = true)
-@Composable
-private fun PreviewPinnedPhotoFrame() {
-    MemoizTheme {
-        Surface(modifier = Modifier.padding(16.dp)) {
-            ImageThumbnailFrame(
-                imageUri = "https://picsum.photos/seed/memoizPreview/600",
-                contentDescription = null,
-                modifier = Modifier.size(160.dp)
-            )
-        }
-    }
-}
-
-@Preview(name = "Tutorial Main UI - Pixel 9", widthDp = 411, heightDp = 915, showBackground = true)
-@Composable
-private fun PreviewTutorialMainUiPixel9() {
-    MemoizTheme {
-        Surface {
-            val start = listOf(
-                R.drawable.main_ui,
-                R.drawable.side_panel
-            )
-            TutorialDialog(
-                onFinished = {},
-                initialStep = stepsIndexForPreview(start, R.drawable.main_ui)
-            )
-        }
-    }
-}
-
-@Preview(name = "Tutorial Main UI - Nexus 5", device = Devices.NEXUS_5, showBackground = true)
-@Composable
-private fun PreviewTutorialMainUiNexus5() {
-    MemoizTheme {
-        Surface {
-            TutorialDialog(
-                onFinished = {},
-                initialStep = stepsIndexForPreview(emptyList(), R.drawable.main_ui)
-            )
-        }
-    }
-}
-
-@Composable
-private fun stepsIndexForPreview(priority: List<Int>, target: Int): Int {
-    val steps = listOf(
-        R.drawable.top_banner,
-        R.drawable.share_from_browser,
-        R.drawable.share_from_select,
-        R.drawable.floating_buttons,
-        R.drawable.my_category,
-        R.drawable.app_usages,
-        R.drawable.main_ui,
-        R.drawable.side_panel
-    )
-    priority.forEach { preferred ->
-        val idx = steps.indexOf(preferred)
-        if (idx >= 0) return idx
-    }
-    return steps.indexOf(target).coerceAtLeast(0)
-}
-
-@Composable
-private fun CampusNoteTextAligned(
-    text: String,
-    modifier: Modifier = Modifier,
-    lineHeight: androidx.compose.ui.unit.TextUnit = 20.sp // smaller line spacing
-) {
-    val density = LocalDensity.current
-    val lineHeightPx = with(density) { lineHeight.toPx() }
-    val shape = RoundedCornerShape(12.dp)
-    // Obtain the background color in the @Composable scope so it can be captured
-    // and used inside drawBehind (drawBehind is not a @Composable lambda).
-    val bgColor = colorResource(id = R.color.campus_note_bg)
-    // Obtain the text color from resources so it follows light/dark variants.
-    val textColor = colorResource(id = R.color.campus_note_text)
-    // Obtain line colors from resources so they adapt to light/dark themes
-    val verticalLineColor = colorResource(id = R.color.campus_note_line_vertical)
-    val horizontalLineColor = colorResource(id = R.color.campus_note_line_horizontal)
-    Text(
-        text = text,
-        style = MaterialTheme.typography.bodyMedium.copy(lineHeight = lineHeight, fontFamily = com.machi.memoiz.ui.theme.Yomogi),
-        color = textColor,
-        maxLines = 6,
-        overflow = TextOverflow.Ellipsis,
-        modifier = modifier
-            .shadow(6.dp, shape)
-            .clip(shape)
-            .drawBehind {
-                // Use the captured bgColor (retrieved in composable scope)
-                drawRect(bgColor)
-                val marginX = 28.dp.toPx()
-                drawLine(
-                    color = verticalLineColor,
-                    start = Offset(marginX, 0f),
-                    end = Offset(marginX, size.height),
-                    strokeWidth = 2.dp.toPx()
-                )
-                val lineOffset = 2.dp.toPx() // nudge lines upward for better baseline alignment
-                var y = lineHeightPx - lineOffset
-                while (y < size.height) {
-                    drawLine(
-                        color = horizontalLineColor,
-                        start = Offset(0f, y),
-                        end = Offset(size.width, y),
-                        strokeWidth = 1.dp.toPx()
-                    )
-                    y += lineHeightPx
-                }
-            }
-            .padding(start = 44.dp, top = 2.dp, end = 16.dp, bottom = 16.dp))
-}
-
 private data class PrimaryAction(
     val label: String,
     val icon: ImageVector,
@@ -2551,93 +1794,388 @@ private fun SpeechBubble(
     }
 }
 
-@Preview(name = "MemoCard - Image Bubble", showBackground = true, device = Devices.PIXEL_4)
 @Composable
-private fun PreviewMemoCardImageBubble() {
-    MemoizTheme {
-        Surface(modifier = Modifier.fillMaxWidth()) {
-            MemoCard(
-                memo = Memo(
-                    id = 1,
-                    content = "This is an auto-generated description for the image. It may be long but should be truncated in the bubble.",
-                    imageUri = "https://picsum.photos/seed/memoizPreview/600",
-                    memoType = MemoType.IMAGE,
-                    category = "Unsorted",
-                    summary = "A scenic photo of mountains and lake."
-                ),
-                onDelete = {},
-                onEditCategory = {},
-                onReanalyze = {}
+private fun AnalyzingIndicator() {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        val infiniteTransition = rememberInfiniteTransition(label = "analyzing")
+        val sweep by infiniteTransition.animateFloat(
+            initialValue = 0f,
+            targetValue = 360f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(durationMillis = 1200, easing = LinearEasing),
+                repeatMode = RepeatMode.Restart
+            ),
+            label = "analyzing_rotation"
+        )
+
+        val hue by infiniteTransition.animateFloat(
+            initialValue = 0f,
+            targetValue = 360f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(durationMillis = 1600, easing = LinearEasing),
+                repeatMode = RepeatMode.Restart
+            ),
+            label = "analyzing_hue"
+        )
+
+        val alphaPulse by infiniteTransition.animateFloat(
+            initialValue = 0.78f,
+            targetValue = 1f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(durationMillis = 700, easing = LinearEasing),
+                repeatMode = RepeatMode.Reverse
+            ),
+            label = "analyzing_alpha"
+        )
+
+        val baseColorInt = android.graphics.Color.HSVToColor(floatArrayOf(hue, 0.9f, 0.95f))
+        val animatedColor = Color(baseColorInt).copy(alpha = alphaPulse)
+
+        Box(
+            modifier = Modifier
+                .size(44.dp)
+                .clip(CircleShape)
+                .background(MaterialTheme.colorScheme.surfaceVariant),
+            contentAlignment = Alignment.Center
+        ) {
+            CircularProgressIndicator(
+                strokeWidth = 3.dp,
+                strokeCap = StrokeCap.Round,
+                modifier = Modifier
+                    .size(40.dp)
+                    .graphicsLayer { rotationZ = sweep },
+                trackColor = MaterialTheme.colorScheme.surfaceVariant,
+                color = animatedColor
             )
+            Image(
+                painter = painterResource(id = R.drawable.analyzing),
+                contentDescription = stringResource(R.string.cd_analyzing_indicator),
+                modifier = Modifier.size(24.dp)
+            )
+        }
+        Text(
+            text = stringResource(R.string.label_analyzing),
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.padding(top = 4.dp)
+        )
+    }
+}
+
+fun formatTimestamp(timestamp: Long): String {
+    val locale = Locale.getDefault()
+    val formatter = DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT, locale)
+    return formatter.format(Date(timestamp))
+}
+
+fun cleanSummary(raw: String?): String {
+    raw ?: return ""
+    val trimmed = raw.trimStart()
+    val prefixes = listOf("* ", "- ", "• ")
+    val matching = prefixes.firstOrNull { trimmed.startsWith(it) }
+    return matching?.let { trimmed.removePrefix(it) } ?: raw
+}
+
+@Composable
+private fun AiSummaryBlock(text: String) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
+            .background(MaterialTheme.colorScheme.inverseOnSurface.copy(alpha = 0.08f))
+            .padding(horizontal = 14.dp, vertical = 12.dp)
+    ) {
+        Text(
+            text = text,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 4,
+            overflow = TextOverflow.Ellipsis
+        )
+    }
+}
+
+const val AI_ROBOT_PREFIX = "\uD83E\uDD16"
+
+@Composable
+private fun ChromeStyleUrlBar(
+    url: String,
+    title: String? = null,
+    modifier: Modifier = Modifier,
+    appUiDisplayMode: com.machi.memoiz.data.datastore.UiDisplayMode? = null
+) {
+    val ctx = LocalContext.current
+    val configuration = LocalConfiguration.current
+    val effectiveConfig = remember(configuration, appUiDisplayMode) {
+        if (appUiDisplayMode == null || appUiDisplayMode == com.machi.memoiz.data.datastore.UiDisplayMode.SYSTEM) {
+            configuration
+        } else {
+            val copy = android.content.res.Configuration(configuration)
+            copy.uiMode = copy.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK.inv()
+            copy.uiMode = when (appUiDisplayMode) {
+                com.machi.memoiz.data.datastore.UiDisplayMode.DARK -> copy.uiMode or android.content.res.Configuration.UI_MODE_NIGHT_YES
+                com.machi.memoiz.data.datastore.UiDisplayMode.LIGHT -> copy.uiMode or android.content.res.Configuration.UI_MODE_NIGHT_NO
+                else -> copy.uiMode
+            }
+            copy
+        }
+    }
+    val themedCtx = remember(effectiveConfig) { ctx.createConfigurationContext(effectiveConfig) }
+    val bgColor = Color(themedCtx.resources.getColor(R.color.chrome_omnibox_bg, themedCtx.theme))
+    val borderColor = Color(themedCtx.resources.getColor(R.color.chrome_omnibox_border, themedCtx.theme))
+    val textColor = Color(themedCtx.resources.getColor(R.color.chrome_omnibox_text, themedCtx.theme))
+
+    Surface(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
+        shape = RoundedCornerShape(26.dp),
+        color = bgColor,
+        tonalElevation = 2.dp,
+        border = BorderStroke(1.dp, borderColor)
+    ) {
+        val hasTitle = !title.isNullOrBlank()
+        if (hasTitle) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 12.dp, vertical = 10.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                Surface(
+                    color = MaterialTheme.colorScheme.primaryContainer,
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text(
+                        text = "URL",
+                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                    )
+                }
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Text(
+                        text = title!!,
+                        style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.SemiBold),
+                        color = textColor,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Text(
+                        text = url,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = textColor,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+                Icon(
+                    imageVector = Icons.Rounded.Star,
+                    contentDescription = null,
+                    modifier = Modifier
+                        .size(24.dp)
+                        .padding(4.dp),
+                    tint = Color(0xFFFFD700)
+                )
+            }
+        } else {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 12.dp, vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                Surface(
+                    color = MaterialTheme.colorScheme.primaryContainer,
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text(
+                        text = "URL",
+                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                    )
+                }
+                Text(
+                    text = url,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = textColor,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f)
+                )
+                Icon(
+                    imageVector = Icons.Rounded.Star,
+                    contentDescription = null,
+                    modifier = Modifier
+                        .size(24.dp)
+                        .padding(4.dp),
+                    tint = Color(0xFFFFD700)
+                )
+            }
         }
     }
 }
 
-@Preview(name = "MemoCard - Web Bubble", showBackground = true, device = Devices.PIXEL_4)
 @Composable
-private fun PreviewMemoCardWebBubble() {
-    MemoizTheme {
-        Surface(modifier = Modifier.fillMaxWidth()) {
-            MemoCard(
-                memo = Memo(
-                    id = 2,
-                    content = "https://news.example.com/article/compose-bubble",
-                    imageUri = null,
-                    memoType = MemoType.WEB_SITE,
-                    category = "Reading",
-                    summary = "Compose-Bubble を使ったサンプル記事\n詳細はリンク先を参照してください。"
-                ),
-                onDelete = {},
-                onEditCategory = {},
-                onReanalyze = {}
+private fun ImageThumbnailFrame(
+    imageUri: String,
+    contentDescription: String?,
+    modifier: Modifier = Modifier
+) {
+    val outerShape = RoundedCornerShape(10.dp)
+    val innerShape = RoundedCornerShape(8.dp)
+    val context = LocalContext.current
+
+    val uri = runCatching { Uri.parse(imageUri) }.getOrNull()
+    val authority = uri?.authority ?: ""
+    val scheme = uri?.scheme ?: ""
+    val appFileProviderAuthority = "${context.packageName}.fileprovider"
+    val hasLocalCopy = when {
+        scheme == ContentResolver.SCHEME_FILE -> true
+        scheme == ContentResolver.SCHEME_CONTENT && authority == appFileProviderAuthority -> true
+        else -> false
+    }
+
+    val pinColor = if (hasLocalCopy) MaterialTheme.colorScheme.error else Color(0xFF1976D2)
+
+    Box(
+        modifier = modifier
+            .graphicsLayer(rotationZ = 2.5f)
+            .shadow(
+                elevation = 10.dp,
+                ambientColor = Color.Black.copy(alpha = 0.12f),
+                spotColor = Color.Black.copy(alpha = 0.18f),
+                shape = outerShape
             )
+    ) {
+        Box(
+            modifier = Modifier
+                .matchParentSize()
+                .background(MaterialTheme.colorScheme.surfaceVariant, shape = outerShape)
+                .padding(18.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color(0xFFF7F7F7), shape = innerShape)
+                    .padding(6.dp)
+            ) {
+                AsyncImage(
+                    model = Uri.parse(imageUri),
+                    contentDescription = contentDescription,
+                    modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(6.dp)),
+                    contentScale = ContentScale.Crop
+                )
+            }
         }
+
+        PinThumbtack(
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .offset(y = 4.dp),
+            pinColor = pinColor
+        )
     }
 }
 
-@Preview(name = "MemoCard - Image Bubble - Dark", showBackground = true, device = Devices.PIXEL_4)
 @Composable
-private fun PreviewMemoCardImageBubbleDark() {
-    MemoizTheme {
-        Surface(modifier = Modifier.fillMaxWidth()) {
-            MemoCard(
-                memo = Memo(
-                    id = 1,
-                    content = "This is an auto-generated description for the image. It may be long but should be truncated in the bubble.",
-                    imageUri = "https://picsum.photos/seed/memoizPreview/600",
-                    memoType = MemoType.IMAGE,
-                    category = "Unsorted",
-                    summary = "A scenic photo of mountains and lake."
-                ),
-                onDelete = {},
-                onEditCategory = {},
-                onReanalyze = {},
-                appUiDisplayMode = com.machi.memoiz.data.datastore.UiDisplayMode.DARK
-            )
-        }
+private fun PinThumbtack(modifier: Modifier = Modifier, pinColor: Color = Color(0xFF2E7D32)) {
+    Canvas(
+        modifier = modifier
+            .size(width = 11.dp, height = 17.dp)
+            .graphicsLayer(rotationX = 26f, rotationZ = -18f)
+    ) {
+        val shadowColor = Color.Black.copy(alpha = 0.26f)
+        val centerX = size.width / 2f
+        val headRadius = size.width * 0.34f
+        val needleWidth = size.width * 0.18f
+        val needleHeight = size.height * 0.62f
+        val needleTopY = headRadius * 1.25f
+
+        drawRoundRect(
+            color = shadowColor,
+            topLeft = Offset(centerX - needleWidth * 1.1f, needleTopY + 2.2f),
+            size = Size(needleWidth * 2.2f, needleHeight + headRadius * 1.3f),
+            cornerRadius = CornerRadius(needleWidth * 1.2f),
+            alpha = 0.25f
+        )
+
+        drawRoundRect(
+            color = shadowColor,
+            topLeft = Offset(centerX - needleWidth / 2f + 1.0f, needleTopY + 1.6f),
+            size = Size(needleWidth, needleHeight),
+            cornerRadius = CornerRadius(needleWidth)
+        )
+
+        drawRoundRect(
+            color = Color(0xFF7A5D48),
+            topLeft = Offset(centerX - needleWidth / 2f, needleTopY),
+            size = Size(needleWidth, needleHeight),
+            cornerRadius = CornerRadius(needleWidth)
+        )
+
+        drawCircle(
+            color = pinColor.copy(alpha = 0.25f),
+            radius = headRadius * 1.08f,
+            center = Offset(centerX - headRadius * 0.16f, headRadius * 0.9f)
+        )
+
+        drawCircle(
+            color = pinColor,
+            radius = headRadius,
+            center = Offset(centerX, headRadius)
+        )
     }
 }
 
-@Preview(name = "MemoCard - Image Bubble - Light", showBackground = true, device = Devices.PIXEL_4)
 @Composable
-private fun PreviewMemoCardImageBubbleLight() {
-    MemoizTheme {
-        Surface(modifier = Modifier.fillMaxWidth()) {
-            MemoCard(
-                memo = Memo(
-                    id = 1,
-                    content = "This is an auto-generated description for the image. It may be long but should be truncated in the bubble.",
-                    imageUri = "https://picsum.photos/seed/memoizPreview/600",
-                    memoType = MemoType.IMAGE,
-                    category = "Unsorted",
-                    summary = "A scenic photo of mountains and lake."
-                ),
-                onDelete = {},
-                onEditCategory = {},
-                onReanalyze = {},
-                appUiDisplayMode = com.machi.memoiz.data.datastore.UiDisplayMode.LIGHT
-            )
-        }
-    }
+private fun CampusNoteTextAligned(
+    text: String,
+    modifier: Modifier = Modifier,
+    lineHeight: androidx.compose.ui.unit.TextUnit = 20.sp // smaller line spacing
+) {
+    val density = LocalDensity.current
+    val lineHeightPx = with(density) { lineHeight.toPx() }
+    val shape = RoundedCornerShape(12.dp)
+    val bgColor = colorResource(id = R.color.campus_note_bg)
+    val textColor = colorResource(id = R.color.campus_note_text)
+    val verticalLineColor = colorResource(id = R.color.campus_note_line_vertical)
+    val horizontalLineColor = colorResource(id = R.color.campus_note_line_horizontal)
+    Text(
+        text = text,
+        style = MaterialTheme.typography.bodyMedium.copy(lineHeight = lineHeight),
+        color = textColor,
+        maxLines = 6,
+        overflow = TextOverflow.Ellipsis,
+        modifier = modifier
+            .shadow(6.dp, shape)
+            .clip(shape)
+            .drawBehind {
+                drawRect(bgColor)
+                val marginX = 28.dp.toPx()
+                drawLine(
+                    color = verticalLineColor,
+                    start = Offset(marginX, 0f),
+                    end = Offset(marginX, size.height),
+                    strokeWidth = 2.dp.toPx()
+                )
+                val lineOffset = 2.dp.toPx()
+                var y = lineHeightPx - lineOffset
+                while (y < size.height) {
+                    drawLine(
+                        color = horizontalLineColor,
+                        start = Offset(0f, y),
+                        end = Offset(size.width, y),
+                        strokeWidth = 1.dp.toPx()
+                    )
+                    y += lineHeightPx
+                }
+            }
+            .padding(start = 44.dp, top = 2.dp, end = 16.dp, bottom = 16.dp))
 }
-
