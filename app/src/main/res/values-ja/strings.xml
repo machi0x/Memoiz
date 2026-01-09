@@ -217,9 +217,9 @@
     <string name="settings_import_result_no_meta">インポートに失敗しました: エクスポートメタデータ(meta.json)が見つかりません。正しいエクスポートファイルを選択してください。</string>
 
     <!-- Privacy consent (Japanese) -->
-    <string name="tutorial_step_consent_title">メモイズの利用状況の収集について</string>
-    <string name="tutorial_step_consent_body">メモイズの機能改善のため、利用状況についての情報を送信してもよろしいですか？ 作成したメモの内容やプライバシーに関わる情報は送信されません。この設定はあとで設定画面からも切り替えられます。</string>
-    <string name="settings_send_usage_title">利用状況を送信する</string>
+    <string name="tutorial_step_consent_title">利用状況の送信</string>
+    <string name="tutorial_step_consent_body">機能改善のため、アプリの利用状況についての情報を送信してもよろしいですか？ 作成したメモの内容やプライバシーに関わる情報は送信されません。この設定は後で設定画面からも切り替えられます。</string>
+    <string name="settings_send_usage_title">利用状況の送信</string>
     <string name="settings_send_usage_description">メモイズの機能改善のため、利用状況についての情報を送信します。作成したメモの内容やプライバシーに関わる情報は送信されません。</string>
 
     <string name="ok">はい</string>
