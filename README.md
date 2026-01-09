@@ -1,10 +1,11 @@
 # Memoiz
 
-<!-- Intro block: icon at left, intro text at right -->
-<div style="display:flex; align-items:center; gap:16px; max-width:900px; margin:0 auto 18px;">
-  <img src="docs/ic_launcher-playstore.png" size="180px" alt="Memoiz Playstore Icon" style="max-width:64px; height:auto;" />
-  <p style="margin:0; font-size:1.05rem; line-height:1.4;">Memoiz is a privacy-first Android clipboard companion that captures text, links, and images, then categorizes and summarizes them on-device for quick recall.</p>
-</div>
+Memoiz is a privacy-first Android clipboard companion that captures text, links, and images, then categorizes and summarizes them on-device for quick recall.
+
+<!-- Small Play Store icon at the top -->
+<p style="text-align:center">
+  <img src="docs/ic_launcher-playstore.png" width="200px" alt="Memoiz Playstore Icon" style="max-width:64px; height:auto;" />
+</p>
 
 ## Highlights
 - **One-tap capture** from Process Text, the Android share sheet, or the in-app "Paste from clipboard" FAB.
@@ -53,12 +54,6 @@
 Use the Settings → Export / Import options to backup or restore your memos. Encrypted exports require the same password to import.
 
 ## Generated OSS license resources
-
-<!-- Feature banner inserted here as a centered, wide image -->
-<p style="text-align:center; margin-top:18px; margin-bottom:18px;">
-  <img src="docs/feature_google_play.png" alt="Memoiz on Google Play" style="max-width:900px; width:100%; height:auto;" />
-</p>
-
 The build uses Google's OSS Licenses plugin to generate `third_party_licenses` and `third_party_license_metadata` during the build. The project by default ignores the generated copies under `app/src/main/res/raw/` to avoid noisy commits. If you intentionally want to track those files in git (for example, to include the license text in the repository), run the merge task with the Gradle property `-PwriteThirdPartyRes=true` and commit the resulting files:
 
 ```powershell
@@ -84,7 +79,6 @@ If you don't need to track them, no action is required; the app will still displ
 cd C:\Users\user\StudioProjects\Memoiz
 .\gradlew.bat assembleDebug
 ```
-
 Install the resulting APK (`app/build/outputs/apk/debug/`). Target devices must run Android 10 (API 29) or newer.
 
 ## How to Use the App
@@ -108,3 +102,8 @@ Install the resulting APK (`app/build/outputs/apk/debug/`). Target devices must 
 
 ## License
 Apache License 2.0 — see `LICENSE` for details.
+
+<!-- Feature banner inserted here as a centered, wide image -->
+<p style="text-align:center; margin-top:18px; margin-bottom:18px;">
+  <img src="docs/feature_google_play.png" alt="Memoiz on Google Play" style="max-width:900px; width:100%; height:auto;" />
+</p>
