@@ -1,3 +1,11 @@
+---
+title: "メモイズ プライバシーポリシー / Memoiz Privacy Policy"
+permalink: /privacy/
+layout: default
+lang: ja
+description: "Privacy policy for Memoiz (日本語 / English). Explains data collected and opt-out information."
+---
+
 # Memoiz プライバシーポリシー / Memoiz Privacy Policy
 
 最終更新日 / Last updated: 2026-01-09
