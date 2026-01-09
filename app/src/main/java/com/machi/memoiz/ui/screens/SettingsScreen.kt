@@ -47,6 +47,7 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.runtime.rememberCoroutineScope
 import kotlinx.coroutines.launch
 import androidx.compose.ui.text.TextStyle
+import com.machi.memoiz.analytics.AnalyticsManager
 
 /**
  * Settings screen for app configuration.
@@ -787,13 +788,13 @@ private fun AboutDialog(
                     textAlign = TextAlign.Center
                 )
 
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(10.dp))
 
                 Image(
                     painter = painterResource(id = R.drawable.thanks),
                     contentDescription = null,
                     modifier = Modifier
-                        .size(200.dp)
+                        .size(250.dp)
                 )
 
                 val isInPreview = LocalInspectionMode.current
@@ -802,7 +803,7 @@ private fun AboutDialog(
                 // Log analytics event once per AboutDialog composition (Preview-safe)
                 LaunchedEffect(Unit) {
                     if (!isInPreview) {
-                        com.machi.memoiz.analytics.AnalyticsManager.logAboutThanksView(aboutDialogContext)
+                        AnalyticsManager.logAboutThanksView(aboutDialogContext)
                     }
                 }
 
