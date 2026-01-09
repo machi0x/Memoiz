@@ -2,6 +2,12 @@
 
 Memoiz is a privacy-first Android clipboard companion that captures text, links, and images, then categorizes and summarizes them on-device for quick recall.
 
+<p style="text-align:center">
+  <img src="docs/ic_launcher-playstore.png" alt="Memoiz Playstore Icon" style="max-width:120px; height:auto;" />
+  &nbsp;&nbsp;
+  <img src="docs/feature_google_play.png" alt="Memoiz on Google Play" style="max-width:420px; height:auto;" />
+</p>
+
 ## Highlights
 - **One-tap capture** from Process Text, the Android share sheet, or the in-app "Paste from clipboard" FAB.
 - **Two-stage AI categorization** that merges smart suggestions with your custom categories while keeping all processing on-device.
