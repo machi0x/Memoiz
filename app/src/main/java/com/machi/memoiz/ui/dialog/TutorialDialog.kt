@@ -37,6 +37,7 @@ private data class TutorialStep(
     @StringRes val descriptionRes: Int
 )
 
+@Suppress("UNUSED_PARAMETER")
 @Composable
 fun TutorialDialog(
     onFinished: () -> Unit,
@@ -85,6 +86,24 @@ fun TutorialDialog(
                 verticalArrangement = Arrangement.spacedBy(12.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
+                // Move the step indicator above the image so its vertical position doesn't change
+                // when the description text length changes.
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    steps.forEachIndexed { index, _ ->
+                        val color = if (index == currentStep) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline
+                        Box(
+                            modifier = Modifier
+                                .padding(horizontal = 4.dp)
+                                .size(if (index == currentStep) 10.dp else 8.dp)
+                                .clip(RoundedCornerShape(50))
+                                .background(color)
+                        )
+                    }
+                }
+
                 val imageScrollState = rememberScrollState()
                 val isLargeShot = step.imageRes == R.drawable.main_ui || step.imageRes == R.drawable.side_panel
                 val baseBoxModifier = Modifier
@@ -123,22 +142,6 @@ fun TutorialDialog(
                     style = MaterialTheme.typography.bodyMedium,
                     textAlign = TextAlign.Center
                 )
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.Center
-                ) {
-                    steps.forEachIndexed { index, _ ->
-                        val color = if (index == currentStep) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline
-                        Box(
-                            modifier = Modifier
-                                .padding(horizontal = 4.dp)
-                                .size(if (index == currentStep) 10.dp else 8.dp)
-                                .clip(RoundedCornerShape(50))
-                                .background(color)
-                        )
-                    }
-                }
 
                 if (isUsagePermissionStep && !usagePermissionGranted) {
                     TextButton(onClick = {
