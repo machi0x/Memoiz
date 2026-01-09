@@ -8,8 +8,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import com.machi.memoiz.R
 
-val SmartFontUi = FontFamily(
-    Font(R.font.smart_font_ui)
+val Mplus1CodeReguar = FontFamily(
+    Font(R.font.mplus1code_regular)
 )
 
 val Yomogi = FontFamily(

@@ -4,7 +4,6 @@ import android.content.ContentResolver
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
-import android.provider.Settings
 import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -44,12 +43,8 @@ import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.tooling.preview.Devices
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.annotation.DrawableRes
 import androidx.compose.ui.graphics.Path
-import androidx.annotation.StringRes
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -57,9 +52,7 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.CornerRadius
@@ -69,7 +62,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
@@ -80,18 +72,15 @@ import com.machi.memoiz.R
 import com.machi.memoiz.data.entity.MemoType
 import com.machi.memoiz.domain.model.Memo
 import com.machi.memoiz.service.ContentProcessingLauncher
-import com.machi.memoiz.ui.theme.MemoizTheme
-import com.machi.memoiz.util.UsageStatsHelper
 import coil.compose.AsyncImage
 import com.google.firebase.crashlytics.FirebaseCrashlytics
 import com.machi.memoiz.analytics.AnalyticsManager
 import com.machi.memoiz.ui.dialog.GenAiStatusCheckDialogActivity
 import com.machi.memoiz.ui.dialog.TutorialDialog
-import com.machi.memoiz.ui.theme.SmartFontUi
+import com.machi.memoiz.ui.theme.Mplus1CodeReguar
+import com.machi.memoiz.ui.theme.Yomogi
 import java.text.DateFormat
 import java.util.*
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.burnoutcrew.reorderable.ReorderableItem
 import org.burnoutcrew.reorderable.detectReorder
@@ -1753,7 +1742,7 @@ private fun SpeechBubble(
                 text = text,
                 // Use the custom SmartFontUi for bubble text but a slightly smaller
                 // size and tighter line height so longer descriptions fit better.
-                style = MaterialTheme.typography.bodySmall.copy(fontFamily = SmartFontUi, fontSize = 13.sp, lineHeight = 18.sp),
+                style = MaterialTheme.typography.bodySmall.copy(fontFamily = Mplus1CodeReguar, fontSize = 13.sp, lineHeight = 18.sp),
                 color = MaterialTheme.colorScheme.onSurface,
                 maxLines = 6,
                 overflow = TextOverflow.Ellipsis,
@@ -2149,7 +2138,7 @@ private fun CampusNoteTextAligned(
     val horizontalLineColor = colorResource(id = R.color.campus_note_line_horizontal)
     Text(
         text = text,
-        style = MaterialTheme.typography.bodyMedium.copy(lineHeight = lineHeight),
+        style = MaterialTheme.typography.bodyMedium.copy(lineHeight = lineHeight, fontFamily = Yomogi),
         color = textColor,
         maxLines = 6,
         overflow = TextOverflow.Ellipsis,
