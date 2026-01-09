@@ -70,9 +70,9 @@ class MainViewModel(
         .map { it.uiDisplayMode }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), UiDisplayMode.SYSTEM)
 
-    // Expose whether the user has consented to sending usage stats
-    val sendUsageStats: StateFlow<Boolean> = userPreferencesFlow
-        .map { it.sendUsageStats }
+    // Expose whether the user has consented to analytics collection (Firebase)
+    val analyticsCollectionEnabled: StateFlow<Boolean> = userPreferencesFlow
+        .map { it.analyticsCollectionEnabled }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
 
     // Indicates whether we've observed the first real preferences emission from DataStore.
@@ -373,20 +373,20 @@ class MainViewModel(
         }
     }
 
-    /** Set user consent for sending usage stats. Updates SharedPreferences immediately and persists to DataStore asynchronously. */
-    fun setSendUsageStats(enabled: Boolean) {
+    /** Set user consent for analytics collection. Updates SharedPreferences immediately and persists to DataStore asynchronously. */
+    fun setAnalyticsCollectionEnabled(enabled: Boolean) {
         // immediate UI reaction via SharedPreferences mirror
         try {
-            preferencesManager.setSendUsageStatsSync(enabled)
+            preferencesManager.setAnalyticsCollectionEnabledSync(enabled)
         } catch (e: Exception) {
-            android.util.Log.w("MainViewModel", "Failed to set sendUsageStats sync", e)
+            android.util.Log.w("MainViewModel", "Failed to set analyticsCollectionEnabled sync", e)
         }
         // persist to DataStore in background
         viewModelScope.launch {
             try {
-                preferencesManager.setSendUsageStats(enabled)
+                preferencesManager.setAnalyticsCollectionEnabled(enabled)
             } catch (e: Exception) {
-                android.util.Log.w("MainViewModel", "Failed to persist sendUsageStats to DataStore", e)
+                android.util.Log.w("MainViewModel", "Failed to persist analyticsCollectionEnabled to DataStore", e)
             }
         }
     }

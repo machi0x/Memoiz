@@ -23,8 +23,8 @@ class MemoizApplication : Application() {
         // Initialize analytics/crashlytics collection according to stored user preference (default: false)
         try {
             val prefsManager = PreferencesDataStoreManager(applicationContext)
-            val sendUsage = prefsManager.isSendUsageStatsSync()
-            AnalyticsManager.setCollectionEnabled(applicationContext, sendUsage)
+            val analyticsEnabled = prefsManager.isAnalyticsCollectionEnabledSync()
+            AnalyticsManager.setCollectionEnabled(applicationContext, analyticsEnabled)
         } catch (e: Exception) {
             android.util.Log.w("MemoizApplication", "Failed to initialize analytics collection from prefs", e)
         }

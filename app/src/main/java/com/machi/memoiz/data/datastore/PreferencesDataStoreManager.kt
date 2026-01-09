@@ -20,8 +20,8 @@ class PreferencesDataStoreManager(private val context: Context) {
         private val CUSTOM_CATEGORIES_KEY = stringSetPreferencesKey("custom_categories")
         private val CATEGORY_ORDER_KEY = stringPreferencesKey("category_order")
         private val UI_DISPLAY_MODE_KEY = stringPreferencesKey("ui_display_mode")
-        // New: send usage stats preference stored in DataStore
-        private val SEND_USAGE_STATS_KEY = stringPreferencesKey("send_usage_stats")
+        // New: analytics collection preference stored in DataStore
+        private val ANALYTICS_COLLECTION_KEY = stringPreferencesKey("analytics_collection_enabled")
         // GenAI last-check status keys
         private val GENAI_IMAGE_LAST_KEY = stringPreferencesKey("genai_last_image_status")
         private val GENAI_TEXT_LAST_KEY = stringPreferencesKey("genai_last_text_status")
@@ -30,29 +30,29 @@ class PreferencesDataStoreManager(private val context: Context) {
         private const val SP_FILE_NAME = "memoiz_shared_prefs"
         private const val SP_KEY_HAS_SEEN_TUTORIAL = "has_seen_tutorial"
         private const val SP_KEY_SHOW_TUTORIAL_ON_NEXT_LAUNCH = "show_tutorial_on_next_launch"
-        // New: immediate-sync key for send usage stats (mirror of DataStore for sync reads)
-        private const val SP_KEY_SEND_USAGE_STATS = "send_usage_stats_sp"
+        // New: immediate-sync key for analytics collection (mirror of DataStore for sync reads)
+        private const val SP_KEY_ANALYTICS_COLLECTION = "analytics_collection_sp"
         private const val SP_KEY_CONSENT_DIALOG_SHOWN = "consent_dialog_shown"
     }
 
     // SharedPreferences + DataStore combined flow: keep DataStore for heavier prefs and
     // SharedPreferences for immediate tutorial flags.
     private val sharedPrefs: SharedPreferences = context.getSharedPreferences(SP_FILE_NAME, Context.MODE_PRIVATE)
-    // Use a Triple to include the new sendUsageStats immediate value
+    // Use a Triple to include the new analyticsCollectionEnabled immediate value
     private val _sharedPrefFlow = MutableStateFlow(
         Triple(
             sharedPrefs.getBoolean(SP_KEY_HAS_SEEN_TUTORIAL, false),
             sharedPrefs.getBoolean(SP_KEY_SHOW_TUTORIAL_ON_NEXT_LAUNCH, false),
-            sharedPrefs.getBoolean(SP_KEY_SEND_USAGE_STATS, false)
+            sharedPrefs.getBoolean(SP_KEY_ANALYTICS_COLLECTION, false)
         )
     )
 
     private val spListener = SharedPreferences.OnSharedPreferenceChangeListener { sp, key ->
-        if (key == SP_KEY_HAS_SEEN_TUTORIAL || key == SP_KEY_SHOW_TUTORIAL_ON_NEXT_LAUNCH || key == SP_KEY_SEND_USAGE_STATS) {
+        if (key == SP_KEY_HAS_SEEN_TUTORIAL || key == SP_KEY_SHOW_TUTORIAL_ON_NEXT_LAUNCH || key == SP_KEY_ANALYTICS_COLLECTION) {
             _sharedPrefFlow.value = Triple(
                 sp.getBoolean(SP_KEY_HAS_SEEN_TUTORIAL, false),
                 sp.getBoolean(SP_KEY_SHOW_TUTORIAL_ON_NEXT_LAUNCH, false),
-                sp.getBoolean(SP_KEY_SEND_USAGE_STATS, false)
+                sp.getBoolean(SP_KEY_ANALYTICS_COLLECTION, false)
             )
         }
     }
@@ -70,7 +70,7 @@ class PreferencesDataStoreManager(private val context: Context) {
             categoryOrder = preferences[CATEGORY_ORDER_KEY]?.split(',')?.filter { it.isNotBlank() } ?: emptyList(),
             hasSeenTutorial = spPair.first,
             showTutorialOnNextLaunch = spPair.second,
-            sendUsageStats = preferences[SEND_USAGE_STATS_KEY]?.toBoolean() ?: spPair.third,
+            analyticsCollectionEnabled = preferences[ANALYTICS_COLLECTION_KEY]?.toBoolean() ?: spPair.third,
             uiDisplayMode = UiDisplayMode.fromString(preferences[UI_DISPLAY_MODE_KEY])
         )
     }.distinctUntilChanged()
@@ -161,9 +161,9 @@ class PreferencesDataStoreManager(private val context: Context) {
         }
     }
 
-    /** Returns the current immediate sendUsageStats value from SharedPreferences (sync read) */
-    fun isSendUsageStatsSync(): Boolean {
-        return sharedPrefs.getBoolean(SP_KEY_SEND_USAGE_STATS, false)
+    /** Returns the current immediate analyticsCollectionEnabled value from SharedPreferences (sync read) */
+    fun isAnalyticsCollectionEnabledSync(): Boolean {
+        return sharedPrefs.getBoolean(SP_KEY_ANALYTICS_COLLECTION, false)
     }
 
     /** Synchronous getter for whether the pre-tutorial consent dialog has been shown/answered. */
@@ -182,23 +182,23 @@ class PreferencesDataStoreManager(private val context: Context) {
         return sharedPrefs.getBoolean(SP_KEY_SHOW_TUTORIAL_ON_NEXT_LAUNCH, false)
     }
 
-    /** Persist the sendUsageStats boolean into DataStore and mirror to SharedPreferences */
-    suspend fun setSendUsageStats(enabled: Boolean) {
+    /** Persist the analyticsCollectionEnabled boolean into DataStore and mirror to SharedPreferences */
+    suspend fun setAnalyticsCollectionEnabled(enabled: Boolean) {
         // Write to DataStore
         context.dataStore.edit { preferences ->
-            preferences[SEND_USAGE_STATS_KEY] = enabled.toString()
+            preferences[ANALYTICS_COLLECTION_KEY] = enabled.toString()
         }
         // Mirror to SharedPreferences for immediate sync reads
-        sharedPrefs.edit().putBoolean(SP_KEY_SEND_USAGE_STATS, enabled).apply()
+        sharedPrefs.edit().putBoolean(SP_KEY_ANALYTICS_COLLECTION, enabled).apply()
         // Update flow immediately
         _sharedPrefFlow.value = Triple(_sharedPrefFlow.value.first, _sharedPrefFlow.value.second, enabled)
     }
 
     /** Synchronous convenience method to set SharedPreferences immediately (no DataStore write)
-     *  Use this for instant UI reaction; callers should also call suspend setSendUsageStats to persist.
+     *  Use this for instant UI reaction; callers should also call suspend setAnalyticsCollectionEnabled to persist.
      */
-    fun setSendUsageStatsSync(enabled: Boolean) {
-        sharedPrefs.edit().putBoolean(SP_KEY_SEND_USAGE_STATS, enabled).apply()
+    fun setAnalyticsCollectionEnabledSync(enabled: Boolean) {
+        sharedPrefs.edit().putBoolean(SP_KEY_ANALYTICS_COLLECTION, enabled).apply()
         _sharedPrefFlow.value = Triple(_sharedPrefFlow.value.first, _sharedPrefFlow.value.second, enabled)
     }
 }

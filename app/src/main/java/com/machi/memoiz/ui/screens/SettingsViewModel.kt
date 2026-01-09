@@ -55,8 +55,8 @@ interface SettingsScreenViewModel {
     fun setUseImageDescription(use: Boolean)
     fun setUseTextGeneration(use: Boolean)
     fun setUseSummarization(use: Boolean)
-    // New: set whether to send usage statistics (non-suspending convenience method)
-    fun setSendUsageStats(enabled: Boolean)
+    /** Set whether to send usage statistics (non-suspending convenience method) */
+    fun setAnalyticsCollectionEnabled(enabled: Boolean)
     // New: set UI display mode — make suspend so callers can wait for DataStore write to complete
     suspend fun setUiDisplayMode(mode: UiDisplayMode)
 
@@ -139,18 +139,18 @@ class SettingsViewModel(
         Log.d("SettingsViewModel", "setUseSummarization called but force-off flags removed; no-op")
     }
 
-    override fun setSendUsageStats(enabled: Boolean) {
+    override fun setAnalyticsCollectionEnabled(enabled: Boolean) {
         // Mirror immediately for fast UI response and schedule DataStore persist
         try {
-            preferencesManager.setSendUsageStatsSync(enabled)
+            preferencesManager.setAnalyticsCollectionEnabledSync(enabled)
         } catch (e: Exception) {
-            Log.w("SettingsViewModel", "Failed to set sendUsageStats sync", e)
+            Log.w("SettingsViewModel", "Failed to set analyticsCollectionEnabled sync", e)
         }
         viewModelScope.launch {
             try {
-                preferencesManager.setSendUsageStats(enabled)
+                preferencesManager.setAnalyticsCollectionEnabled(enabled)
             } catch (e: Exception) {
-                Log.w("SettingsViewModel", "Failed to persist sendUsageStats to DataStore", e)
+                Log.w("SettingsViewModel", "Failed to persist analyticsCollectionEnabled to DataStore", e)
             }
         }
     }
@@ -484,6 +484,3 @@ class SettingsViewModel(
         }
     }
 }
-
-// Preview for Settings screen: adapt fake VM to new signatures
-

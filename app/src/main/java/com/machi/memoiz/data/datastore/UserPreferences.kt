@@ -12,5 +12,5 @@ data class UserPreferences(
     val showTutorialOnNextLaunch: Boolean = false,
     val uiDisplayMode: UiDisplayMode = UiDisplayMode.SYSTEM,
     // New: whether the user consents to sending non-private usage statistics (Firebase)
-    val sendUsageStats: Boolean = false
+    val analyticsCollectionEnabled: Boolean = false
 )

@@ -722,7 +722,7 @@ fun MainScreen(
         AlertDialog(
             onDismissRequest = {
                 // Treat dismissal as No. Mark dialog as answered so we never show it again.
-                viewModel.setSendUsageStats(false)
+                viewModel.setAnalyticsCollectionEnabled(false)
                 com.machi.memoiz.analytics.AnalyticsManager.setCollectionEnabled(context, false)
                 try {
                     FirebaseCrashlytics.getInstance().setCrashlyticsCollectionEnabled(false)
@@ -752,7 +752,7 @@ fun MainScreen(
             confirmButton = {
                 TextButton(onClick = {
                     // OK: enable analytics & crashlytics
-                    viewModel.setSendUsageStats(true)
+                    viewModel.setAnalyticsCollectionEnabled(true)
                     com.machi.memoiz.analytics.AnalyticsManager.setCollectionEnabled(context, true)
                     try {
                         FirebaseCrashlytics.getInstance().setCrashlyticsCollectionEnabled(true)
@@ -770,10 +770,10 @@ fun MainScreen(
             dismissButton = {
                 TextButton(onClick = {
                     // No: disable analytics & crashlytics, and mark answered
-                    viewModel.setSendUsageStats(false)
+                    viewModel.setAnalyticsCollectionEnabled(false)
                     com.machi.memoiz.analytics.AnalyticsManager.setCollectionEnabled(context, false)
                     try {
-                        FirebaseCrashlytics.getInstance().setCrashlyticsCollectionEnabled(false)
+                        FirebaseCrashlytics.getInstance().isCrashlyticsCollectionEnabled = false
                     } catch (e: Exception) {
                         Log.w("MainScreen", "Failed to disable Crashlytics: ${e.message}")
                     }

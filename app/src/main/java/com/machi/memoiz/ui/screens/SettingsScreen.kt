@@ -478,12 +478,11 @@ fun SettingsScreen(
                         leadingIcon = { Icon(Icons.Filled.Send, contentDescription = null) },
                         trailingContent = {
                             // Small switch on the right
-                            var checked by remember { mutableStateOf(userPrefs.sendUsageStats) }
+                            var checked by remember { mutableStateOf(userPrefs.analyticsCollectionEnabled) }
                             // Keep checked in sync when preferences change
-                            LaunchedEffect(userPrefs.sendUsageStats) { checked = userPrefs.sendUsageStats }
+                            LaunchedEffect(userPrefs.analyticsCollectionEnabled) { checked = userPrefs.analyticsCollectionEnabled }
                             Switch(checked = checked, onCheckedChange = { newChecked ->
-                                checked = newChecked
-                                viewModel.setSendUsageStats(newChecked)
+                                viewModel.setAnalyticsCollectionEnabled(newChecked)
                                 com.machi.memoiz.analytics.AnalyticsManager.setCollectionEnabled(context, newChecked)
                             })
                         }
@@ -895,8 +894,8 @@ fun SettingsScreenPreview() {
             override fun setUseImageDescription(use: Boolean) { /* preview-only: no-op */ }
             override fun setUseTextGeneration(use: Boolean) { /* preview-only: no-op */ }
             override fun setUseSummarization(use: Boolean) { /* preview-only: no-op */ }
-            override fun setSendUsageStats(enabled: Boolean) { /* preview-only: no-op */ }
-             override suspend fun setUiDisplayMode(mode: UiDisplayMode) { /* preview-only: no-op */ }
+            override fun setAnalyticsCollectionEnabled(enabled: Boolean) { /* preview-only: no-op */ }
+            override suspend fun setUiDisplayMode(mode: UiDisplayMode) { /* preview-only: no-op */ }
 
             override suspend fun exportMemos(context: Context, password: String?): Uri? {
                 return null
