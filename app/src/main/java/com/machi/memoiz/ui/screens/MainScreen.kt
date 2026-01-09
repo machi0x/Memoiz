@@ -903,7 +903,7 @@ private fun NavigationDrawerContent(
     Column(
         modifier = Modifier
             .fillMaxHeight()
-            .width(300.dp)
+            .width(250.dp)
     ) {
         val bannerPainter = painterResource(id = R.drawable.top_banner)
         val bannerHeight = 120.dp
@@ -923,7 +923,7 @@ private fun NavigationDrawerContent(
              selected = false,
              onClick = onSettingsClick,
              icon = { Icon(Icons.Default.Settings, contentDescription = null) },
-             modifier = Modifier.height(45.dp).padding(top = 5.dp)
+             modifier = Modifier.height(45.dp).padding(top = 13.dp)
          )
 
         NavigationDrawerItem(
