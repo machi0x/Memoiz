@@ -48,6 +48,17 @@ Memoiz is a privacy-first Android clipboard companion that captures text, links,
 
 Use the Settings → Export / Import options to backup or restore your memos. Encrypted exports require the same password to import.
 
+## Generated OSS license resources
+The build uses Google's OSS Licenses plugin to generate `third_party_licenses` and `third_party_license_metadata` during the build. The project by default ignores the generated copies under `app/src/main/res/raw/` to avoid noisy commits. If you intentionally want to track those files in git (for example, to include the license text in the repository), run the merge task with the Gradle property `-PwriteThirdPartyRes=true` and commit the resulting files:
+
+```powershell
+# Run the merge task and write the generated license resources into src/main/res/raw
+.
+\gradlew.bat :app:mergeThirdPartyLicenses -PwriteThirdPartyRes=true
+```
+
+If you don't need to track them, no action is required; the app will still display OSS licenses at runtime using the generated resources created during build.
+
 ## Architecture Snapshot
 | Layer | Key Components |
 | --- | --- |

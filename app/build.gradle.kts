@@ -1,6 +1,9 @@
 import java.util.concurrent.TimeUnit
 import java.nio.file.Files
 import java.nio.file.StandardOpenOption
+import java.security.MessageDigest
+import java.io.ByteArrayOutputStream
+import java.io.File
 
 plugins {
     id("com.android.application")
@@ -157,6 +160,61 @@ afterEvaluate {
             val baseLicBytes = genLicFile.readBytes()
             val baseMetaText = genMetaFile.readText(Charsets.UTF_8)
 
+            // --- Deduplicate generated entries (name + text) ---
+            data class Entry(val offset: Int, val size: Int, val name: String, val bytes: ByteArray, val hash: String)
+
+            fun sha256Hex(bytes: ByteArray): String {
+                val md = MessageDigest.getInstance("SHA-256")
+                return md.digest(bytes).joinToString("") { "%02x".format(it) }
+            }
+
+            val parsedEntries = mutableListOf<Entry>()
+            for (line in baseMetaText.lines()) {
+                val trimmed = line.trim()
+                if (trimmed.isEmpty()) continue
+                // Expect: "<offset>:<size> <name>"
+                val parts = trimmed.split(Regex("\\s+"), 2)
+                if (parts.size < 2) continue
+                val offSize = parts[0]
+                val name = parts[1]
+                val offSizeParts = offSize.split(":")
+                if (offSizeParts.size != 2) continue
+                val offset = offSizeParts[0].toIntOrNull() ?: continue
+                val size = offSizeParts[1].toIntOrNull() ?: continue
+                val end = offset + size
+                if (offset < 0 || end > baseLicBytes.size) continue
+                val bytes = baseLicBytes.copyOfRange(offset, end)
+                val hash = sha256Hex(bytes)
+                parsedEntries.add(Entry(offset, size, name, bytes, hash))
+            }
+
+            val uniqueEntries = LinkedHashMap<String, Entry>() // key: name + '|' + hash
+            for (e in parsedEntries) {
+                val key = e.name + "|" + e.hash
+                if (!uniqueEntries.containsKey(key)) {
+                    uniqueEntries[key] = e
+                } else {
+                    println("[mergeThirdPartyLicenses] Removing duplicate generated entry: ${e.name}")
+                }
+            }
+
+            // Rebuild base license bytes and metadata from unique entries (preserve first-seen order)
+            val rebuiltBaseBytesStream = ByteArrayOutputStream()
+            val rebuiltMetaLines = StringBuilder()
+            var rebuiltOffset = 0
+            for ((_, e) in uniqueEntries) {
+                rebuiltBaseBytesStream.write(e.bytes)
+                rebuiltMetaLines.append("${rebuiltOffset}:${e.bytes.size} ${e.name}\n")
+                rebuiltOffset += e.bytes.size
+            }
+
+            val dedupedBaseLicBytes: ByteArray = rebuiltBaseBytesStream.toByteArray()
+            val dedupedBaseMetaText = rebuiltMetaLines.toString().trimEnd()
+
+            // Replace base bytes/meta with deduped versions for subsequent appends
+            val workingBaseBytes: ByteArray = dedupedBaseLicBytes
+             val workingBaseMetaText = dedupedBaseMetaText
+
             val customDir = file("licenses")
             val customFiles = if (customDir.exists()) customDir.listFiles()?.filter { it.isFile && it.name.endsWith(".txt") } ?: emptyList() else emptyList()
 
@@ -165,42 +223,71 @@ afterEvaluate {
                 return@doLast
             }
 
-            var currentOffset = baseLicBytes.size
+            var currentOffset = workingBaseBytes.size
             val appendedMeta = StringBuilder()
             val appendedBytesList = mutableListOf<ByteArray>()
 
+            // Parse existing names from the generated metadata to avoid duplicate entries.
+            // Metadata lines look like: "<offset>:<size> <name>"
+            val existingNames = workingBaseMetaText.lines()
+                .mapNotNull { it.trim().takeIf { it.isNotEmpty() } }
+                .map { line -> line.split(Regex("\\s+")).last() }
+                .toMutableSet()
+
+            val seenCustomNames = mutableSetOf<String>()
             for (f in customFiles) {
+                val name = f.nameWithoutExtension
+                if (name in seenCustomNames) {
+                    println("[mergeThirdPartyLicenses] Skipping duplicate custom license file in app/licenses: ${f.name}")
+                    continue
+                }
+                seenCustomNames.add(name)
+
+                if (name in existingNames) {
+                    println("[mergeThirdPartyLicenses] Skipping append for '${name}' because it already exists in generated licenses.")
+                    continue
+                }
+
                 val bytes = f.readBytes()
                 appendedBytesList.add(bytes)
-                appendedMeta.append("$currentOffset:${bytes.size} ${f.nameWithoutExtension}\n")
+                appendedMeta.append("$currentOffset:${bytes.size} ${name}\n")
                 currentOffset += bytes.size
             }
 
             // Write back to the generated files (overwrite)
             try {
                 genLicFile.outputStream().use { os ->
-                    os.write(baseLicBytes)
+                    os.write(workingBaseBytes)
                     for (b in appendedBytesList) os.write(b)
                 }
-                genMetaFile.writeText(baseMetaText.trimEnd() + "\n" + appendedMeta.toString(), Charsets.UTF_8)
+                val finalMetaText = (workingBaseMetaText.trimEnd().let { if (it.isEmpty()) "" else it + "\n" } + appendedMeta.toString()).trimEnd()
+                genMetaFile.writeText(finalMetaText, Charsets.UTF_8)
                 println("[mergeThirdPartyLicenses] Updated generated files: ${genLicFile.path}")
             } catch (e: Exception) {
                 println("[mergeThirdPartyLicenses] Unable to write to generated files: ${e.message}")
             }
 
-            // Also write to src/main/res/raw as a backup and for tooling
-            val outDir = file("src/main/res/raw")
-            outDir.mkdirs()
-            val outLic = File(outDir, "third_party_licenses")
-            val outMeta = File(outDir, "third_party_license_metadata")
+            // Optionally write to src/main/res/raw as a backup and for tooling. Controlled by project property
+            // 'writeThirdPartyRes' (set -PwriteThirdPartyRes=true to enable). Default is disabled to avoid
+            // repeatedly modifying tracked resources.
+            val shouldWriteRes = (project.findProperty("writeThirdPartyRes")?.toString() == "true")
+            if (shouldWriteRes) {
+                val outDir = file("src/main/res/raw")
+                outDir.mkdirs()
+                val outLic = File(outDir, "third_party_licenses")
+                val outMeta = File(outDir, "third_party_license_metadata")
 
-            outLic.outputStream().use { os ->
-                os.write(baseLicBytes)
-                for (b in appendedBytesList) os.write(b)
+                outLic.outputStream().use { os ->
+                    os.write(workingBaseBytes)
+                    for (b in appendedBytesList) os.write(b)
+                }
+                val finalOutMeta = (workingBaseMetaText.trimEnd().let { if (it.isEmpty()) "" else it + "\n" } + appendedMeta.toString()).trimEnd()
+                outMeta.writeText(finalOutMeta, Charsets.UTF_8)
+
+                println("[mergeThirdPartyLicenses] Wrote backup files to ${outLic.path} and ${outMeta.path} with ${customFiles.size} custom entries.")
+            } else {
+                println("[mergeThirdPartyLicenses] Skipped writing backup files to src/main/res/raw (set -PwriteThirdPartyRes=true to enable)")
             }
-            outMeta.writeText(baseMetaText.trimEnd() + "\n" + appendedMeta.toString(), Charsets.UTF_8)
-
-            println("[mergeThirdPartyLicenses] Wrote backup files to ${outLic.path} and ${outMeta.path} with ${customFiles.size} custom entries.")
         }
     }
 

@@ -38,3 +38,9 @@ app/release/**
 
 # AI
 genai_sample/
+
+# Generated OSS license resources (created by OSS Licenses plugin + merge task)
+# By default these are generated during build; enable writing to src/main/res/raw with
+# -PwriteThirdPartyRes=true if you deliberately want to track them in git.
+app/src/main/res/raw/third_party_licenses
+app/src/main/res/raw/third_party_license_metadata
