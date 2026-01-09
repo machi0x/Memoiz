@@ -132,6 +132,7 @@ Try sharing text or images from other apps, or use the + button at the bottom of
     <string name="tutorial_usage_permission_button">Grant permission ↗</string>
     <string name="tutorial_step_usage_permission_body_header">Granting usage access lets Memoiz record the source app name for shared images and text.</string>
     <string name="tutorial_step_usage_permission_body">Granting usage access lets Memoiz record the source app name for shared images and text. Tap "Grant permission ↗" to open Usage Access now, or allow it later from Memoiz settings.</string>
+    <string name="tutorial_step_usage_permission_body_granted">Usage access is already granted. Memoiz can record the source app name for shared images and text.</string>
     <string name="tutorial_step_main_ui_title">Main screen basics</string>
     <string name="tutorial_step_main_ui_body">Use the top search bar, expand category headers, drag them to reorder, and run memo actions (open, share, re-analyze, delete) directly from the list.</string>
     <string name="tutorial_step_side_panel_title">Side panel filters</string>
@@ -140,7 +141,7 @@ Try sharing text or images from other apps, or use the + button at the bottom of
     <string name="settings_tutorial_title">See tutorial</string>
     <string name="settings_tutorial_description">Open the quick tour again to review features and permissions.</string>
     <string name="settings_remerge_all_title">Re-run memo merges</string>
-    <string name="settings_remerge_all_description">When AI-generated categories get out of hand, review every memo and consolidate similar labels.</string>
+    <string name="settings_remerge_all_description">Review all memos to merge similar categories and re-analyze memos where analysis failed.</string>
     <string name="fab_create_memo">Type text to create memo</string>
     <string name="fab_pick_image">Pick image</string>
     <string name="dialog_create_memo_title">Create memo</string>

@@ -60,8 +60,8 @@ fun TutorialDialog(
     var currentStep by rememberSaveable { mutableStateOf(initialStep.coerceIn(0, steps.lastIndex)) }
     val isLastStep = currentStep == steps.lastIndex
     val step = steps[currentStep]
-    val stepTitle = stringResource(step.titleRes)
-    val stepDescription = stringResource(step.descriptionRes)
+
+    // Usage permission related state needs to be available before deciding which description to show
     val tutorialCoroutineScope = rememberCoroutineScope()
     var usagePermissionJob by remember { mutableStateOf<Job?>(null) }
     val usagePermissionStepIndex = steps.indexOfFirst { it.imageRes == R.drawable.app_usages }
@@ -71,6 +71,15 @@ fun TutorialDialog(
         if (isUsagePermissionStep) {
             usagePermissionGranted = UsageStatsHelper(context).hasUsageStatsPermission()
         }
+    }
+
+    val stepTitle = stringResource(step.titleRes)
+    // Choose description resource dynamically for usage-permission step when permission already granted
+    val stepDescriptionText = if (isUsagePermissionStep) {
+        if (usagePermissionGranted) stringResource(R.string.tutorial_step_usage_permission_body_granted)
+        else stringResource(step.descriptionRes)
+    } else {
+        stringResource(step.descriptionRes)
     }
 
     AlertDialog(
@@ -138,7 +147,7 @@ fun TutorialDialog(
                 )
 
                 Text(
-                    text = stepDescription,
+                    text = stepDescriptionText,
                     style = MaterialTheme.typography.bodyMedium,
                     textAlign = TextAlign.Center
                 )
