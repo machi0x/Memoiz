@@ -27,12 +27,18 @@ Root
     - `worker/` (`ClipboardProcessingWorker` etc.)
     - `ui/`
       - `screens/` (`MainScreen`, `SettingsScreen`), view models — `SettingsScreen` now displays AI feature status (Enabled/Disabled/Downloading/Error)
+      - `dialog/` (`CatStatusDialogActivity.kt`) — UI for "メモイズから一言" / Memoiz status dialog showing character image and parameters; selects `_last` variants when thresholds/EXP conditions are met and displays `_last` slightly larger.
       - `theme/` (Material 3 theme tokens)
       - `ViewModelFactory.kt`
-    - `util/` (`UsageStatsHelper`, `ImageUriManager`, formatters). `ImageUriManager` helps determine whether an image memo has an app-local copy (used to select pin color: red for local copy, blue for URI-only).
+    - `util/` (`UsageStatsHelper`, `ImageUriManager`, formatters)
+      - `MemoizStatusHelper.kt` — central helper to compute memoiz status labels (e.g. `kindness_last`) used by UI and startup analytics; includes DEBUG-friendly thresholds used for tests.
   - `res/`
     - `values/` + `values-ja/` (strings, themes)
     - `drawable*/`, `mipmap*/`, `xml/` (backup/data extraction rules)
+
+Tests
+-----
+- Unit tests: `app/src/test/java/com/machi/memoiz/util/MemoizStatusHelperTest.kt` (covers debug/release thresholds and boundary cases for status label computation)
 
 Build Output Highlights
 -----------------------

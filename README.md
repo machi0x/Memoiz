@@ -52,6 +52,18 @@
 
 Use the Settings → Export / Import options to backup or restore your memos. Encrypted exports require the same password to import.
 
+### "メモイズから一言" (Cat Comment) & Memoiz status (spice)
+- **メモイズから一言**: ユーザーが各メモに対して手軽に一言（feeling）を付ける機能です。初回実行時にのみ以下の処理が行われます:
+  - 指定した feeling に応じて一つのパラメータが +1 され、別のパラメータが -1（ただし最小 0）されます（例えば `happy` は kindness を増やし、coolness を減らします）。
+  - 同一メモを複数回実行しても、最初の一回だけがカウントされ、EXP（経験値）の加算とパラメータ反映が行われます。
+- **Memoiz ステータス**: 上記のパラメータ（kindness, coolness, smartness, curiosity）と EXP の組み合わせからアプリ内でキャラクター的なステータスを決定し、ステータス画像を表示します。各ステータスには通常版（`status_xxx`）と上位版（`status_xxx_last`）があり、以下の条件で `_last` を表示します:
+  - 任意のパラメータが特定の高閾値を超えた場合（Release では >30、Debug では >2）
+  - 任意のパラメータが閾値以上でかつ EXP が十分に溜まっている場合（Release: >=15 & EXP>=50、Debug: >=1 & EXP>=5）
+  - どのパラメータも低いが EXP が十分に溜まっている場合は `status_neutral_last` を表示します
+- **表示差分**: `_last` 画像は通常画像より少し大きめに表示され、視覚的に目立たせます。
+- **Analytics**: ステータス決定時には `startup_memoiz_status` イベントに `memoiz_status` パラメータ（例: `kindness_last` / `neutral`）を送信します。これにより `_last` 状態も解析可能です。
+- **テスト**: ステータス判定ロジックはユニットテストで検証済みです（テスト: `app/src/test/java/com/machi/memoiz/util/MemoizStatusHelperTest.kt`）。
+
 ## Third-party notices
 
 This repository includes a consolidated third‑party notice file at the project root: `THIRDPARTY_NOTICE.txt`.
