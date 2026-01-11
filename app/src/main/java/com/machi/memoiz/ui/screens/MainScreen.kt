@@ -908,6 +908,7 @@ private fun NavigationDrawerContent(
             .fillMaxHeight()
             .width(250.dp)
     ) {
+        val drawerContext = LocalContext.current
         val bannerPainter = painterResource(id = R.drawable.top_banner)
         val bannerHeight = 120.dp
         Image(
@@ -928,6 +929,16 @@ private fun NavigationDrawerContent(
              icon = { Icon(Icons.Default.Settings, contentDescription = null) },
              modifier = Modifier.height(45.dp).padding(top = 13.dp)
          )
+
+        NavigationDrawerItem(
+            label = { Text(stringResource(R.string.drawer_status)) },
+            selected = false,
+            onClick = { /* open status dialog */
+                com.machi.memoiz.ui.dialog.CatStatusDialogActivity.start(drawerContext)
+            },
+            icon = { Icon(Icons.Default.Info, contentDescription = null) },
+            modifier = Modifier.height(45.dp)
+        )
 
         NavigationDrawerItem(
             label = { Text(stringResource(R.string.drawer_add_category)) },

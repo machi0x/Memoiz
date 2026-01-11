@@ -26,6 +26,14 @@ class PreferencesDataStoreManager(private val context: Context) {
         private val GENAI_IMAGE_LAST_KEY = stringPreferencesKey("genai_last_image_status")
         private val GENAI_TEXT_LAST_KEY = stringPreferencesKey("genai_last_text_status")
         private val GENAI_SUMMARY_LAST_KEY = stringPreferencesKey("genai_last_summary_status")
+        // Memoiz Status keys
+        private val MEMOIZ_EXP_KEY = stringPreferencesKey("memoiz_exp")
+        // DataStore keys (keep original key strings for compatibility)
+        private val MEMOIZ_YASASHISA_KEY = stringPreferencesKey("memoiz_yasashisa")
+        private val MEMOIZ_KAKKOYOSA_KEY = stringPreferencesKey("memoiz_kakkoyosa")
+        private val MEMOIZ_KASHIKOSA_KEY = stringPreferencesKey("memoiz_kashikosa")
+        private val MEMOIZ_KOUKISHIN_KEY = stringPreferencesKey("memoiz_koukishin")
+        private val MEMOIZ_USED_MEMO_IDS_KEY = stringPreferencesKey("memoiz_used_memo_ids")
         // NOTE: tutorial flags are now stored in SharedPreferences for immediate consistency
         private const val SP_FILE_NAME = "memoiz_shared_prefs"
         private const val SP_KEY_HAS_SEEN_TUTORIAL = "has_seen_tutorial"
@@ -75,6 +83,19 @@ class PreferencesDataStoreManager(private val context: Context) {
         )
     }.distinctUntilChanged()
 
+    /**
+     * Flow exposing the current Memoiz status (EXP and parameters).
+     */
+    fun memoizStatusFlow(): Flow<MemoizStatus> = context.dataStore.data.map { preferences ->
+        val exp = preferences[MEMOIZ_EXP_KEY]?.toIntOrNull() ?: 0
+        val kindness = preferences[MEMOIZ_YASASHISA_KEY]?.toIntOrNull() ?: 0
+        val coolness = preferences[MEMOIZ_KAKKOYOSA_KEY]?.toIntOrNull() ?: 0
+        val smartness = preferences[MEMOIZ_KASHIKOSA_KEY]?.toIntOrNull() ?: 0
+        val curiosity = preferences[MEMOIZ_KOUKISHIN_KEY]?.toIntOrNull() ?: 0
+        val ids = preferences[MEMOIZ_USED_MEMO_IDS_KEY]?.split(',')?.filter { it.isNotBlank() }?.mapNotNull { it.toLongOrNull() }?.toSet() ?: emptySet()
+        MemoizStatus(exp = exp, kindness = kindness, coolness = coolness, smartness = smartness, curiosity = curiosity, usedMemoIds = ids)
+    }
+
     // Convenience flows for GenAI last-check status (nullable string: "unknown" or one of available/downloadable/unavailable)
     @Suppress("unused")
     val genAiImageLastCheckFlow: Flow<String?> = context.dataStore.data.map { it[GENAI_IMAGE_LAST_KEY] }
@@ -103,6 +124,78 @@ class PreferencesDataStoreManager(private val context: Context) {
             preferences[GENAI_SUMMARY_LAST_KEY] = status
         }
     }
+
+    /**
+     * Record that the user executed "メモイズから一言" for the given memoId and apply parameter changes
+     * according to the provided feeling label. If the memoId was not previously counted, increment EXP.
+     */
+    suspend fun recordCatCommentUsage(memoId: Long, feelingLabel: String?) {
+        context.dataStore.edit { preferences ->
+            // load existing
+            val idsStr = preferences[MEMOIZ_USED_MEMO_IDS_KEY] ?: ""
+            val ids = idsStr.split(',').filter { it.isNotBlank() }.mapNotNull { it.toLongOrNull() }.toMutableSet()
+            var exp = preferences[MEMOIZ_EXP_KEY]?.toIntOrNull() ?: 0
+
+            // Determine if this memoId is new (first execution)
+            val isNew = !ids.contains(memoId)
+            if (isNew) {
+                ids.add(memoId)
+                exp += 1
+                preferences[MEMOIZ_EXP_KEY] = exp.toString()
+                preferences[MEMOIZ_USED_MEMO_IDS_KEY] = ids.joinToString(",")
+
+                // Apply feeling-based parameter change only on first-time usage
+                feelingLabel?.let { label ->
+                    val logic = mapOf(
+                        "happy" to ("kindness" to "coolness"),
+                        "cool" to ("coolness" to "kindness"),
+                        "thoughtful" to ("smartness" to "curiosity"),
+                        "confused" to ("curiosity" to "smartness"),
+                        "difficult" to ("smartness" to "kindness"),
+                        "curious" to ("curiosity" to "coolness"),
+                        "scared" to ("kindness" to "curiosity"),
+                        "neutral" to ("kindness" to "smartness")
+                    )
+
+                    val pair = logic[label]
+                    if (pair != null) {
+                        val plus = pair.first
+                        val minus = pair.second
+
+                        val plusVal = when (plus) {
+                            "kindness" -> (preferences[MEMOIZ_YASASHISA_KEY]?.toIntOrNull() ?: 0) + 1
+                            "coolness" -> (preferences[MEMOIZ_KAKKOYOSA_KEY]?.toIntOrNull() ?: 0) + 1
+                            "smartness" -> (preferences[MEMOIZ_KASHIKOSA_KEY]?.toIntOrNull() ?: 0) + 1
+                            "curiosity" -> (preferences[MEMOIZ_KOUKISHIN_KEY]?.toIntOrNull() ?: 0) + 1
+                            else -> 0
+                        }
+
+                        val minusVal = when (minus) {
+                            "kindness" -> ((preferences[MEMOIZ_YASASHISA_KEY]?.toIntOrNull() ?: 0) - 1).coerceAtLeast(0)
+                            "coolness" -> ((preferences[MEMOIZ_KAKKOYOSA_KEY]?.toIntOrNull() ?: 0) - 1).coerceAtLeast(0)
+                            "smartness" -> ((preferences[MEMOIZ_KASHIKOSA_KEY]?.toIntOrNull() ?: 0) - 1).coerceAtLeast(0)
+                            "curiosity" -> ((preferences[MEMOIZ_KOUKISHIN_KEY]?.toIntOrNull() ?: 0) - 1).coerceAtLeast(0)
+                            else -> 0
+                        }
+
+                        when (plus) {
+                            "kindness" -> preferences[MEMOIZ_YASASHISA_KEY] = plusVal.toString()
+                            "coolness" -> preferences[MEMOIZ_KAKKOYOSA_KEY] = plusVal.toString()
+                            "smartness" -> preferences[MEMOIZ_KASHIKOSA_KEY] = plusVal.toString()
+                            "curiosity" -> preferences[MEMOIZ_KOUKISHIN_KEY] = plusVal.toString()
+                        }
+
+                        when (minus) {
+                            "kindness" -> preferences[MEMOIZ_YASASHISA_KEY] = minusVal.toString()
+                            "coolness" -> preferences[MEMOIZ_KAKKOYOSA_KEY] = minusVal.toString()
+                            "smartness" -> preferences[MEMOIZ_KASHIKOSA_KEY] = minusVal.toString()
+                            "curiosity" -> preferences[MEMOIZ_KOUKISHIN_KEY] = minusVal.toString()
+                        }
+                     }
+                 }
+             }
+         }
+     }
 
     suspend fun addCustomCategory(categoryName: String) {
         context.dataStore.edit { preferences ->

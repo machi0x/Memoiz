@@ -25,13 +25,17 @@ import androidx.compose.ui.unit.sp
 import com.machi.memoiz.ui.components.MemoPreview
 import com.machi.memoiz.R
 import com.machi.memoiz.data.MemoizDatabase
+import com.machi.memoiz.data.datastore.PreferencesDataStoreManager
 import com.machi.memoiz.data.datastore.UiDisplayMode
 import com.machi.memoiz.data.repository.MemoRepository
 import com.machi.memoiz.domain.model.Memo
 import com.machi.memoiz.service.CatCommentService
 import com.machi.memoiz.service.Feeling
 import com.machi.memoiz.ui.theme.MemoizTheme
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import java.util.*
 
 class CatCommentDialogActivity : ComponentActivity() {
@@ -112,6 +116,27 @@ private fun CatCommentDialogScreen(appContext: Context, targetMemoId: Long?) {
         val elapsed = System.currentTimeMillis() - start
         val remaining = 5000L - elapsed
         if (remaining > 0) delay(remaining)
+    }
+
+    // Once we have result (state==2), record the usage asynchronously
+    LaunchedEffect(state, selectedMemo, feeling) {
+        if (state == 2 && selectedMemo != null) {
+            try {
+                // Fire-and-forget: update DataStore to increment EXP if needed and apply feeling
+                val memo = selectedMemo
+                memo?.let { m ->
+                    val mgr = PreferencesDataStoreManager(appContext)
+                    kotlinx.coroutines.withContext(Dispatchers.IO) {
+                        try {
+                            mgr.recordCatCommentUsage(m.id, feeling?.name)
+                        } catch (_: Exception) { }
+                    }
+                }
+            } catch (e: Exception) {
+                // ignore; non-critical
+                e.printStackTrace()
+            }
+        }
     }
 
     // Show as centered dialog card with orange border (similar to ProcessingDialogActivity)

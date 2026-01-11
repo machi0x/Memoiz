@@ -300,4 +300,15 @@ Memo data:
 - \'neutral\': ordinary or general information.
 
 Output only the lowercase label name and nothing else.]]></string>
+
+<!-- Base strings for Memoiz Status (ensure default locale contains these keys) -->
+<string name="drawer_status">Memoiz Status</string>
+<string name="status_dialog_title">Memoiz Status</string>
+<string name="status_exp_label">EXP: %1$d</string>
+<string name="status_note">Memoiz grows depending on the number and content of memos you used with the "Comment from Memoiz" feature.</string>
+<string name="status_close">Close</string>
+<string name="status_param_yasashisa">Kindness: %1$d</string>
+<string name="status_param_kakkoyosa">Coolness: %1$d</string>
+<string name="status_param_kashikosa">Smartness: %1$d</string>
+<string name="status_param_koukishin">Curiosity: %1$d</string>
 </resources>

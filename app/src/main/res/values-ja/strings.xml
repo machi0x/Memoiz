@@ -244,22 +244,22 @@
         <item>思考中…</item>
         <item>検討中…</item>
         <item>考え中…</item>
-        <item>読んでる…</item>
+        <item>読み込み中…</item>
         <item>解析中…</item>
-        <item>集中中…</item>
+        <item>悩み中…</item>
         <item>熟考中…</item>
         <item>選定中…</item>
         <item>見直し中…</item>
         <item>瞑想中…</item>
-        <item>夢想中…</item>
-        <item>ひそひそ…</item>
-        <item>つぶやき中…</item>
+        <item>まとめ中…</item>
+        <item>ふりかえり中…</item>
+        <item>準備中…</item>
         <item>確認中…</item>
         <item>吟味中…</item>
-        <item>ひとこと考え中…</item>
+        <item>がんばり中…</item>
         <item>準備中…</item>
         <item>作成中…</item>
-        <item>ハミング…</item>
+        <item>もぐもぐ中…</item>
         <item>仕上げ中…</item>
     </string-array>
 
@@ -279,4 +279,15 @@
 - \'neutral\': 普通、または一般的な情報。
 
 出力はラベル名のみ（小文字）にしてください。]]></string>
+
+    <!-- New: Memoiz Status (JA) -->
+    <string name="drawer_status">メモイズの様子</string>
+    <string name="status_dialog_title">メモイズの様子</string>
+    <string name="status_exp_label">けいけんち: %1$d</string>
+    <string name="status_param_yasashisa">やさしさ: %1$d</string>
+    <string name="status_param_kakkoyosa">かっこよさ: %1$d</string>
+    <string name="status_param_kashikosa">かしこさ: %1$d</string>
+    <string name="status_param_koukishin">こうきしん: %1$d</string>
+    <string name="status_note">「メモイズから一言」機能で読ませたメモの数や内容によってメモイズが成長します。</string>
+    <string name="status_close">閉じる</string>
 </resources>

@@ -68,6 +68,15 @@
             android:excludeFromRecents="true"
             android:finishOnTaskLaunch="true" />
 
+        <!-- Add CatStatusDialogActivity so it can be started from the side panel -->
+        <activity
+            android:name=".ui.dialog.CatStatusDialogActivity"
+            android:exported="false"
+            android:theme="@style/Theme.Memoiz.Dialog"
+            android:taskAffinity=""
+            android:excludeFromRecents="true"
+            android:finishOnTaskLaunch="true" />
+
         <!-- Main Activity -->
         <activity
             android:name=".MainActivity"
