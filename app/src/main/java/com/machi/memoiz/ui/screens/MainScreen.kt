@@ -19,6 +19,8 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -1410,6 +1412,11 @@ private fun MemoCard(
                             )
                         }
                         summaryOverride = webSummary
+                    }
+                    MemoType.IMAGE -> {
+                        // For image memos we intentionally do NOT render an inline prefixed Surface here.
+                        // The AI-generated description for images should be shown only in the speech bubble below
+                        // (with the robot emoji). Keeping this branch empty avoids duplicate descriptions.
                     }
                     else -> {
                         if (memo.content.isNotBlank()) {
