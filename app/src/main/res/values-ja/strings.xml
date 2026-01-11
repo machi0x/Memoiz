@@ -231,4 +231,52 @@
 
     <string name="ok">はい</string>
     <string name="no">いいえ</string>
+
+    <!-- Cat Comment (JA) -->
+    <string name="fab_cat_comment_label">メモイズから一言</string>
+    <string name="catcomment_close">閉じる</string>
+    <string name="catcomment_no_memo_message">メモがまだありません。メモを作成してください。</string>
+    <string name="catcomment_no_response_message">メモイズから回答がありませんでした。また後でやり直して下さい。</string>
+    <string name="catcomment_dialog_title">メモイズから一言</string>
+    <string name="catcomment_disclaimer">※メモイズは子猫AIなので間違ったことをしゃべる可能性があります。</string>
+    <string name="catcomment_processing_prefix">メモイズが</string>
+    <string-array name="catcomment_processing_array">
+        <item>思考中…</item>
+        <item>検討中…</item>
+        <item>考え中…</item>
+        <item>読んでる…</item>
+        <item>解析中…</item>
+        <item>集中中…</item>
+        <item>熟考中…</item>
+        <item>選定中…</item>
+        <item>見直し中…</item>
+        <item>瞑想中…</item>
+        <item>夢想中…</item>
+        <item>ひそひそ…</item>
+        <item>つぶやき中…</item>
+        <item>確認中…</item>
+        <item>吟味中…</item>
+        <item>ひとこと考え中…</item>
+        <item>準備中…</item>
+        <item>作成中…</item>
+        <item>ハミング…</item>
+        <item>仕上げ中…</item>
+    </string-array>
+
+    <!-- Cat Comment prompt templates (JA) -->
+    <string name="catcomment_prompt_comment"><![CDATA[あなたは可愛いオスの子猫の語り手です。挨拶や自己紹介は抜きにして、ユーザーのメモに対して1〜3文の短く心温まるフレンドリーな反応だけを書いてください。メモの説明を繰り返したり内容を要約したりするのではなく、子猫としてのあなた自身の気持ちや、優しい励ましの一言を直接伝えてください。
+
+メモの内容:
+%1$s]]></string>
+    <string name="catcomment_prompt_feeling"><![CDATA[この子猫の反応「%1$s」に対して、最も適切な感情ラベルを次の中から1つだけ選んでください：
+- \'happy\': ポジティブ、楽しい、美味しい、または心が温まる内容。
+- \'cool\': かっこいい、技術的、感銘を受ける、またはスマートな内容。
+- \'thoughtful\': 深い、真面目、哲学的、または意味深い内容。
+- \'confused\': おかしい、奇妙、不可解、または意味不明な内容。
+- \'difficult\': 複雑、理解が難しい、または学術的な内容。
+- \'curious\': 興味深いニュース、事実、または新しい発見。
+- \'scared\': 怖い、驚き、またはショッキングな内容。
+- \'neutral\': 普通、または一般的な情報。
+
+出力はラベル名のみ（小文字）にしてください。]]></string>
 </resources>

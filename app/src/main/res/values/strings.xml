@@ -251,4 +251,53 @@ Try sharing text or images from other apps, or use the + button at the bottom of
 
     <string name="ok">OK</string>
     <string name="no">No</string>
+
+    <!-- Cat Comment (EN) -->
+    <string name="fab_cat_comment_label">Comment from Memoiz</string>
+    <string name="catcomment_close">Close</string>
+    <string name="catcomment_no_memo_message">You don\'t have any memos yet. Create one and I\'ll share a cat comment.</string>
+    <string name="catcomment_no_response_message">Memoiz did not return a response. Please try again later.</string>
+    <string name="catcomment_dialog_title">Comment from Memoiz</string>
+    <string name="catcomment_disclaimer">*Memoiz is a kitten AI and may occasionally provide inaccurate information.</string>
+    <!-- Array of processing messages shown while waiting (EN) -->
+    <string-array name="catcomment_processing_array">
+        <item>Thinking…</item>
+        <item>Considering…</item>
+        <item>Reflecting…</item>
+        <item>Reading…</item>
+        <item>Analyzing…</item>
+        <item>Focusing…</item>
+        <item>Pondering…</item>
+        <item>Curating…</item>
+        <item>Reviewing…</item>
+        <item>Contemplating…</item>
+        <item>Dreaming…</item>
+        <item>Whispering…</item>
+        <item>Murmuring…</item>
+        <item>Checking…</item>
+        <item>Scrutinizing…</item>
+        <item>Musing…</item>
+        <item>Preparing…</item>
+        <item>Composing…</item>
+        <item>Humming…</item>
+        <item>Finishing…</item>
+    </string-array>
+    <string name="catcomment_processing_prefix">Memoiz is</string>
+
+    <!-- Cat Comment prompt templates (EN) -->
+    <string name="catcomment_prompt_comment"><![CDATA[You are a cute male kitten commentator. Skip all greetings and introductions. Write only a direct, heart-warming reaction to the user\'s memo in 1 to 3 short sentences. Do not repeat the memo description or summarize the text; focus only on sharing a kitten-like thought or gentle encouragement.
+
+Memo data:
+%1$s]]></string>
+    <string name="catcomment_prompt_feeling"><![CDATA[Based on this kitten\'s reaction: \"%1$s\", choose the most appropriate \'feeling\' label from these categories:
+- \'happy\': positive, fun, delicious, or heartwarming things.
+- \'cool\': stylish, technical, impressive, or smart things.
+- \'thoughtful\': deep, serious, philosophical, or meaningful notes.
+- \'confused\': strange, weird, cryptic, or nonsensical content.
+- \'difficult\': complex, hard to understand, or academic topics.
+- \'curious\': interesting news, facts, or new discoveries.
+- \'scared\': frightening, surprising, or shocking content.
+- \'neutral\': ordinary or general information.
+
+Output only the lowercase label name and nothing else.]]></string>
 </resources>

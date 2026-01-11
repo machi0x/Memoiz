@@ -26,7 +26,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.rounded.Star
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.rememberUpdatedState
@@ -36,10 +35,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -51,9 +50,7 @@ import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
@@ -62,12 +59,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.AnnotatedString
-import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.sp
 import com.machi.memoiz.R
 import com.machi.memoiz.data.entity.MemoType
 import com.machi.memoiz.domain.model.Memo
@@ -75,10 +70,12 @@ import com.machi.memoiz.service.ContentProcessingLauncher
 import coil.compose.AsyncImage
 import com.google.firebase.crashlytics.FirebaseCrashlytics
 import com.machi.memoiz.analytics.AnalyticsManager
+import com.machi.memoiz.ui.components.CampusNoteTextAligned
+import com.machi.memoiz.ui.components.ChromeStyleUrlBar
+import com.machi.memoiz.ui.dialog.CatCommentDialogActivity
 import com.machi.memoiz.ui.dialog.GenAiStatusCheckDialogActivity
 import com.machi.memoiz.ui.dialog.TutorialDialog
 import com.machi.memoiz.ui.theme.Mplus1CodeReguar
-import com.machi.memoiz.ui.theme.Yomogi
 import java.text.DateFormat
 import java.util.*
 import kotlinx.coroutines.launch
@@ -112,13 +109,21 @@ fun MainScreen(
     var showConsentDialogBeforeTutorial by rememberSaveable { mutableStateOf(false) }
 
     // Track whether we've already shown the GenAI dialog during this Activity lifecycle.
-    // Use `remember` (not `rememberSaveable`) so this flag is NOT persisted into
-    // SavedInstanceState. If the Activity/Composable is destroyed and re-created
-    // (for example, user closed UI with Back and later re-opened), we want the
-    // flag to reset and allow the status check/dialog to run again. Using
-    // rememberSaveable caused the flag to be restored and prevented re-checks
-    // until the process was killed — which matches the reported repro.
     var genAiDialogShown by remember { mutableStateOf(false) }
+    var genAiTextAvailable by remember { mutableStateOf(false) }
+
+    // Lightweight GenAI textAvailability check for enabling Cat Comment FAB
+    LaunchedEffect(Unit) {
+        try {
+            val manager = com.machi.memoiz.service.GenAiStatusManager(context.applicationContext)
+            val status = manager.checkAll()
+            genAiTextAvailable = status.textGeneration == com.google.mlkit.genai.common.FeatureStatus.AVAILABLE
+            manager.close()
+        } catch (e: Exception) {
+            // If check fails, default to false
+            genAiTextAvailable = false
+        }
+    }
 
     LaunchedEffect(memoGroups) {
         viewModel.ensureCategoryOrder(memoGroups.map { it.category })
@@ -133,17 +138,8 @@ fun MainScreen(
     }
 
 
-    // Only show the tutorial after we've loaded preferences from DataStore. The
-    // initial default prefs may report hasSeenTutorial=false before DataStore emits,
-    // which would incorrectly trigger showing the tutorial on cold start (or after
-    // an overwrite install where preferences are not yet read). Wait until
-    // `preferencesLoaded` is true to rely on the real stored value.
     LaunchedEffect(shouldShowTutorial, preferencesLoaded) {
         if (preferencesLoaded && shouldShowTutorial) {
-            // Only show the pre-tutorial consent dialog when all of the following are true:
-            // 1) the user hasn't already answered the consent dialog (persisted),
-            // 2) the tutorial was NOT explicitly requested from Settings (in that case skip consent),
-            // and 3) preferences are loaded and shouldShowTutorial is true.
             val alreadyAnswered = viewModel.isConsentDialogShownSync()
             val requestedFromSettings = viewModel.isShowTutorialOnNextLaunchSync()
             if (alreadyAnswered || requestedFromSettings) {
@@ -155,27 +151,15 @@ fun MainScreen(
         }
     }
 
-    // Run once when the composable enters composition (onCreate). This explicitly checks
-    // the GenAI feature status (including cases where AICore is disabled) and shows the
-    // status dialog if needed. It will not run on resume because LaunchedEffect(Unit)
-    // only runs when entering composition.
     LaunchedEffect(Unit) {
         if (genAiDialogShown) {
             Log.d("MainScreen", "Skipping GenAi check: genAiDialogShown=true")
             return@LaunchedEffect
         }
-        // If the tutorial will actually be shown (preferencesLoaded && shouldShowTutorial),
-        // we intentionally skip the GenAI status check here and let the tutorial's
-        // onFinished handler perform the check. Previously this checked only
-        // `shouldShowTutorial` and could incorrectly skip the check when
-        // preferences were not yet loaded (default state), preventing the status
-        // check from running on create. Require both flags so we only skip when
-        // the tutorial truly will appear.
         if (preferencesLoaded && shouldShowTutorial) {
             Log.d("MainScreen", "Skipping GenAi check: preferencesLoaded and shouldShowTutorial are true => letting tutorial onFinished run the check")
             return@LaunchedEffect
         }
-        // Perform an explicit status check to detect AICore-disabled devices immediately.
         val manager = com.machi.memoiz.service.GenAiStatusManager(context.applicationContext)
         try {
             Log.d("MainScreen", "Starting GenAi status check (genAiDialogShown=$genAiDialogShown, preferencesLoaded=$preferencesLoaded, shouldShowTutorial=$shouldShowTutorial)")
@@ -189,14 +173,12 @@ fun MainScreen(
                 Log.d("MainScreen", "GenAi status OK: no dialog needed")
             }
         } catch (e: Exception) {
-            // If status check failed (for example AICore disabled or GMS issue), assume unavailable and show dialog.
             e.printStackTrace()
             try {
                 Log.d("MainScreen", "GenAi check failed with exception; attempting to launch dialog as fallback: ${e.message}")
                 GenAiStatusCheckDialogActivity.start(context.applicationContext)
                 genAiDialogShown = true
             } catch (ignored: Exception) {
-                // If even launching the dialog fails, swallow to avoid crashing UI.
             }
         } finally {
             manager.close()
@@ -360,12 +342,8 @@ fun MainScreen(
                                     value = searchQuery,
                                     onValueChange = { viewModel.setSearchQuery(it) },
                                     placeholder = { Text(stringResource(R.string.search_hint)) },
-                                    // Make the field narrower while analyzing so it doesn't wrap;
-                                    // use a smaller weight and slightly reduced end padding.
                                     modifier = Modifier
                                         .weight(if (isProcessing) 0.65f else 1f)
-                                        // Allow the composable to shrink below its default min width
-                                        // so it won't force a line wrap when the indicator appears.
                                         .defaultMinSize(minWidth = 0.dp)
                                         .padding(end = if (isProcessing) 4.dp else 0.dp),
                                     singleLine = true,
@@ -456,6 +434,30 @@ fun MainScreen(
                                          isFabExpanded = false
                                     }
                                 )
+                                if (genAiTextAvailable) {
+                                    ExtendedFloatingActionButton(
+                                        text = { Text(text = stringResource(R.string.fab_cat_comment_label)) },
+                                        icon = {
+                                            Box(modifier = Modifier.size(24.dp), contentAlignment = Alignment.Center) {
+                                                Text(text = "🐱", fontSize = 16.sp)
+                                            }
+                                        },
+                                        onClick = {
+                                            Log.d("MainScreen", "CatComment FAB clicked")
+                                            isFabExpanded = false
+                                            try {
+                                                val act = context as? android.app.Activity
+                                                if (act != null) {
+                                                    CatCommentDialogActivity.start(act)
+                                                } else {
+                                                    CatCommentDialogActivity.start(context.applicationContext)
+                                                }
+                                            } catch (e: Exception) {
+                                                Log.e("MainScreen", "Failed to start CatCommentDialogActivity: ${e.message}", e)
+                                            }
+                                        }
+                                    )
+                                }
                                 SmallFloatingActionButton(onClick = { isFabExpanded = false }) {
                                     Icon(Icons.Default.Close, contentDescription = stringResource(R.string.fab_close_menu))
                                 }
@@ -557,7 +559,8 @@ fun MainScreen(
                                     },
                                     onMemoUsed = { id -> viewModel.recordMemoUsed(id) },
                                     dragHandle = Modifier.detectReorder(reorderState),
-                                    uiDisplayMode = uiDisplayModeSetting
+                                    uiDisplayMode = uiDisplayModeSetting,
+                                    genAiTextAvailable = genAiTextAvailable
                                 )
                             }
                         }
@@ -624,10 +627,6 @@ fun MainScreen(
                             stringResource(R.string.dialog_delete_memo_message)
                         }
                     )
-                    // For custom (My) categories we intentionally DO NOT show the red
-                    // warning line because the primary message already explains that
-                    // memos are preserved. For regular categories show the stronger
-                    // warning that memos will be deleted.
                     if (isCategory && !deleteTargetIsCustomCategory) {
                         Text(
                             text = stringResource(R.string.dialog_delete_category_warning),
@@ -708,11 +707,9 @@ fun MainScreen(
         )
     }
 
-    // Consent dialog shown once before tutorial on first-run
     if (showConsentDialogBeforeTutorial) {
         AlertDialog(
             onDismissRequest = {
-                // Treat dismissal as No. Mark dialog as answered so we never show it again.
                 viewModel.setAnalyticsCollectionEnabled(false)
                 com.machi.memoiz.analytics.AnalyticsManager.setCollectionEnabled(context, false)
                 try {
@@ -744,7 +741,6 @@ fun MainScreen(
             },
             confirmButton = {
                  TextButton(onClick = {
-                     // OK: enable analytics & crashlytics
                      viewModel.setAnalyticsCollectionEnabled(true)
                      com.machi.memoiz.analytics.AnalyticsManager.setCollectionEnabled(context, true)
                      try {
@@ -752,7 +748,6 @@ fun MainScreen(
                      } catch (e: Exception) {
                          Log.w("MainScreen", "Failed to enable Crashlytics: ${e.message}")
                      }
-                     // Mark the consent dialog as shown (persist) so it's never shown again
                      viewModel.setConsentDialogShownSync(true)
                      showConsentDialogBeforeTutorial = false
                      showTutorialDialog = true
@@ -761,7 +756,6 @@ fun MainScreen(
                  }
              },
              dismissButton = {
-                // Compose a left-side row with Privacy Policy and No buttons
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     val privacyUrl = stringResource(R.string.privacy_policy_url)
                     TextButton(onClick = {
@@ -777,7 +771,6 @@ fun MainScreen(
                     Spacer(modifier = Modifier.width(8.dp))
 
                     TextButton(onClick = {
-                        // No: disable analytics & crashlytics, and mark answered
                         viewModel.setAnalyticsCollectionEnabled(false)
                         AnalyticsManager.setCollectionEnabled(context, false)
                         try {
@@ -801,10 +794,6 @@ fun MainScreen(
             onFinished = {
                 showTutorialDialog = false
                 viewModel.markTutorialSeen()
-                // Instead of unconditionally scheduling the GenAI status dialog, run
-                // an explicit check and only start the dialog if features are
-                // unavailable or require download. This avoids showing the "model
-                // download" dialog when everything is already available.
                 if (genAiDialogShown) return@TutorialDialog
                 scope.launch {
                     val manager = com.machi.memoiz.service.GenAiStatusManager(context.applicationContext)
@@ -815,14 +804,11 @@ fun MainScreen(
                             genAiDialogShown = true
                         }
                      } catch (e: Exception) {
-                         // If the status check fails, attempt to show the dialog as a
-                         // fallback (matches previous behavior).
                          e.printStackTrace()
                          try {
                             GenAiStatusCheckDialogActivity.start(context.applicationContext)
                              genAiDialogShown = true
                          } catch (ignored: Exception) {
-                             // swallow
                          }
                      } finally {
                          manager.close()
@@ -893,11 +879,8 @@ fun MainScreen(
         )
     }
 
-    // Emit a short, unconditional log right when the composable is entered so we
-    // can detect whether MainScreen is composed at all when reproducing the bug.
     Log.d("MainScreen", "MainScreen composed entry: preferencesLoaded=$preferencesLoaded shouldShowTutorial=$shouldShowTutorial genAiDialogShown=$genAiDialogShown")
 
-    // Ensure we clear the in-memory flag when this composable is disposed.
     DisposableEffect(Unit) {
         onDispose {
             Log.d("MainScreen", "MainScreen disposed; clearing genAiDialogShown")
@@ -952,14 +935,12 @@ private fun NavigationDrawerContent(
             modifier = Modifier.height(45.dp)
         )
 
-        // Divider between persistent items and the scrollable list
         HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
 
         LazyColumn(
             modifier = Modifier.weight(1f)
         ) {
             item {
-                // Filter by Type section header
                 Text(
                     text = stringResource(R.string.drawer_filter_by_type),
                     style = MaterialTheme.typography.labelMedium,
@@ -968,7 +949,6 @@ private fun NavigationDrawerContent(
                 )
             }
 
-            // All types option
             item {
                 NavigationDrawerItem(
                     label = { Text(stringResource(R.string.drawer_all_categories)) },
@@ -979,7 +959,6 @@ private fun NavigationDrawerContent(
                 )
             }
 
-            // Memo type filters
             item {
                 NavigationDrawerItem(
                     label = { Text(stringResource(R.string.memo_type_text)) },
@@ -1010,7 +989,6 @@ private fun NavigationDrawerContent(
                 )
             }
 
-            // Filter by Category section header
             item {
                 Text(
                     text = stringResource(R.string.drawer_filter_by_category),
@@ -1020,7 +998,6 @@ private fun NavigationDrawerContent(
                 )
             }
 
-            // All categories option
             item {
                 NavigationDrawerItem(
                     label = { Text(stringResource(R.string.drawer_all_categories)) },
@@ -1061,8 +1038,6 @@ private fun NavigationDrawerContent(
         }
 
         HorizontalDivider()
-
-        // Footer area remains for any other items (kept empty)
      }
  }
 
@@ -1079,16 +1054,15 @@ private fun CategoryAccordion(
     onReanalyzeMemo: (Memo) -> Unit,
     onMemoUsed: (Long) -> Unit = {},
     dragHandle: Modifier,
-    uiDisplayMode: com.machi.memoiz.data.datastore.UiDisplayMode? = null
+    uiDisplayMode: com.machi.memoiz.data.datastore.UiDisplayMode? = null,
+    genAiTextAvailable: Boolean = false
 ) {
-    val reanalyzeFailuresString = stringResource(R.string.action_reanalyze_failures)
     val deleteCategoryString = stringResource(R.string.action_delete_category)
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
     ) {
         Column {
-            // Category header (always visible)
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -1138,7 +1112,6 @@ private fun CategoryAccordion(
                 }
             }
 
-            // Memos (expandable)
             AnimatedVisibility(
                 visible = isExpanded,
                 enter = expandVertically(),
@@ -1153,7 +1126,8 @@ private fun CategoryAccordion(
                             onEditCategory = { onEditCategory(memo) },
                             onReanalyze = { onReanalyzeMemo(memo) },
                             onUsed = { id -> onMemoUsed(id) },
-                            appUiDisplayMode = uiDisplayMode
+                            appUiDisplayMode = uiDisplayMode,
+                            genAiTextAvailable = genAiTextAvailable
                         )
                     }
                 }
@@ -1170,7 +1144,8 @@ private fun MemoCard(
     onReanalyze: () -> Unit,
     readOnly: Boolean = false,
     onUsed: (Long) -> Unit = {},
-    appUiDisplayMode: com.machi.memoiz.data.datastore.UiDisplayMode? = null
+    appUiDisplayMode: com.machi.memoiz.data.datastore.UiDisplayMode? = null,
+    genAiTextAvailable: Boolean = false
 ) {
     val context = LocalContext.current
     val clipboardManager = LocalClipboardManager.current
@@ -1274,7 +1249,6 @@ private fun MemoCard(
                     onClick = {
                         when {
                             memo.memoType == MemoType.IMAGE && !memo.imageUri.isNullOrBlank() -> {
-                                // Copy image URI as a ClipData uri so clipboard consumers can obtain item.uri
                                 val uri = runCatching { Uri.parse(memo.imageUri) }.getOrNull()
                                 uri?.let {
                                     val sysClipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
@@ -1290,9 +1264,6 @@ private fun MemoCard(
                             !memo.summary.isNullOrBlank() -> {
                                 clipboardManager.setText(AnnotatedString(memo.summary))
                                 Toast.makeText(context, copiedToast, Toast.LENGTH_SHORT).show()
-                            }
-                            else -> {
-                                // nothing to copy
                             }
                         }
                     },
@@ -1327,6 +1298,30 @@ private fun MemoCard(
                             if (!readOnly) onEditCategory()
                         }
                     )
+                    if (genAiTextAvailable) {
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.fab_cat_comment_label)) },
+                            leadingIcon = {
+                                Box(modifier = Modifier.size(24.dp), contentAlignment = Alignment.Center) {
+                                    Text(text = "🐱", fontSize = 14.sp)
+                                }
+                            },
+                            enabled = !readOnly,
+                            onClick = {
+                                menuExpanded = false
+                                try {
+                                    val act = context as? android.app.Activity
+                                    if (act != null) {
+                                        CatCommentDialogActivity.start(act, memo.id)
+                                    } else {
+                                        CatCommentDialogActivity.start(context.applicationContext, memo.id)
+                                    }
+                                } catch (e: Exception) {
+                                    Log.e("MainScreen", "Failed to start CatCommentDialogActivity from menu: ${e.message}", e)
+                                }
+                            }
+                        )
+                    }
                     DropdownMenuItem(
                         text = { Text(reanalyzeString) },
                         leadingIcon = { Icon(Icons.Default.Refresh, contentDescription = null) },
@@ -1351,12 +1346,10 @@ private fun MemoCard(
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        // Image thumbnail and content
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            // Show image thumbnail if available
             if (!memo.imageUri.isNullOrBlank()) {
                 if (memo.memoType == MemoType.IMAGE) {
                     ImageThumbnailFrame(
@@ -1375,7 +1368,6 @@ private fun MemoCard(
                 }
             }
 
-            // Content column
             Column(
                 modifier = Modifier.weight(1f)
             ) {
@@ -1419,11 +1411,6 @@ private fun MemoCard(
                         }
                         summaryOverride = webSummary
                     }
-                    MemoType.IMAGE -> {
-                        // For IMAGE memos we intentionally do not render the inline surface
-                        // with the AI prefix here, because we render the description in the
-                        // speech bubble below to avoid duplicated text.
-                    }
                     else -> {
                         if (memo.content.isNotBlank()) {
                             val imageDescription = remember(memo.content) { "${AI_ROBOT_PREFIX} ${memo.content}" }
@@ -1445,7 +1432,6 @@ private fun MemoCard(
                     }
                 }
 
-                // After the when/memo content block, show a speech bubble for IMAGE and WEB_SITE types
                 val bubbleText = remember(memo.memoType, memo.content, summaryOverride, memo.summary) {
                     when (memo.memoType) {
                         MemoType.IMAGE -> memo.content
@@ -1457,7 +1443,6 @@ private fun MemoCard(
                 if (!bubbleText.isNullOrBlank() && (memo.memoType == MemoType.IMAGE || memo.memoType == MemoType.WEB_SITE)) {
                     Spacer(modifier = Modifier.height(8.dp))
                     Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.Start) {
-                        // Bubble contains the raw sentence (no emoji prefix)
                         SpeechBubble(
                             text = bubbleText,
                             modifier = Modifier.fillMaxWidth(),
@@ -1469,7 +1454,6 @@ private fun MemoCard(
                     }
                 }
 
-                // Only show AiSummaryBlock when there is a summary AND we did not already render it
                 if (!memo.summary.isNullOrBlank() && memo.memoType != MemoType.IMAGE && bubbleText.isNullOrBlank()) {
                     val cleaned = remember(memo.summary) { cleanSummary(summaryOverride ?: memo.summary) }
                     val prefixedSummary = remember(cleaned, memo.memoType) {
@@ -1712,13 +1696,11 @@ private fun MemoTypeIcon(memoType: String?) {
 private fun SpeechBubble(
     text: String,
     modifier: Modifier = Modifier,
-    maxWidthDp: Dp = 320.dp, // smaller line spacing
+    maxWidthDp: Dp = 320.dp,
     appUiDisplayMode: com.machi.memoiz.data.datastore.UiDisplayMode? = null,
     startPadding: Dp = 0.dp,
     showRobotEmoji: Boolean = true
 ) {
-    // Resolve bubble background using a configuration-aware Context so the
-    // app's UiDisplayMode (light/dark/system) controls values vs values-night.
     val ctx = LocalContext.current
     val configuration = LocalConfiguration.current
     val effectiveConfig = remember(configuration, appUiDisplayMode) {
@@ -1726,8 +1708,6 @@ private fun SpeechBubble(
             configuration
         } else {
             val copy = android.content.res.Configuration(configuration)
-            // Clear the night-mode bits, then set explicitly to YES or NO so
-            // resource lookup (values-night) follows the app setting instead of system.
             copy.uiMode = copy.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK.inv()
             copy.uiMode = when (appUiDisplayMode) {
                 com.machi.memoiz.data.datastore.UiDisplayMode.DARK -> copy.uiMode or android.content.res.Configuration.UI_MODE_NIGHT_YES
@@ -1746,9 +1726,6 @@ private fun SpeechBubble(
     val tailYOffset = 12.dp
 
     Box(modifier = modifier.padding(bottom = robotYOffset)) {
-        // Make the bubble expand horizontally to the available space so it uses
-        // left and right room. Keep a small horizontal inset so text doesn't hit
-        // the screen edges.
         Surface(
             shape = RoundedCornerShape(12.dp),
             color = bubbleColor,
@@ -1758,8 +1735,6 @@ private fun SpeechBubble(
         ) {
             Text(
                 text = text,
-                // Use the custom SmartFontUi for bubble text but a slightly smaller
-                // size and tighter line height so longer descriptions fit better.
                 style = MaterialTheme.typography.bodySmall.copy(fontFamily = Mplus1CodeReguar, fontSize = 13.sp, lineHeight = 18.sp),
                 color = MaterialTheme.colorScheme.onSurface,
                 maxLines = 6,
@@ -1768,8 +1743,6 @@ private fun SpeechBubble(
             )
         }
 
-        // Tail: align near the start padding position so it visually points to the
-        // robot; offset uses the same horizontal base so it moves together.
         Canvas(
             modifier = Modifier
                 .size(18.dp)
@@ -1782,13 +1755,9 @@ private fun SpeechBubble(
                 lineTo(0f, size.height)
                 close()
             }
-            // draw only the filled tail (no outline) so it matches the bubble body
             drawPath(p, color = bubbleColor)
         }
 
-        // Robot emoji: position it using the same startPadding so it moves
-        // horizontally with the bubble and tail. Move it further down and slightly
-        // left so it no longer overlays the bubble on Pixel 9.
         if (showRobotEmoji) {
             Text(
                 text = "🤖",
@@ -1905,131 +1874,6 @@ private fun AiSummaryBlock(text: String) {
 const val AI_ROBOT_PREFIX = "\uD83E\uDD16"
 
 @Composable
-private fun ChromeStyleUrlBar(
-    url: String,
-    title: String? = null,
-    modifier: Modifier = Modifier,
-    appUiDisplayMode: com.machi.memoiz.data.datastore.UiDisplayMode? = null
-) {
-    val ctx = LocalContext.current
-    val configuration = LocalConfiguration.current
-    val effectiveConfig = remember(configuration, appUiDisplayMode) {
-        if (appUiDisplayMode == null || appUiDisplayMode == com.machi.memoiz.data.datastore.UiDisplayMode.SYSTEM) {
-            configuration
-        } else {
-            val copy = android.content.res.Configuration(configuration)
-            copy.uiMode = copy.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK.inv()
-            copy.uiMode = when (appUiDisplayMode) {
-                com.machi.memoiz.data.datastore.UiDisplayMode.DARK -> copy.uiMode or android.content.res.Configuration.UI_MODE_NIGHT_YES
-                com.machi.memoiz.data.datastore.UiDisplayMode.LIGHT -> copy.uiMode or android.content.res.Configuration.UI_MODE_NIGHT_NO
-                else -> copy.uiMode
-            }
-            copy
-        }
-    }
-    val themedCtx = remember(effectiveConfig) { ctx.createConfigurationContext(effectiveConfig) }
-    val bgColor = Color(themedCtx.resources.getColor(R.color.chrome_omnibox_bg, themedCtx.theme))
-    val borderColor = Color(themedCtx.resources.getColor(R.color.chrome_omnibox_border, themedCtx.theme))
-    val textColor = Color(themedCtx.resources.getColor(R.color.chrome_omnibox_text, themedCtx.theme))
-
-    Surface(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(vertical = 4.dp),
-        shape = RoundedCornerShape(26.dp),
-        color = bgColor,
-        tonalElevation = 2.dp,
-        border = BorderStroke(1.dp, borderColor)
-    ) {
-        val hasTitle = !title.isNullOrBlank()
-        if (hasTitle) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 12.dp, vertical = 10.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                Surface(
-                    color = MaterialTheme.colorScheme.primaryContainer,
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Text(
-                        text = "URL",
-                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                        color = MaterialTheme.colorScheme.onPrimaryContainer,
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
-                    )
-                }
-                Column(
-                    modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    Text(
-                        text = title!!,
-                        style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.SemiBold),
-                        color = textColor,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                    Text(
-                        text = url,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = textColor,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
-                Icon(
-                    imageVector = Icons.Rounded.Star,
-                    contentDescription = null,
-                    modifier = Modifier
-                        .size(24.dp)
-                        .padding(4.dp),
-                    tint = Color(0xFFFFD700)
-                )
-            }
-        } else {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 12.dp, vertical = 12.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                Surface(
-                    color = MaterialTheme.colorScheme.primaryContainer,
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Text(
-                        text = "URL",
-                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                        color = MaterialTheme.colorScheme.onPrimaryContainer,
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
-                    )
-                }
-                Text(
-                    text = url,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = textColor,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f)
-                )
-                Icon(
-                    imageVector = Icons.Rounded.Star,
-                    contentDescription = null,
-                    modifier = Modifier
-                        .size(24.dp)
-                        .padding(4.dp),
-                    tint = Color(0xFFFFD700)
-                )
-            }
-        }
-    }
-}
-
-@Composable
 private fun ImageThumbnailFrame(
     imageUri: String,
     contentDescription: String?,
@@ -2139,50 +1983,4 @@ private fun PinThumbtack(modifier: Modifier = Modifier, pinColor: Color = Color(
             center = Offset(centerX, headRadius)
         )
     }
-}
-
-@Composable
-private fun CampusNoteTextAligned(
-    text: String,
-    modifier: Modifier = Modifier,
-    lineHeight: androidx.compose.ui.unit.TextUnit = 20.sp // smaller line spacing
-) {
-    val density = LocalDensity.current
-    val lineHeightPx = with(density) { lineHeight.toPx() }
-    val shape = RoundedCornerShape(12.dp)
-    val bgColor = colorResource(id = R.color.campus_note_bg)
-    val textColor = colorResource(id = R.color.campus_note_text)
-    val verticalLineColor = colorResource(id = R.color.campus_note_line_vertical)
-    val horizontalLineColor = colorResource(id = R.color.campus_note_line_horizontal)
-    Text(
-        text = text,
-        style = MaterialTheme.typography.bodyMedium.copy(lineHeight = lineHeight, fontFamily = Yomogi),
-        color = textColor,
-        maxLines = 6,
-        overflow = TextOverflow.Ellipsis,
-        modifier = modifier
-            .shadow(6.dp, shape)
-            .clip(shape)
-            .drawBehind {
-                drawRect(bgColor)
-                val marginX = 28.dp.toPx()
-                drawLine(
-                    color = verticalLineColor,
-                    start = Offset(marginX, 0f),
-                    end = Offset(marginX, size.height),
-                    strokeWidth = 2.dp.toPx()
-                )
-                val lineOffset = 2.dp.toPx()
-                var y = lineHeightPx - lineOffset
-                while (y < size.height) {
-                    drawLine(
-                        color = horizontalLineColor,
-                        start = Offset(0f, y),
-                        end = Offset(size.width, y),
-                        strokeWidth = 1.dp.toPx()
-                    )
-                    y += lineHeightPx
-                }
-            }
-            .padding(start = 44.dp, top = 2.dp, end = 16.dp, bottom = 16.dp))
 }

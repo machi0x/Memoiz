@@ -60,6 +60,14 @@
             android:excludeFromRecents="true"
             android:finishOnTaskLaunch="true" />
 
+        <activity
+            android:name=".ui.dialog.CatCommentDialogActivity"
+            android:exported="false"
+            android:theme="@style/Theme.Memoiz.Dialog"
+            android:taskAffinity=""
+            android:excludeFromRecents="true"
+            android:finishOnTaskLaunch="true" />
+
         <!-- Main Activity -->
         <activity
             android:name=".MainActivity"
