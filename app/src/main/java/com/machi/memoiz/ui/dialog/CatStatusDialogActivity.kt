@@ -25,11 +25,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.text.style.TextAlign
 import com.machi.memoiz.R
-import com.machi.memoiz.BuildConfig
+import com.machi.memoiz.analytics.AnalyticsManager
 import com.machi.memoiz.data.datastore.PreferencesDataStoreManager
 import com.machi.memoiz.data.datastore.MemoizStatus
 import com.machi.memoiz.ui.theme.MemoizTheme
 import kotlinx.coroutines.flow.collectLatest
+import com.machi.memoiz.util.MemoizStatusHelper
 
 class CatStatusDialogActivity : ComponentActivity() {
 
@@ -62,23 +63,35 @@ private fun CatStatusDialogScreen(appContext: Context) {
         }
     }
 
-    // choose image resource
-    val imageRes = remember(status) {
-        val threshold = if (BuildConfig.DEBUG) 1 else 15
-        val vals = listOf(status.kindness, status.coolness, status.smartness, status.curiosity)
-        if (vals.all { it < threshold }) {
-            R.drawable.status_neutral
-        } else {
-            // determine max with priority kindness > coolness > smartness > curiosity
-            val map = listOf("kindness" to status.kindness, "coolness" to status.coolness, "smartness" to status.smartness, "curiosity" to status.curiosity)
-            val maxVal = map.maxByOrNull { it.second }?.second ?: 0
-            when (map.first { it.second == maxVal }.first) {
-                "kindness" -> R.drawable.status_heartful
-                "coolness" -> R.drawable.status_cool
-                "smartness" -> R.drawable.status_smart
-                "curiosity" -> R.drawable.status_curious
-                else -> R.drawable.status_neutral
-            }
+    // Compute canonical status label using shared helper
+    val statusLabel = remember(status) { MemoizStatusHelper.computeStatusLabel(status) }
+
+    // Map label to drawable (choose _last variants when label ends with _last)
+    val imageRes = remember(statusLabel) {
+        when (statusLabel) {
+            "neutral" -> R.drawable.status_neutral
+            "neutral_last" -> R.drawable.status_neutral_last
+            "kindness" -> R.drawable.status_heartful
+            "kindness_last" -> R.drawable.status_heartful_last
+            "coolness" -> R.drawable.status_cool
+            "coolness_last" -> R.drawable.status_cool_last
+            "smartness" -> R.drawable.status_smart
+            "smartness_last" -> R.drawable.status_smart_last
+            "curiosity" -> R.drawable.status_curious
+            "curiosity_last" -> R.drawable.status_curious_last
+            else -> R.drawable.status_neutral
+        }
+    }
+
+    // Show _last images slightly bigger than normal
+    val imageSize = remember(statusLabel) { if (statusLabel.endsWith("_last")) 180.dp else 140.dp }
+
+    // Emit analytics for the chosen label (include _last if used)
+    LaunchedEffect(statusLabel) {
+        try {
+            AnalyticsManager.logStartupMemoizStatus(appContext, statusLabel)
+        } catch (_: Exception) {
+            // swallow analytics errors
         }
     }
 
@@ -110,7 +123,7 @@ private fun CatStatusDialogScreen(appContext: Context) {
                     modifier = Modifier.padding(bottom = 12.dp)
                 )
 
-                Image(painter = painterResource(id = imageRes), contentDescription = null, modifier = Modifier.size(140.dp))
+                Image(painter = painterResource(id = imageRes), contentDescription = null, modifier = Modifier.size(imageSize))
                 Spacer(modifier = Modifier.height(12.dp))
 
                 // Status area: white frame + black background, text in white using dotgothic

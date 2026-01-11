@@ -11,9 +11,8 @@ import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import com.machi.memoiz.data.datastore.PreferencesDataStoreManager
-import com.machi.memoiz.data.datastore.MemoizStatus
 import com.machi.memoiz.service.GenAiStatusManager
-import com.machi.memoiz.BuildConfig
+import com.machi.memoiz.util.MemoizStatusHelper
 
 /**
  * Application class for Memoiz.
@@ -29,7 +28,7 @@ class MemoizApplication : Application() {
             val analyticsEnabled = prefsManager.isAnalyticsCollectionEnabledSync()
             AnalyticsManager.setCollectionEnabled(applicationContext, analyticsEnabled)
         } catch (e: Exception) {
-            android.util.Log.w("MemoizApplication", "Failed to initialize analytics collection from prefs", e)
+            Log.w("MemoizApplication", "Failed to initialize analytics collection from prefs", e)
         }
         // Future: Initialize WorkManager configurations here if needed
         // Future: Initialize AI service when Gemini Nano becomes available
@@ -94,55 +93,41 @@ class MemoizApplication : Application() {
                 // Send Memoiz overall status (neutral/kindness/coolness/smartness/curiosity)
                 try {
                     val memoizStatus = preferencesManager.memoizStatusFlow().first()
-                    val threshold = if (BuildConfig.DEBUG) 1 else 15
-                    val vals = listOf(memoizStatus.kindness, memoizStatus.coolness, memoizStatus.smartness, memoizStatus.curiosity)
-                    val statusLabel = if (vals.all { it < threshold }) {
-                        "neutral"
-                    } else {
-                        val map = listOf("kindness" to memoizStatus.kindness, "coolness" to memoizStatus.coolness, "smartness" to memoizStatus.smartness, "curiosity" to memoizStatus.curiosity)
-                        val maxVal = map.maxByOrNull { it.second }?.second ?: 0
-                        when (map.first { it.second == maxVal }.first) {
-                            "kindness" -> "kindness"
-                            "coolness" -> "coolness"
-                            "smartness" -> "smartness"
-                            "curiosity" -> "curiosity"
-                            else -> "neutral"
-                        }
-                    }
+                    val statusLabel = MemoizStatusHelper.computeStatusLabel(memoizStatus)
                     AnalyticsManager.logStartupMemoizStatus(applicationContext, statusLabel)
-                } catch (e: Exception) {
-                    Log.w("MemoizApplication", "Failed to log Memoiz status", e)
-                }
+                 } catch (e: Exception) {
+                     Log.w("MemoizApplication", "Failed to log Memoiz status", e)
+                 }
 
-                // Existing telemetry: usage stats permission (keep as before)
-                val isPermissionGranted = UsageStatsHelper(applicationContext).hasUsageStatsPermission()
-                AnalyticsManager.logUsageStatsPermission(applicationContext, isPermissionGranted)
+                 // Existing telemetry: usage stats permission (keep as before)
+                 val isPermissionGranted = UsageStatsHelper(applicationContext).hasUsageStatsPermission()
+                 AnalyticsManager.logUsageStatsPermission(applicationContext, isPermissionGranted)
 
-                // Kick off a background GenAI check to refresh saved statuses (do not block startup)
-                try {
-                    val manager = GenAiStatusManager(applicationContext)
-                    val fresh = manager.checkAll() // suspending
-                    // Map int statuses to strings using Analytics helper
-                    val imgStatus = AnalyticsManager.featureStatusToString(fresh.imageDescription)
-                    val textStatus = AnalyticsManager.featureStatusToString(fresh.textGeneration)
-                    val sumStatus = AnalyticsManager.featureStatusToString(fresh.summarization)
+                 // Kick off a background GenAI check to refresh saved statuses (do not block startup)
+                 try {
+                     val manager = GenAiStatusManager(applicationContext)
+                     val fresh = manager.checkAll() // suspending
+                     // Map int statuses to strings using Analytics helper
+                     val imgStatus = AnalyticsManager.featureStatusToString(fresh.imageDescription)
+                     val textStatus = AnalyticsManager.featureStatusToString(fresh.textGeneration)
+                     val sumStatus = AnalyticsManager.featureStatusToString(fresh.summarization)
 
-                    // Persist results to DataStore for next launch
-                    try {
-                        preferencesManager.setGenAiImageLastCheck(imgStatus)
-                        preferencesManager.setGenAiTextLastCheck(textStatus)
-                        preferencesManager.setGenAiSummaryLastCheck(sumStatus)
-                    } catch (e: Exception) {
-                        android.util.Log.w("MemoizApplication", "Failed to persist GenAI last-check statuses", e)
-                    }
+                     // Persist results to DataStore for next launch
+                     try {
+                         preferencesManager.setGenAiImageLastCheck(imgStatus)
+                         preferencesManager.setGenAiTextLastCheck(textStatus)
+                         preferencesManager.setGenAiSummaryLastCheck(sumStatus)
+                     } catch (e: Exception) {
+                         Log.w("MemoizApplication", "Failed to persist GenAI last-check statuses", e)
+                     }
 
-                    manager.close()
-                } catch (e: Exception) {
-                    Log.w("MemoizApplication", "Background GenAI status check failed", e)
-                }
-            } catch (e: Exception) {
-                Log.w("MemoizApplication", "Startup analytics collection failed", e)
-            }
-        }
-    }
-}
+                     manager.close()
+                 } catch (e: Exception) {
+                     Log.w("MemoizApplication", "Background GenAI status check failed", e)
+                 }
+             } catch (e: Exception) {
+                 Log.w("MemoizApplication", "Startup analytics collection failed", e)
+             }
+         }
+     }
+ }
