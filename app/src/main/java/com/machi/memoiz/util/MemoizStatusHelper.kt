@@ -12,19 +12,14 @@ object MemoizStatusHelper {
      * Returns one of: "neutral", "kindness", "coolness", "smartness", "curiosity",
      * or their "_last" variants (e.g. "coolness_last", "neutral_last").
      *
-     * Rules implemented (matches dialog logic):
-     *  - Let paramThreshold = 1 for debug builds, otherwise 15.
-     *  - If all parameters < paramThreshold AND exp >= 50 -> "neutral_last".
-     *  - If any parameter > 30 -> choose the largest parameter and return "<param>_last".
-     *  - If any parameter >= paramThreshold AND exp >= 50 -> choose the largest parameter and return "<param>_last".
-     *  - Otherwise, if all parameters < paramThreshold -> "neutral".
-     *  - Otherwise choose the largest parameter name (priority: kindness > coolness > smartness > curiosity).
+     * Optional debugOverride can be passed from tests to simulate BuildConfig.DEBUG.
      */
-    fun computeStatusLabel(status: MemoizStatus): String {
-        val paramThreshold = if (BuildConfig.DEBUG) 1 else 15
+    fun computeStatusLabel(status: MemoizStatus, debugOverride: Boolean? = null): String {
+        val isDebug = debugOverride ?: BuildConfig.DEBUG
+        val paramThreshold = if (isDebug) 1 else 15
         // Debug overrides: use smaller thresholds when debugging to allow easier testing
-        val highLastThreshold = if (BuildConfig.DEBUG) 2 else 30
-        val expLastThreshold = if (BuildConfig.DEBUG) 5 else 50
+        val highLastThreshold = if (isDebug) 2 else 30
+        val expLastThreshold = if (isDebug) 5 else 50
 
         val vals = listOf(status.kindness, status.coolness, status.smartness, status.curiosity)
         val map = listOf("kindness" to status.kindness, "coolness" to status.coolness, "smartness" to status.smartness, "curiosity" to status.curiosity)
