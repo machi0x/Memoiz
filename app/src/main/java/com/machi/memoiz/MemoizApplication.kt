@@ -11,7 +11,9 @@ import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import com.machi.memoiz.data.datastore.PreferencesDataStoreManager
+import com.machi.memoiz.data.datastore.MemoizStatus
 import com.machi.memoiz.service.GenAiStatusManager
+import com.machi.memoiz.BuildConfig
 
 /**
  * Application class for Memoiz.
@@ -88,6 +90,29 @@ class MemoizApplication : Application() {
                 AnalyticsManager.logStartupGenAiStatus(applicationContext, "startup_genai_image_status", imgLast ?: "unknown")
                 AnalyticsManager.logStartupGenAiStatus(applicationContext, "startup_genai_text_status", textLast ?: "unknown")
                 AnalyticsManager.logStartupGenAiStatus(applicationContext, "startup_genai_summarization_status", sumLast ?: "unknown")
+
+                // Send Memoiz overall status (neutral/kindness/coolness/smartness/curiosity)
+                try {
+                    val memoizStatus = preferencesManager.memoizStatusFlow().first()
+                    val threshold = if (BuildConfig.DEBUG) 1 else 15
+                    val vals = listOf(memoizStatus.kindness, memoizStatus.coolness, memoizStatus.smartness, memoizStatus.curiosity)
+                    val statusLabel = if (vals.all { it < threshold }) {
+                        "neutral"
+                    } else {
+                        val map = listOf("kindness" to memoizStatus.kindness, "coolness" to memoizStatus.coolness, "smartness" to memoizStatus.smartness, "curiosity" to memoizStatus.curiosity)
+                        val maxVal = map.maxByOrNull { it.second }?.second ?: 0
+                        when (map.first { it.second == maxVal }.first) {
+                            "kindness" -> "kindness"
+                            "coolness" -> "coolness"
+                            "smartness" -> "smartness"
+                            "curiosity" -> "curiosity"
+                            else -> "neutral"
+                        }
+                    }
+                    AnalyticsManager.logStartupMemoizStatus(applicationContext, statusLabel)
+                } catch (e: Exception) {
+                    Log.w("MemoizApplication", "Failed to log Memoiz status", e)
+                }
 
                 // Existing telemetry: usage stats permission (keep as before)
                 val isPermissionGranted = UsageStatsHelper(applicationContext).hasUsageStatsPermission()

@@ -19,6 +19,7 @@ object AnalyticsManager {
     private const val EVENT_STARTUP_SORT_KEY = "startup_sort_key"
     private const val EVENT_STARTUP_MY_CATEGORY_COUNT = "startup_my_category_count"
     private const val EVENT_STARTUP_MEMO_STATS_RANGES = "startup_memo_stats_ranges"
+    private const val EVENT_STARTUP_MEMOIZ_STATUS = "startup_memoiz_status"
 
     // Memo create event
     private const val EVENT_MEMO_CREATED = "memo_created"
@@ -114,6 +115,14 @@ object AnalyticsManager {
             putString("status", status)
         }
         logEvent(context, featureEventName, params)
+    }
+
+    /** Log Memoiz overall status at startup (one of: neutral, kindness, coolness, smartness, curiosity) */
+    fun logStartupMemoizStatus(context: Context, statusLabel: String) {
+        val params = Bundle().apply {
+            putString("memoiz_status", statusLabel)
+        }
+        logEvent(context, EVENT_STARTUP_MEMOIZ_STATUS, params)
     }
 
     /**
