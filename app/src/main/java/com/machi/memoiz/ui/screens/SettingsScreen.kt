@@ -4,6 +4,7 @@ package com.machi.memoiz.ui.screens
 
 import android.content.Context
 import android.content.Intent
+import android.content.res.Configuration
 import android.net.Uri
 import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -450,7 +451,7 @@ fun SettingsScreen(
                         leadingIcon = {
                             Icon(Icons.Filled.Description, contentDescription = null)
                         },
-                        onClick = { openOssLicenses(context) }
+                        onClick = { openOssLicenses(context, userPrefs.uiDisplayMode) }
                     )
                 }
 
@@ -770,8 +771,25 @@ private fun openUsageAccessSettings(context: Context) {
     context.startActivity(intent)
 }
 
-private fun openOssLicenses(context: Context) {
-    context.startActivity(Intent(context, OssLicensesActivity::class.java))
+private fun openOssLicenses(context: Context, uiDisplayMode: UiDisplayMode) {
+    val intent = Intent(context, OssLicensesActivity::class.java).apply { addFlags(Intent.FLAG_ACTIVITY_NEW_TASK) }
+    try {
+        val baseConfig = Configuration(context.resources.configuration)
+        // Clear night mask bits, then set according to preference (SYSTEM => leave as is)
+        baseConfig.uiMode = baseConfig.uiMode and Configuration.UI_MODE_NIGHT_MASK.inv()
+        when (uiDisplayMode) {
+            UiDisplayMode.DARK -> baseConfig.uiMode = baseConfig.uiMode or Configuration.UI_MODE_NIGHT_YES
+            UiDisplayMode.LIGHT -> baseConfig.uiMode = baseConfig.uiMode or Configuration.UI_MODE_NIGHT_NO
+            UiDisplayMode.SYSTEM -> {
+                // no-op: use system default
+            }
+        }
+        val themedCtx = context.createConfigurationContext(baseConfig)
+        themedCtx.startActivity(intent)
+    } catch (_: Exception) {
+        // Fallback: start normally
+        context.startActivity(intent)
+    }
 }
 
 @Composable
