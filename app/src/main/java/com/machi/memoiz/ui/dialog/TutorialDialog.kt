@@ -42,10 +42,11 @@ private data class TutorialStep(
 fun TutorialDialog(
     onFinished: () -> Unit,
     initialStep: Int = 0,
-    viewModel: MainViewModel? = null
+    viewModel: MainViewModel? = null,
+    includeMemoizCommentStep: Boolean = true
 ) {
     val context = LocalContext.current
-    val steps = listOf(
+    val baseSteps = listOf(
         TutorialStep(R.drawable.top_banner, R.string.tutorial_step_overview_title, R.string.tutorial_step_overview_body),
         TutorialStep(R.drawable.share_from_browser, R.string.tutorial_step_share_browser_title, R.string.tutorial_step_share_browser_body),
         TutorialStep(R.drawable.share_from_select, R.string.tutorial_step_share_select_title, R.string.tutorial_step_share_select_body),
@@ -53,10 +54,19 @@ fun TutorialDialog(
         TutorialStep(R.drawable.my_category, R.string.tutorial_step_my_category_title, R.string.tutorial_step_my_category_body),
         TutorialStep(R.drawable.app_usages, R.string.tutorial_step_usage_permission_title, R.string.tutorial_step_usage_permission_body),
         TutorialStep(R.drawable.main_ui, R.string.tutorial_step_main_ui_title, R.string.tutorial_step_main_ui_body),
-        TutorialStep(R.drawable.side_panel, R.string.tutorial_step_side_panel_title, R.string.tutorial_step_side_panel_body),
-        TutorialStep(R.drawable.memoiz_comment, R.string.tutorial_step_memoiz_comment_title, R.string.tutorial_step_memoiz_comment_body),
-        TutorialStep(R.drawable.export, R.string.tutorial_step_export_title, R.string.tutorial_step_export_body)
+        TutorialStep(R.drawable.side_panel, R.string.tutorial_step_side_panel_title, R.string.tutorial_step_side_panel_body)
     )
+
+    val steps = if (includeMemoizCommentStep) {
+        baseSteps + listOf(
+            TutorialStep(R.drawable.memoiz_comment, R.string.tutorial_step_memoiz_comment_title, R.string.tutorial_step_memoiz_comment_body),
+            TutorialStep(R.drawable.export, R.string.tutorial_step_export_title, R.string.tutorial_step_export_body)
+        )
+    } else {
+        baseSteps + listOf(
+            TutorialStep(R.drawable.export, R.string.tutorial_step_export_title, R.string.tutorial_step_export_body)
+        )
+    }
 
     var currentStep by rememberSaveable { mutableStateOf(initialStep.coerceIn(0, steps.lastIndex)) }
     val isLastStep = currentStep == steps.lastIndex

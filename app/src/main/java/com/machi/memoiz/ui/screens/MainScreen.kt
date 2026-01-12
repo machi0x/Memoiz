@@ -327,7 +327,8 @@ fun MainScreen(
                         deleteTarget = category
                         deleteTargetIsCustomCategory = true
                         showDeleteConfirmationDialog = true
-                    }
+                    },
+                    showMemoizStatus = genAiTextAvailable // Pass the flag here
                 )
             }
         }
@@ -814,7 +815,8 @@ fun MainScreen(
                          manager.close()
                      }
                 }
-             }
+             },
+            includeMemoizCommentStep = genAiTextAvailable
          )
      }
 
@@ -899,7 +901,8 @@ private fun NavigationDrawerContent(
     onMemoTypeFilterSelected: (String?) -> Unit,
     onAddCategoryClick: () -> Unit,
     onSettingsClick: () -> Unit,
-    onRemoveCustomCategory: (String) -> Unit
+    onRemoveCustomCategory: (String) -> Unit,
+    showMemoizStatus: Boolean = true
 ) {
     Column(
         modifier = Modifier
@@ -928,15 +931,15 @@ private fun NavigationDrawerContent(
              modifier = Modifier.height(45.dp)
          )
 
-        NavigationDrawerItem(
-            label = { Text(stringResource(R.string.drawer_status)) },
-            selected = false,
-            onClick = { /* open status dialog */
-                com.machi.memoiz.ui.dialog.CatStatusDialogActivity.start(drawerContext)
-            },
-            icon = { Icon(Icons.Default.Info, contentDescription = null) },
-            modifier = Modifier.height(45.dp)
-        )
+        if (showMemoizStatus) {
+            NavigationDrawerItem(
+                label = { Text(stringResource(R.string.drawer_status)) },
+                selected = false,
+                onClick = { com.machi.memoiz.ui.dialog.CatStatusDialogActivity.start(drawerContext) },
+                icon = { Icon(Icons.Default.Info, contentDescription = null) },
+                modifier = Modifier.height(45.dp)
+            )
+        }
 
         NavigationDrawerItem(
             label = { Text(stringResource(R.string.drawer_add_category)) },
