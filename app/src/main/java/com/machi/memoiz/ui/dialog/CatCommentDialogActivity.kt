@@ -175,7 +175,7 @@ private fun CatCommentDialogScreen(appContext: Context, targetMemoId: Long?) {
                         Spacer(modifier = Modifier.height(12.dp))
                         val prefix = stringResource(R.string.catcomment_processing_prefix)
                         Text(
-                            text = "$prefix ${processingMessage}...",
+                            text = "$prefix ${processingMessage}",
                             style = MaterialTheme.typography.titleMedium,
                             color = Color.White
                         )
