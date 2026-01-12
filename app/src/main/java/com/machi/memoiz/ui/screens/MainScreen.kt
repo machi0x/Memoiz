@@ -915,7 +915,7 @@ private fun NavigationDrawerContent(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(bannerHeight)
-                .padding(horizontal = 16.dp)
+                .padding(horizontal = 16.dp,vertical = 13.dp)
                 .clip(RoundedCornerShape(12.dp)),
             contentScale = ContentScale.Fit
         )
@@ -925,7 +925,7 @@ private fun NavigationDrawerContent(
              selected = false,
              onClick = onSettingsClick,
              icon = { Icon(Icons.Default.Settings, contentDescription = null) },
-             modifier = Modifier.height(45.dp).padding(top = 13.dp)
+             modifier = Modifier.height(45.dp)
          )
 
         NavigationDrawerItem(
