@@ -77,6 +77,13 @@
             android:excludeFromRecents="true"
             android:finishOnTaskLaunch="true" />
 
+        <!-- OSS Licenses Activity -->
+        <activity
+            android:name=".ui.OssLicensesActivity"
+            android:exported="false"
+            android:label="@string/settings_oss_title"
+            android:theme="@style/Theme.Memoiz" />
+
         <!-- Main Activity -->
         <activity
             android:name=".MainActivity"
@@ -87,20 +94,6 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-
-        <activity
-            android:name="com.google.android.gms.oss.licenses.OssLicensesMenuActivity"
-            android:theme="@style/Theme.Memoiz.Licenses" />
-
-        <activity
-            android:name="com.google.android.gms.oss.licenses.OssLicensesActivity"
-            android:theme="@style/Theme.Memoiz.Licenses" />
-
-        <!-- Custom licenses Activity -->
-        <activity
-            android:name=".ui.licenses.LicenseActivity"
-            android:exported="false"
-            android:theme="@style/Theme.Memoiz.Licenses" />
 
         <provider
             android:name="androidx.core.content.FileProvider"

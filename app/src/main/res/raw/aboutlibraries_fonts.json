@@ -1,0 +1,34 @@
+{
+  "libraries": [
+    {
+      "uniqueId": "mplus1code",
+      "name": "M PLUS 1 Code",
+      "developers": [ { "name": "M+ FONTS Project" } ],
+      "description": "M PLUS 1 Code is a coding font family.",
+      "licenses": [ "SIL-OFL" ],
+      "website": "https://github.com/coz-m/MPLUS_Fonts"
+    },
+    {
+      "uniqueId": "yomogi",
+      "name": "Yomogi",
+      "developers": [ { "name": "The Yomogi Project Authors" } ],
+      "description": "Yomogi is a free Japanese font included in Google Fonts.",
+      "licenses": [ "SIL-OFL" ],
+      "website": "https://github.com/google/fonts"
+    },
+    {
+      "uniqueId": "dotgothic16",
+      "name": "DotGothic16 Regular",
+      "developers": [ { "name": "DotGothic project / Google Fonts" } ],
+      "description": "DotGothic16 is a dot-matrix style Japanese font available from Google Fonts.",
+      "licenses": [ "SIL-OFL" ],
+      "website": "https://fonts.google.com/specimen/DotGothic16"
+    }
+  ],
+  "licenses": {
+    "SIL-OFL": {
+      "name": "SIL Open Font License 1.1",
+      "url": "https://scripts.sil.org/OFL"
+    }
+  }
+}

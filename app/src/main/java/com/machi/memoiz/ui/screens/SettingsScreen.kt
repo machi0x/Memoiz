@@ -13,6 +13,10 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -22,30 +26,27 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
-import com.google.android.gms.oss.licenses.OssLicensesMenuActivity
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.google.mlkit.genai.common.FeatureStatus
 import com.machi.memoiz.BuildConfig
 import com.machi.memoiz.R
-import com.machi.memoiz.data.datastore.UserPreferences
+import com.machi.memoiz.analytics.AnalyticsManager
 import com.machi.memoiz.data.datastore.UiDisplayMode
+import com.machi.memoiz.data.datastore.UserPreferences
+import com.machi.memoiz.service.GenAiFeatureStates
+import com.machi.memoiz.ui.OssLicensesActivity
 import com.machi.memoiz.ui.theme.MemoizTheme
 import com.machi.memoiz.util.UsageStatsHelper
 import kotlinx.coroutines.flow.MutableStateFlow
-import com.machi.memoiz.service.GenAiFeatureStates
-import com.google.mlkit.genai.common.FeatureStatus
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
-import androidx.compose.runtime.rememberCoroutineScope
 import kotlinx.coroutines.launch
-import androidx.compose.ui.text.TextStyle
-import com.machi.memoiz.analytics.AnalyticsManager
+
 
 /**
  * Settings screen for app configuration.
@@ -62,6 +63,15 @@ fun SettingsScreen(
     var hasUsageStatsPermission by remember {
         mutableStateOf(UsageStatsHelper(context).hasUsageStatsPermission())
     }
+
+    // Hoist string resources to local variables to avoid calling context.getString() in non-composable contexts
+    val importBadPasswordErr = stringResource(R.string.settings_import_result_bad_password)
+    val importOpenFailedErr = stringResource(R.string.settings_import_result_open_failed)
+    val importNoMetaErr = stringResource(R.string.settings_import_result_no_meta)
+    val importGeneralErr = stringResource(R.string.settings_import_result_failure)
+    val passwordValidationErr = stringResource(R.string.password_validation_error)
+    val exportFailureErr = stringResource(R.string.settings_export_result_failure)
+
     DisposableEffect(lifecycleOwner, context) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
@@ -78,12 +88,8 @@ fun SettingsScreen(
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
     val appVersion = remember { BuildConfig.VERSION_NAME }
-    // genAiPreferences is available in the viewModel but not needed for the read-only display here.
-    // val genAiPrefs by viewModel.genAiPreferences.collectAsState(initial = UserPreferences())
     val baseModelNames by viewModel.baseModelNames.collectAsStateWithLifecycle()
-    // Collect feature states for GenAI (nullable until loaded)
     val featureStates by viewModel.featureStates.collectAsStateWithLifecycle()
-    // Collect persisted user preferences (including sendUsageStats)
     val userPrefs by viewModel.genAiPreferences.collectAsStateWithLifecycle(initialValue = UserPreferences())
 
     val scope = rememberCoroutineScope()
@@ -122,23 +128,23 @@ fun SettingsScreen(
                         importPasswordError = null
                         showImportPasswordDialog = true
                     } else {
-                        // Map known messages to localized strings
+                        // Map known messages to localized strings using hoisted variables
                         val mapped = when (res.message) {
                             null -> null
-                            "Invalid password or corrupted file" -> context.getString(R.string.settings_import_result_bad_password)
+                            "Invalid password or corrupted file" -> importBadPasswordErr
                             else -> {
                                 val msg = res.message
                                 when {
-                                    msg.contains("Cannot open input stream", ignoreCase = true) -> context.getString(R.string.settings_import_result_open_failed)
-                                    msg.contains("meta.json not found", ignoreCase = true) -> context.getString(R.string.settings_import_result_no_meta)
-                                    else -> context.getString(R.string.settings_import_result_failure)
+                                    msg.contains("Cannot open input stream", ignoreCase = true) -> importOpenFailedErr
+                                    msg.contains("meta.json not found", ignoreCase = true) -> importNoMetaErr
+                                    else -> importGeneralErr
                                 }
                             }
                         }
                         importResult = ImportResult(res.added, res.skipped, res.errors, mapped)
                     }
                 } catch (_: Exception) {
-                    importResult = ImportResult(0, 0, 1, context.getString(R.string.settings_import_result_failure))
+                    importResult = ImportResult(0, 0, 1, importGeneralErr)
                 } finally {
                     showImportProgress = false
                 }
@@ -152,7 +158,7 @@ fun SettingsScreen(
                 title = { Text(stringResource(R.string.settings_title)) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Default.ArrowBack, stringResource(R.string.cd_back))
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.cd_back))
                     }
                 }
             )
@@ -217,12 +223,7 @@ fun SettingsScreen(
 
                 // 3. UI display mode
                 item {
-                    // collect latest user preferences to get current ui display mode
-                    val userPrefs by viewModel.genAiPreferences.collectAsStateWithLifecycle(initialValue = UserPreferences())
                     val currentMode = userPrefs.uiDisplayMode
-                    val ctx = LocalContext.current
-                    val scope = rememberCoroutineScope()
-
                     PreferenceItem(
                         title = stringResource(R.string.settings_ui_display_mode),
                         leadingIcon = { Icon(Icons.Filled.Brightness6, contentDescription = null) },
@@ -244,7 +245,7 @@ fun SettingsScreen(
                                                     try {
                                                         viewModel.setUiDisplayMode(UiDisplayMode.LIGHT)
                                                     } catch (_: Exception) {
-                                                        // ignore - error logged in ViewModel; could show Toast/Snackbar here
+                                                        // ignore - error logged in ViewModel
                                                     } finally {
                                                         writeInProgress = false
                                                     }
@@ -340,7 +341,6 @@ fun SettingsScreen(
                                                     }
                                                 }
                                             }
-                                            // For system mode, let system handle theme; no recreate necessary
                                         }
                                         .padding(vertical = 6.dp),
                                     verticalAlignment = Alignment.CenterVertically
@@ -529,7 +529,7 @@ fun SettingsScreen(
                     if (exportPassword.isNotEmpty()) {
                         val ok = Regex("^[A-Za-z0-9]{4,32}$").matches(exportPassword)
                         if (!ok) {
-                            exportPasswordError = context.getString(R.string.password_validation_error)
+                            exportPasswordError = passwordValidationErr
                             return@TextButton
                         }
                     }
@@ -540,7 +540,7 @@ fun SettingsScreen(
                         try {
                             val uri = viewModel.exportMemos(context, exportPassword.takeIf { it.isNotBlank() })
                             if (uri == null) {
-                                exportFailureMessage = context.getString(R.string.settings_export_result_failure)
+                                exportFailureMessage = exportFailureErr
                             } else {
                                 val sendIntent = Intent().apply {
                                     action = Intent.ACTION_SEND
@@ -554,11 +554,11 @@ fun SettingsScreen(
                                 try {
                                     context.startActivity(chooser)
                                 } catch (_: Exception) {
-                                    exportFailureMessage = context.getString(R.string.settings_export_result_failure)
+                                    exportFailureMessage = exportFailureErr
                                 }
                             }
                         } catch (e: Exception) {
-                            exportFailureMessage = context.getString(R.string.settings_export_result_failure)
+                            exportFailureMessage = exportFailureErr
                         } finally {
                             showExportProgress = false
                         }
@@ -571,7 +571,6 @@ fun SettingsScreen(
             title = { Text(text = stringResource(R.string.settings_export_title)) },
             text = {
                 Column {
-                    // Show only the password explanation in the export confirmation dialog
                     Text(text = stringResource(R.string.export_password_explain))
                     Spacer(modifier = Modifier.height(12.dp))
                     OutlinedTextField(
@@ -597,10 +596,10 @@ fun SettingsScreen(
             onDismissRequest = { showImportPasswordDialog = false },
             confirmButton = {
                 TextButton(onClick = {
-                    // Validate input
+                    // Validate input using hoisted string variable
                     val ok = Regex("^[A-Za-z0-9]{4,32}$").matches(importPassword)
                     if (!ok) {
-                        importPasswordError = context.getString(R.string.password_validation_error)
+                        importPasswordError = passwordValidationErr
                         return@TextButton
                     }
                     // Try import with password
@@ -610,22 +609,22 @@ fun SettingsScreen(
                             showImportProgress = true
                             try {
                                 val res = viewModel.importMemos(uri, context, importPassword)
-                                // Map known messages to localized strings like above
+                                // Map known messages to localized hoisted strings
                                 val mapped = when (res.message) {
                                     null -> null
-                                    "Invalid password or corrupted file" -> context.getString(R.string.settings_import_result_bad_password)
+                                    "Invalid password or corrupted file" -> importBadPasswordErr
                                     else -> {
                                         val msg = res.message
                                         when {
-                                            msg.contains("Cannot open input stream", ignoreCase = true) -> context.getString(R.string.settings_import_result_open_failed)
-                                            msg.contains("meta.json not found", ignoreCase = true) -> context.getString(R.string.settings_import_result_no_meta)
-                                            else -> context.getString(R.string.settings_import_result_failure)
+                                            msg.contains("Cannot open input stream", ignoreCase = true) -> importOpenFailedErr
+                                            msg.contains("meta.json not found", ignoreCase = true) -> importNoMetaErr
+                                            else -> importGeneralErr
                                         }
                                     }
                                 }
                                 importResult = ImportResult(res.added, res.skipped, res.errors, mapped)
                             } catch (_: Exception) {
-                                importResult = ImportResult(0, 0, 1, context.getString(R.string.settings_import_result_failure))
+                                importResult = ImportResult(0, 0, 1, importGeneralErr)
                             } finally {
                                 showImportProgress = false
                                 pendingImportUri = null
@@ -684,9 +683,9 @@ fun SettingsScreen(
             title = { Text(text = stringResource(R.string.settings_import_title)) },
             text = {
                 if (res.errors > 0) {
-                    Text(text = res.message ?: stringResource(R.string.settings_import_result_failure))
+                    Text(text = res.message ?: importGeneralErr)
                 } else {
-                    // Show a concise success message to avoid confusion: "Imported X memos."
+                    // Show a concise success message: "Imported X memos."
                     Text(text = stringResource(R.string.settings_import_result_simple, res.added))
                 }
             }
@@ -772,51 +771,7 @@ private fun openUsageAccessSettings(context: Context) {
 }
 
 private fun openOssLicenses(context: Context) {
-    // Debug: dump metadata and validate offsets to Logcat so we can see what OssLicensesActivity will read
-    try {
-        val res = context.resources
-        val metaStream = res.openRawResource(R.raw.third_party_license_metadata)
-        val metaText = metaStream.bufferedReader(Charsets.UTF_8).use { it.readText() }
-        android.util.Log.i("OSS_LICENSES_DEBUG", "third_party_license_metadata:\n" + metaText.take(2000)) // limit output
-
-        val licBytes = res.openRawResource(R.raw.third_party_licenses).use { it.readBytes() }
-        android.util.Log.i("OSS_LICENSES_DEBUG", "third_party_licenses bytes=${licBytes.size}")
-
-        // Search for our font entries in metadata and validate offsets
-        val lines = metaText.lines().map { it.trim() }.filter { it.isNotEmpty() }
-        var found = 0
-        for (ln in lines) {
-            // expected format: offset:length Name
-            val parts = ln.split(" ", limit = 2)
-            if (parts.size < 2) continue
-            val offLen = parts[0]
-            val name = parts[1]
-            if (name.contains("Yomogi", ignoreCase = true) || name.contains("MPlus", ignoreCase = true) || name.contains("MPlus1", ignoreCase = true)) {
-                found++
-                try {
-                    val offLenParts = offLen.split(":")
-                    val off = offLenParts[0].toInt()
-                    val len = offLenParts[1].toInt()
-                    val ok = off >= 0 && len >= 0 && off + len <= licBytes.size
-                    android.util.Log.i("OSS_LICENSES_DEBUG", "Found font entry: name=\"$name\" offset=$off len=$len ok=$ok")
-                    if (ok) {
-                        val snippet = String(licBytes, off, Math.min(len, 512), Charsets.UTF_8)
-                        android.util.Log.i("OSS_LICENSES_DEBUG", "Snippet for $name:\n" + snippet.replace("\n", "\\n").take(1000))
-                    }
-                } catch (e: Exception) {
-                    android.util.Log.w("OSS_LICENSES_DEBUG", "Failed to parse offset/len for line: $ln", e)
-                }
-            }
-        }
-        android.util.Log.i("OSS_LICENSES_DEBUG", "Found font metadata entries: $found")
-    } catch (e: Exception) {
-        android.util.Log.w("OSS_LICENSES_DEBUG", "Failed reading third party license resources", e)
-    }
-
-    val intent = Intent(context, OssLicensesMenuActivity::class.java).apply {
-        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-    }
-    context.startActivity(intent)
+    context.startActivity(Intent(context, OssLicensesActivity::class.java))
 }
 
 @Composable
@@ -911,7 +866,9 @@ private fun AiFeatureRow(featureTitle: String, modelDisplay: String, state: @Fea
             verticalAlignment = Alignment.CenterVertically
         ) {
             // Left column: feature title (vertically centered)
-            Box(modifier = Modifier.width(160.dp).fillMaxHeight(), contentAlignment = Alignment.CenterStart) {
+            Box(modifier = Modifier
+                .width(160.dp)
+                .fillMaxHeight(), contentAlignment = Alignment.CenterStart) {
                 Text(text = featureTitle, style = MaterialTheme.typography.titleSmall)
             }
 
