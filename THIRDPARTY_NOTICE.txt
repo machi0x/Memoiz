@@ -6,6 +6,7 @@ For each component, the entry contains either the full license text or, if the f
 
 ================================================================
 Libraries:
+ - AboutLibraries
  - Accompanist Drawable Painter library
  - Activity
  - Activity Compose
