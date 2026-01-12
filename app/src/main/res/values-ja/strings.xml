@@ -290,4 +290,8 @@
     <string name="status_param_koukishin">こうきしん: %1$d</string>
     <string name="status_note">「メモイズから一言」機能で読ませたメモの数や内容によってメモイズが成長します。</string>
     <string name="status_close">閉じる</string>
+
+    <!-- Added tutorial step: Memoiz comment -->
+    <string name="tutorial_step_memoiz_comment_title">メモイズから一言</string>
+    <string name="tutorial_step_memoiz_comment_body">各メモのメニューから[メモイズから一言]を実行すると、メモイズからのコメントを見ることができます。メモを読むことで成長するメモイズの様子をサイドパネルの[メモイズの様子]から確認することができます。</string>
 </resources>

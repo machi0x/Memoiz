@@ -54,6 +54,7 @@ fun TutorialDialog(
         TutorialStep(R.drawable.app_usages, R.string.tutorial_step_usage_permission_title, R.string.tutorial_step_usage_permission_body),
         TutorialStep(R.drawable.main_ui, R.string.tutorial_step_main_ui_title, R.string.tutorial_step_main_ui_body),
         TutorialStep(R.drawable.side_panel, R.string.tutorial_step_side_panel_title, R.string.tutorial_step_side_panel_body),
+        TutorialStep(R.drawable.memoiz_comment, R.string.tutorial_step_memoiz_comment_title, R.string.tutorial_step_memoiz_comment_body),
         TutorialStep(R.drawable.export, R.string.tutorial_step_export_title, R.string.tutorial_step_export_body)
     )
 

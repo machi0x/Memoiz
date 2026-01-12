@@ -311,4 +311,9 @@ Output only the lowercase label name and nothing else.]]></string>
 <string name="status_param_kakkoyosa">Coolness: %1$d</string>
 <string name="status_param_kashikosa">Smartness: %1$d</string>
 <string name="status_param_koukishin">Curiosity: %1$d</string>
+
+<!-- Added tutorial step: Memoiz comment -->
+<string name="tutorial_step_memoiz_comment_title">Comment from Memoiz</string>
+<string name="tutorial_step_memoiz_comment_body">Run "Comment from Memoiz" from a memo\'s menu to see a short comment from Memoiz. Memoiz grows depending on the number and content of memos you used with this feature. You can check Memoiz\'s current state from the side panel under [Memoiz Status].\n\n*This feature works only when on-device AI features are available.</string>
+
 </resources>
