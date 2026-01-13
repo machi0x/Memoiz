@@ -138,7 +138,9 @@ object ContentProcessingLauncher {
                 if (!persistedUriString.isNullOrBlank()) {
                     repo.getMemoByImageUriImmediate(persistedUriString) != null
                 } else if (!text.isNullOrBlank()) {
-                    repo.getMemoByContentImmediate(text) != null
+                    // Use shared-URL canonicalization: if the shared text is a title+URL blob, use the URL
+                    val canonicalText = SharedTextUtils.extractSharedUrlIfEligible(text) ?: text
+                    repo.getMemoByContentImmediate(canonicalText) != null
                 } else {
                     false
                 }
@@ -181,11 +183,6 @@ object ContentProcessingLauncher {
         return EnqueueResult.Enqueued
     }
 
-    fun enqueueManualMemo(context: Context, text: String): Boolean {
-        return enqueueWork(context, text, null, showDialog = true, showStatusDialogOnUnavailable = true, creationSource = "main_ui_fab")
-    }
-
-    // New: WithResult for manual memo
     fun enqueueManualMemoWithResult(context: Context, text: String): EnqueueResult {
         return enqueueWorkWithResult(context, text, null, showDialog = true, showStatusDialogOnUnavailable = true, creationSource = "main_ui_fab")
     }
