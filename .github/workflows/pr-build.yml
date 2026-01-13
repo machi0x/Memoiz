@@ -162,9 +162,7 @@ jobs:
           script: |
             const comment = context.payload.comment.body.toLowerCase();
             const shouldBuild = (
-              comment.includes('/build') || 
-              comment.includes('build apk') || 
-              comment.includes('build release')
+              comment.includes('/build')
             );
             
             core.setOutput('should_build', shouldBuild);
@@ -259,7 +257,7 @@ jobs:
         if: steps.check_trigger.outputs.should_build == 'true'
         id: version_info
         run: |
-          VERSION_NAME=$(./gradlew -q printVersionName | tail -n 1)
+          VcERSION_NAME=$(./gradlew -q printVersionName | tail -n 1)
           VERSION_CODE=$(./gradlew -q printVersionCode | tail -n 1)
           echo "VERSION_NAME=${VERSION_NAME}" >> $GITHUB_OUTPUT
           echo "VERSION_CODE=${VERSION_CODE}" >> $GITHUB_OUTPUT
