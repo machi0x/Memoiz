@@ -74,18 +74,24 @@ class AiCategorizationService(
      */
     suspend fun processText(content: String, sourceApp: String?): MemoEntity? = withContext(Dispatchers.Default) {
         try {
-            val (category, subCategory, summary) = mlKitCategorizer.categorize(content, sourceApp) ?: return@withContext null
+            // If the incoming text is a shared "title + URL" style blob, extract the URL and use it
+            val extractedUrl = SharedTextUtils.extractSharedUrlIfEligible(content)
+            val contentForCategorize = extractedUrl ?: content
+
+            val (category, subCategory, summary) = mlKitCategorizer.categorize(contentForCategorize, sourceApp) ?: return@withContext null
             val finalCategory = mergeCategory(category ?: "Uncategorized", subCategory, summary)
 
-            // Determine memo type based on content
+            // Determine memo type based on whether we extracted a shared URL; otherwise fallback to previous heuristic
             val memoType = when {
-                content.startsWith("http://", ignoreCase = true) || 
+                extractedUrl != null -> com.machi.memoiz.data.entity.MemoType.WEB_SITE
+                content.startsWith("http://", ignoreCase = true) ||
                 content.startsWith("https://", ignoreCase = true) -> com.machi.memoiz.data.entity.MemoType.WEB_SITE
                 else -> com.machi.memoiz.data.entity.MemoType.TEXT
             }
-            
+
             MemoEntity(
-                content = content,
+                // Store canonicalized content when we extracted a shared URL (ignore title part)
+                content = extractedUrl ?: content,
                 memoType = memoType,
                 category = finalCategory,
                 subCategory = subCategory,
