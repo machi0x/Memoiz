@@ -8,12 +8,20 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.*
 
 /**
  * Manager for persisting user preferences using DataStore
  */
 class PreferencesDataStoreManager(private val context: Context) {
+    // Internal scope for creating hot StateFlows owned by this manager.
+    // This manager is intended to live for the application lifetime, so we keep
+    // a long-lived scope here. If you ever need to release resources, call close().
+    private val internalScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     companion object {
         private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "user_preferences")
@@ -22,6 +30,8 @@ class PreferencesDataStoreManager(private val context: Context) {
         private val UI_DISPLAY_MODE_KEY = stringPreferencesKey("ui_display_mode")
         // New: analytics collection preference stored in DataStore
         private val ANALYTICS_COLLECTION_KEY = stringPreferencesKey("analytics_collection_enabled")
+        // Timestamp when the MainScreen was last marked seen (epoch ms)
+        private val LAST_MAIN_SCREEN_SEEN_AT_KEY = stringPreferencesKey("last_main_screen_seen_at")
         // GenAI last-check status keys
         private val GENAI_IMAGE_LAST_KEY = stringPreferencesKey("genai_last_image_status")
         private val GENAI_TEXT_LAST_KEY = stringPreferencesKey("genai_last_text_status")
@@ -79,9 +89,16 @@ class PreferencesDataStoreManager(private val context: Context) {
             hasSeenTutorial = spPair.first,
             showTutorialOnNextLaunch = spPair.second,
             analyticsCollectionEnabled = preferences[ANALYTICS_COLLECTION_KEY]?.toBoolean() ?: spPair.third,
-            uiDisplayMode = UiDisplayMode.fromString(preferences[UI_DISPLAY_MODE_KEY])
+            uiDisplayMode = UiDisplayMode.fromString(preferences[UI_DISPLAY_MODE_KEY]),
+            lastMainScreenSeenAt = preferences[LAST_MAIN_SCREEN_SEEN_AT_KEY]?.toLongOrNull() ?: 0L
         )
     }.distinctUntilChanged()
+
+    // Simple hot StateFlow exposing only the lastMainScreenSeenAt timestamp.
+    // Consumers (e.g. ViewModel) can directly subscribe to this instead of mapping userPreferencesFlow.
+    val lastMainScreenSeenAtState: StateFlow<Long> = context.dataStore.data
+        .map { prefs -> prefs[LAST_MAIN_SCREEN_SEEN_AT_KEY]?.toLongOrNull() ?: 0L }
+        .stateIn(internalScope, SharingStarted.WhileSubscribed(5_000), 0L)
 
     /**
      * Flow exposing the current Memoiz status (EXP and parameters).
@@ -293,5 +310,17 @@ class PreferencesDataStoreManager(private val context: Context) {
     fun setAnalyticsCollectionEnabledSync(enabled: Boolean) {
         sharedPrefs.edit().putBoolean(SP_KEY_ANALYTICS_COLLECTION, enabled).apply()
         _sharedPrefFlow.value = Triple(_sharedPrefFlow.value.first, _sharedPrefFlow.value.second, enabled)
+    }
+
+    /** Persist the time (epoch ms) when the MainScreen was last seen/left. */
+    suspend fun markMainScreenSeen(atMillis: Long = System.currentTimeMillis()) {
+        context.dataStore.edit { preferences ->
+            preferences[LAST_MAIN_SCREEN_SEEN_AT_KEY] = atMillis.toString()
+        }
+    }
+
+    /** Optional: cancel internal resources when the manager is no longer needed. */
+    fun close() {
+        internalScope.cancel()
     }
 }

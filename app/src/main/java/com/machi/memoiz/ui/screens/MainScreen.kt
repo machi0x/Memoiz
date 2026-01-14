@@ -83,6 +83,8 @@ import org.burnoutcrew.reorderable.ReorderableItem
 import org.burnoutcrew.reorderable.detectReorder
 import org.burnoutcrew.reorderable.rememberReorderableLazyListState
 import org.burnoutcrew.reorderable.reorderable
+import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.lifecycle.LifecycleEventObserver
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -103,6 +105,8 @@ fun MainScreen(
     val preferencesLoaded by viewModel.preferencesLoaded.collectAsState()
     val isProcessing by viewModel.isProcessing.collectAsState()
     val uiDisplayModeSetting by viewModel.uiDisplayMode.collectAsState()
+    val newMemoIds by viewModel.newMemoIds.collectAsState()
+    val categoriesWithNew by viewModel.categoriesWithNew.collectAsState()
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var showTutorialDialog by rememberSaveable { mutableStateOf(false) }
@@ -201,6 +205,10 @@ fun MainScreen(
     var createMemoError by remember { mutableStateOf<String?>(null) }
     val hasManualOrder = categoryOrder.isNotEmpty()
 
+    // Capture resource strings used inside non-composable lambdas
+    val errorCategoryNameEmpty = stringResource(R.string.error_category_name_empty)
+    val createMemoErrorEmpty = stringResource(R.string.dialog_create_memo_error_empty)
+
     val clearManualCategoryState: () -> Unit = {
         manualCategoryMemo = null
         manualCategoryInput = ""
@@ -210,7 +218,7 @@ fun MainScreen(
     val handleManualCategorySave: (String) -> Unit = save@{ rawInput ->
         val trimmedCategory = rawInput.trim()
         if (trimmedCategory.isEmpty()) {
-            manualCategoryError = context.getString(R.string.error_category_name_empty)
+            manualCategoryError = errorCategoryNameEmpty
             return@save
         }
         manualCategoryMemo?.let { memo ->
@@ -537,6 +545,8 @@ fun MainScreen(
                                     isExpanded = group.category in expandedCategories,
                                     context = context,
                                     isCustomCategory = isCustomCategory,
+                                    categoriesWithNew = categoriesWithNew,
+                                    newMemoIds = newMemoIds,
                                     onHeaderClick = { viewModel.toggleCategoryExpanded(group.category) },
                                     onDeleteCategory = {
                                         deleteTarget = group.category
@@ -850,7 +860,7 @@ fun MainScreen(
                 TextButton(onClick = {
                     val trimmed = createMemoText.trim()
                     if (trimmed.isEmpty()) {
-                        createMemoError = context.getString(R.string.dialog_create_memo_error_empty)
+                        createMemoError = createMemoErrorEmpty
                         return@TextButton
                     }
                     val result = ContentProcessingLauncher.enqueueManualMemoWithResult(context, trimmed)
@@ -883,10 +893,21 @@ fun MainScreen(
 
     Log.d("MainScreen", "MainScreen composed entry: preferencesLoaded=$preferencesLoaded shouldShowTutorial=$shouldShowTutorial genAiDialogShown=$genAiDialogShown")
 
-    DisposableEffect(Unit) {
+    // Observe lifecycle to reliably detect when the Activity/Screen is left.
+    // Mark the main screen as seen on ON_STOP so new memos are treated as read when user leaves.
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == androidx.lifecycle.Lifecycle.Event.ON_STOP) {
+                Log.d("MainScreen", "Lifecycle ON_STOP: marking main screen seen and clearing genAiDialogShown")
+                viewModel.markMainScreenSeen()
+                genAiDialogShown = false
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
         onDispose {
-            Log.d("MainScreen", "MainScreen disposed; clearing genAiDialogShown")
-            genAiDialogShown = false
+            lifecycleOwner.lifecycle.removeObserver(observer)
+            Log.d("MainScreen", "MainScreen disposed; removed lifecycle observer")
         }
     }
 }
@@ -1061,6 +1082,8 @@ private fun CategoryAccordion(
     isExpanded: Boolean,
     context: Context,
     isCustomCategory: Boolean,
+    categoriesWithNew: Set<String>,
+    newMemoIds: Set<Long>,
     onHeaderClick: () -> Unit,
     onDeleteCategory: () -> Unit,
     onDeleteMemo: (Memo) -> Unit,
@@ -1102,11 +1125,16 @@ private fun CategoryAccordion(
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold
                     )
-                    Text(
-                        text = stringResource(R.string.category_memo_count, group.memos.size),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    if (group.category in categoriesWithNew) {
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Box(
+                            modifier = Modifier
+                                .background(color = Color(0xFFFFF59D), shape = RoundedCornerShape(8.dp))
+                                .padding(horizontal = 6.dp, vertical = 2.dp)
+                        ) {
+                            Text(text = "New!", style = MaterialTheme.typography.labelSmall, color = Color.Red)
+                        }
+                    }
                 }
                 Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
                     val deleteIcon = Icons.Default.Delete
@@ -1140,6 +1168,7 @@ private fun CategoryAccordion(
                             onEditCategory = { onEditCategory(memo) },
                             onReanalyze = { onReanalyzeMemo(memo) },
                             onUsed = { id -> onMemoUsed(id) },
+                            newMemoIds = newMemoIds,
                             appUiDisplayMode = uiDisplayMode,
                             genAiTextAvailable = genAiTextAvailable
                         )
@@ -1158,6 +1187,7 @@ private fun MemoCard(
     onReanalyze: () -> Unit,
     readOnly: Boolean = false,
     onUsed: (Long) -> Unit = {},
+    newMemoIds: Set<Long> = emptySet(),
     appUiDisplayMode: com.machi.memoiz.data.datastore.UiDisplayMode? = null,
     genAiTextAvailable: Boolean = false
 ) {
@@ -1241,7 +1271,22 @@ private fun MemoCard(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                MemoTypeIcon(memo.memoType)
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    // Ensure icon keeps its size and the label sits clearly below it.
+                    MemoTypeIcon(memo.memoType)
+                    if (memo.id in newMemoIds) {
+                        Box(
+                            modifier = Modifier
+                                .background(color = Color(0xFFFFF59D), shape = RoundedCornerShape(6.dp))
+                                .padding(horizontal = 6.dp, vertical = 2.dp)
+                        ) {
+                            Text(text = "New!", style = MaterialTheme.typography.labelSmall, color = Color.Red)
+                        }
+                    }
+                }
                 if (memo.subCategory != null) {
                     AssistChip(
                         onClick = { },

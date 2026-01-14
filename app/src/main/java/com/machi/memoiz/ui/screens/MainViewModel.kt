@@ -70,10 +70,28 @@ class MainViewModel(
         .map { it.uiDisplayMode }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), UiDisplayMode.SYSTEM)
 
-    // Expose whether the user has consented to analytics collection (Firebase)
-    val analyticsCollectionEnabled: StateFlow<Boolean> = userPreferencesFlow
-        .map { it.analyticsCollectionEnabled }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+    /** Mark the MainScreen as seen/left at current time (persist to DataStore) */
+    fun markMainScreenSeen(atMillis: Long = System.currentTimeMillis()) {
+        // Simplified: persist the last-seen timestamp. Consumers observe preferencesManager.lastMainScreenSeenAtState.
+        viewModelScope.launch {
+            try {
+                preferencesManager.markMainScreenSeen(atMillis)
+            } catch (e: Exception) {
+                android.util.Log.w("MainViewModel", "Failed to persist lastMainScreenSeenAt", e)
+            }
+        }
+    }
+
+    // Derived flows: which memos are new (created after lastMainScreenSeenAt) and which categories contain new memos
+    private val _allMemosFlow: Flow<List<Memo>> = memoRepository.getAllMemos()
+
+    val newMemoIds: StateFlow<Set<Long>> = combine(_allMemosFlow, preferencesManager.lastMainScreenSeenAtState) { memos, lastSeen ->
+        memos.filter { it.createdAt > lastSeen }.map { it.id }.toSet()
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptySet())
+
+    val categoriesWithNew: StateFlow<Set<String>> = combine(_allMemosFlow, preferencesManager.lastMainScreenSeenAtState) { memos, lastSeen ->
+        memos.filter { it.createdAt > lastSeen }.map { it.category }.toSet()
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptySet())
 
     // Indicates whether we've observed the first real preferences emission from DataStore.
     private val _preferencesLoaded = MutableStateFlow(false)
@@ -104,6 +122,18 @@ class MainViewModel(
         viewModelScope.launch {
             userPreferencesFlow.collect { prefs ->
                 _categoryOrder.value = prefs.categoryOrder
+            }
+        }
+
+        // If this is a fresh install (no lastMainScreenSeenAt), set it to now
+        viewModelScope.launch {
+            try {
+                val prefs = preferencesManager.userPreferencesFlow.first()
+                if (prefs.lastMainScreenSeenAt == 0L) {
+                    preferencesManager.markMainScreenSeen(System.currentTimeMillis())
+                }
+            } catch (_: Exception) {
+                // ignore
             }
         }
 

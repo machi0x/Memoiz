@@ -1,7 +1,5 @@
 package com.machi.memoiz.data.datastore
 
-import com.machi.memoiz.data.datastore.UiDisplayMode
-
 /**
  * Data class representing user preferences stored in DataStore
  */
@@ -12,5 +10,7 @@ data class UserPreferences(
     val showTutorialOnNextLaunch: Boolean = false,
     val uiDisplayMode: UiDisplayMode = UiDisplayMode.SYSTEM,
     // New: whether the user consents to sending non-private usage statistics (Firebase)
-    val analyticsCollectionEnabled: Boolean = false
+    val analyticsCollectionEnabled: Boolean = false,
+    // Timestamp (epoch ms) when the user last left/closed the MainScreen. Used to mark "new" memos/categories.
+    val lastMainScreenSeenAt: Long = 0L
 )
