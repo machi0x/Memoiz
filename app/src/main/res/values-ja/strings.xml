@@ -126,6 +126,7 @@
     <string name="category_uncategorizable">分類不能</string>
     <string name="fab_create_memo">テキストを入力</string>
     <string name="fab_pick_image">端末内の画像を選択</string>
+    <string name="fab_take_photo">カメラで撮影</string>
     <string name="dialog_create_memo_title">メモを作成</string>
     <string name="dialog_create_memo_message">テキストを入力してメモとして保存します。他のメモと同様にAIが解析します。</string>
     <string name="dialog_create_memo_placeholder">メモ本文</string>

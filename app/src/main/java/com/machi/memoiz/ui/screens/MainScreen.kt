@@ -295,6 +295,36 @@ fun MainScreen(
         }
     }
 
+    // Camera capture: create a temp file URI via FileProvider and launch external camera app.
+    var pendingPhotoUri by remember { mutableStateOf<Uri?>(null) }
+    var pendingPhotoFile by remember { mutableStateOf<java.io.File?>(null) }
+    val takePictureLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.TakePicture()
+    ) { success: Boolean ->
+        val uri = pendingPhotoUri
+        if (success && uri != null) {
+            // Image captured successfully. Enqueue processing (force copy) and clear pending uri.
+            val result = ContentProcessingLauncher.enqueueWorkWithResult(context, null, uri, forceCopyImage = true, creationSource = "main_ui_camera")
+            when (result) {
+                ContentProcessingLauncher.EnqueueResult.Enqueued -> { /* no-op */ }
+                ContentProcessingLauncher.EnqueueResult.NothingToCategorize ->
+                    Toast.makeText(context, R.string.nothing_to_categorize, Toast.LENGTH_SHORT).show()
+                ContentProcessingLauncher.EnqueueResult.DuplicateIgnored ->
+                    Toast.makeText(context, R.string.toast_already_exists, Toast.LENGTH_SHORT).show()
+            }
+            pendingPhotoUri = null
+        } else {
+            // Failed or cancelled: cleanup temp file if exists
+            try {
+                pendingPhotoFile?.let { file ->
+                    if (file.exists()) file.delete()
+                }
+            } catch (_: Exception) { }
+            pendingPhotoFile = null
+            pendingPhotoUri = null
+        }
+    }
+
     val selectedCategoryFilter = categoryFilter
     val filterNote = when {
         appliedTypeLabel != null && selectedCategoryFilter != null -> stringResource(
@@ -467,6 +497,29 @@ fun MainScreen(
                                         }
                                     )
                                 }
+                                // Camera capture button (no runtime CAMERA permission requested)
+                                ExtendedFloatingActionButton(
+                                    text = { Text(text = stringResource(R.string.fab_take_photo)) },
+                                    icon = { Icon(Icons.Default.CameraAlt, contentDescription = null) },
+                                    onClick = {
+                                        // Create temp file in cache and launch camera
+                                        try {
+                                            val photoFile = java.io.File.createTempFile(
+                                                "memoiz_camera_${System.currentTimeMillis()}",
+                                                ".jpg",
+                                                context.cacheDir
+                                            ).apply { deleteOnExit() }
+                                            val uri = androidx.core.content.FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", photoFile)
+                                            pendingPhotoFile = photoFile
+                                            pendingPhotoUri = uri
+                                            takePictureLauncher.launch(uri)
+                                            isFabExpanded = false
+                                        } catch (e: Exception) {
+                                            Log.e("MainScreen", "Failed to create temp file for camera: ${e.message}", e)
+                                            Toast.makeText(context, R.string.error_open_image, Toast.LENGTH_SHORT).show()
+                                        }
+                                    }
+                                )
                                 SmallFloatingActionButton(onClick = { isFabExpanded = false }) {
                                     Icon(Icons.Default.Close, contentDescription = stringResource(R.string.fab_close_menu))
                                 }

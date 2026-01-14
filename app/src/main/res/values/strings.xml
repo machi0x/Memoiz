@@ -144,6 +144,7 @@ Try sharing text or images from other apps, or use the + button at the bottom of
     <string name="settings_remerge_all_description">Review all memos to merge similar categories and re-analyze memos where analysis failed.</string>
     <string name="fab_create_memo">Type text to create memo</string>
     <string name="fab_pick_image">Pick image</string>
+    <string name="fab_take_photo">Take photo</string>
     <string name="dialog_create_memo_title">Create memo</string>
     <string name="dialog_create_memo_message">Enter text to save as a memo. AI will analyze it like other items.</string>
     <string name="dialog_create_memo_placeholder">Memo text</string>
