@@ -26,16 +26,16 @@ import com.machi.memoiz.ui.components.MemoPreview
 import com.machi.memoiz.R
 import com.machi.memoiz.data.MemoizDatabase
 import com.machi.memoiz.data.datastore.PreferencesDataStoreManager
+import com.machi.memoiz.data.datastore.MemoizStatus
 import com.machi.memoiz.data.datastore.UiDisplayMode
 import com.machi.memoiz.data.repository.MemoRepository
 import com.machi.memoiz.domain.model.Memo
-import com.machi.memoiz.service.CatCommentService
+import com.machi.memoiz.service.CatCommentGenerator
 import com.machi.memoiz.service.Feeling
 import com.machi.memoiz.ui.theme.MemoizTheme
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.first
 import java.util.*
 
 class CatCommentDialogActivity : ComponentActivity() {
@@ -85,7 +85,7 @@ private fun CatCommentDialogScreen(appContext: Context, targetMemoId: Long?) {
         try {
             val db = MemoizDatabase.getDatabase(appContext)
             val repo = MemoRepository(db.memoDao())
-            
+
             val chosen = if (targetMemoId != null) {
                 repo.getMemoById(targetMemoId)
             } else {
@@ -97,10 +97,25 @@ private fun CatCommentDialogScreen(appContext: Context, targetMemoId: Long?) {
                 state = 1
             } else {
                 selectedMemo = chosen
-                // call CatCommentService
-                val result = CatCommentService.generateCatComment(appContext, chosen)
+
+                // Compute top status hint from DataStore (read once)
+                val mgr = PreferencesDataStoreManager(appContext)
+                val status: MemoizStatus? = try {
+                    mgr.memoizStatusFlow().first()
+                } catch (_: Exception) {
+                    null
+                }
+                val topStatusHint = status?.let { s ->
+                    // Determine which parameter is highest (ties -> order: kindness, coolness, smartness, curiosity)
+                    val map = mapOf("kindness" to s.kindness, "coolness" to s.coolness, "smartness" to s.smartness, "curiosity" to s.curiosity)
+                    map.maxByOrNull { it.value }?.key
+                }
+
+                // call CatCommentGenerator with hint
+                val result = CatCommentGenerator.generateCatComment(appContext, chosen, topStatusHint = topStatusHint)
+
                 // sanitize the returned text: remove XML-like tags and the feeling label lines
-                commentText = sanitizeCatComment(result.text, result.feeling)
+                commentText = sanitizeCatComment(result.text)
                 feeling = result.feeling
                 if (commentText.isNullOrBlank()) {
                     state = 3
@@ -319,13 +334,13 @@ private fun selectWeightedMemo(memos: List<Memo>): Memo {
 /**
  * Remove XML-like tags (e.g. <comment>, <feeling>) and strip any isolated feeling label lines.
  */
-private fun sanitizeCatComment(raw: String?, feeling: Feeling?): String? {
+private fun sanitizeCatComment(raw: String?): String? {
     raw ?: return null
     // Remove any tags like <...>
     var s = raw.replace(Regex("<[^>]*>"), "").trim()
 
     // More aggressive feeling label removal
-    val feelings = Feeling.values().map { it.name }
+    val feelings = Feeling.entries.map { it.name }
     val lines = s.lines().map { it.trim() }.toMutableList()
     
     if (lines.isNotEmpty()) {
