@@ -11,8 +11,7 @@ import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.Canvas
@@ -1207,12 +1206,12 @@ private fun CategoryAccordion(
                 }
             }
 
-            AnimatedVisibility(
-                visible = isExpanded,
-                enter = expandVertically(),
-                exit = shrinkVertically()
-            ) {
-                Column {
+            // Avoid using AnimatedVisibility here because LazyList prefetch/subcomposition can attempt to
+            // apply changes to layout nodes that have been deactivated, causing crashes like:
+            // "Apply is called on deactivated node ... deactivated: true". To prevent this, keep the
+            // composable node active and animate its size instead of removing/adding child nodes.
+            Column(modifier = Modifier.animateContentSize()) {
+                if (isExpanded) {
                     HorizontalDivider()
                     group.memos.forEach { memo ->
                         MemoCard(
