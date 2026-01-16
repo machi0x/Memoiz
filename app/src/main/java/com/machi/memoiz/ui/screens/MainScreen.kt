@@ -13,6 +13,12 @@ import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.Canvas
@@ -21,6 +27,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -44,12 +51,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.graphics.Path
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.CornerRadius
@@ -121,7 +122,8 @@ fun MainScreen(
         try {
             val manager = com.machi.memoiz.service.GenAiStatusManager(context.applicationContext)
             val status = manager.checkAll()
-            genAiTextAvailable = status.textGeneration == com.google.mlkit.genai.common.FeatureStatus.AVAILABLE
+            genAiTextAvailable =
+                status.textGeneration == com.google.mlkit.genai.common.FeatureStatus.AVAILABLE
             manager.close()
         } catch (e: Exception) {
             // If check fails, default to false
@@ -161,14 +163,23 @@ fun MainScreen(
             return@LaunchedEffect
         }
         if (preferencesLoaded && shouldShowTutorial) {
-            Log.d("MainScreen", "Skipping GenAi check: preferencesLoaded and shouldShowTutorial are true => letting tutorial onFinished run the check")
+            Log.d(
+                "MainScreen",
+                "Skipping GenAi check: preferencesLoaded and shouldShowTutorial are true => letting tutorial onFinished run the check"
+            )
             return@LaunchedEffect
         }
         val manager = com.machi.memoiz.service.GenAiStatusManager(context.applicationContext)
         try {
-            Log.d("MainScreen", "Starting GenAi status check (genAiDialogShown=$genAiDialogShown, preferencesLoaded=$preferencesLoaded, shouldShowTutorial=$shouldShowTutorial)")
+            Log.d(
+                "MainScreen",
+                "Starting GenAi status check (genAiDialogShown=$genAiDialogShown, preferencesLoaded=$preferencesLoaded, shouldShowTutorial=$shouldShowTutorial)"
+            )
             val status = manager.checkAll()
-            Log.d("MainScreen", "GenAi checkAll returned: image=${status.imageDescription} text=${status.textGeneration} sum=${status.summarization}")
+            Log.d(
+                "MainScreen",
+                "GenAi checkAll returned: image=${status.imageDescription} text=${status.textGeneration} sum=${status.summarization}"
+            )
             if (status.anyUnavailable() || status.anyDownloadable()) {
                 Log.d("MainScreen", "GenAi status requires user attention; launching dialog")
                 GenAiStatusCheckDialogActivity.start(context.applicationContext)
@@ -179,7 +190,10 @@ fun MainScreen(
         } catch (e: Exception) {
             e.printStackTrace()
             try {
-                Log.d("MainScreen", "GenAi check failed with exception; attempting to launch dialog as fallback: ${e.message}")
+                Log.d(
+                    "MainScreen",
+                    "GenAi check failed with exception; attempting to launch dialog as fallback: ${e.message}"
+                )
                 GenAiStatusCheckDialogActivity.start(context.applicationContext)
                 genAiDialogShown = true
             } catch (ignored: Exception) {
@@ -284,13 +298,24 @@ fun MainScreen(
         contract = ActivityResultContracts.PickVisualMedia()
     ) { uri: Uri? ->
         if (uri != null) {
-            val result = ContentProcessingLauncher.enqueueWorkWithResult(context, null, uri, forceCopyImage = true, creationSource = "main_ui_image_picker")
+            val result = ContentProcessingLauncher.enqueueWorkWithResult(
+                context,
+                null,
+                uri,
+                forceCopyImage = true,
+                creationSource = "main_ui_image_picker"
+            )
             when (result) {
-                ContentProcessingLauncher.EnqueueResult.Enqueued -> { /* no-op */ }
+                ContentProcessingLauncher.EnqueueResult.Enqueued -> { /* no-op */
+                }
+
                 ContentProcessingLauncher.EnqueueResult.NothingToCategorize ->
-                    Toast.makeText(context, R.string.nothing_to_categorize, Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, R.string.nothing_to_categorize, Toast.LENGTH_SHORT)
+                        .show()
+
                 ContentProcessingLauncher.EnqueueResult.DuplicateIgnored ->
-                    Toast.makeText(context, R.string.toast_already_exists, Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, R.string.toast_already_exists, Toast.LENGTH_SHORT)
+                        .show()
             }
         }
     }
@@ -304,13 +329,24 @@ fun MainScreen(
         val uri = pendingPhotoUri
         if (success && uri != null) {
             // Image captured successfully. Enqueue processing (force copy) and clear pending uri.
-            val result = ContentProcessingLauncher.enqueueWorkWithResult(context, null, uri, forceCopyImage = true, creationSource = "main_ui_camera")
+            val result = ContentProcessingLauncher.enqueueWorkWithResult(
+                context,
+                null,
+                uri,
+                forceCopyImage = true,
+                creationSource = "main_ui_camera"
+            )
             when (result) {
-                ContentProcessingLauncher.EnqueueResult.Enqueued -> { /* no-op */ }
+                ContentProcessingLauncher.EnqueueResult.Enqueued -> { /* no-op */
+                }
+
                 ContentProcessingLauncher.EnqueueResult.NothingToCategorize ->
-                    Toast.makeText(context, R.string.nothing_to_categorize, Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, R.string.nothing_to_categorize, Toast.LENGTH_SHORT)
+                        .show()
+
                 ContentProcessingLauncher.EnqueueResult.DuplicateIgnored ->
-                    Toast.makeText(context, R.string.toast_already_exists, Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, R.string.toast_already_exists, Toast.LENGTH_SHORT)
+                        .show()
             }
             pendingPhotoUri = null
         } else {
@@ -319,7 +355,8 @@ fun MainScreen(
                 pendingPhotoFile?.let { file ->
                     if (file.exists()) file.delete()
                 }
-            } catch (_: Exception) { }
+            } catch (_: Exception) {
+            }
             pendingPhotoFile = null
             pendingPhotoUri = null
         }
@@ -332,8 +369,13 @@ fun MainScreen(
             appliedTypeLabel,
             selectedCategoryFilter
         )
+
         appliedTypeLabel != null -> stringResource(R.string.filter_note_type_only, appliedTypeLabel)
-        selectedCategoryFilter != null -> stringResource(R.string.filter_note_category_only, selectedCategoryFilter)
+        selectedCategoryFilter != null -> stringResource(
+            R.string.filter_note_category_only,
+            selectedCategoryFilter
+        )
+
         else -> null
     }
 
@@ -392,7 +434,10 @@ fun MainScreen(
                                         unfocusedBorderColor = MaterialTheme.colorScheme.outline
                                     ),
                                     leadingIcon = {
-                                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
+                                        Icon(
+                                            Icons.AutoMirrored.Filled.ArrowBack,
+                                            contentDescription = null
+                                        )
                                     },
                                     trailingIcon = {
                                         if (searchQuery.isNotEmpty()) {
@@ -460,24 +505,46 @@ fun MainScreen(
                                 )
                                 ExtendedFloatingActionButton(
                                     text = { Text(text = fabPasteLabel) },
-                                    icon = { Icon(Icons.Default.ContentPaste, contentDescription = null) },
+                                    icon = {
+                                        Icon(
+                                            Icons.Default.ContentPaste,
+                                            contentDescription = null
+                                        )
+                                    },
                                     onClick = {
-                                        val result = ContentProcessingLauncher.enqueueFromClipboardWithResult(context)
+                                        val result =
+                                            ContentProcessingLauncher.enqueueFromClipboardWithResult(
+                                                context
+                                            )
                                         when (result) {
-                                            ContentProcessingLauncher.EnqueueResult.Enqueued -> { /* no-op */ }
+                                            ContentProcessingLauncher.EnqueueResult.Enqueued -> { /* no-op */
+                                            }
+
                                             ContentProcessingLauncher.EnqueueResult.NothingToCategorize ->
-                                                Toast.makeText(context, R.string.nothing_to_categorize, Toast.LENGTH_SHORT).show()
+                                                Toast.makeText(
+                                                    context,
+                                                    R.string.nothing_to_categorize,
+                                                    Toast.LENGTH_SHORT
+                                                ).show()
+
                                             ContentProcessingLauncher.EnqueueResult.DuplicateIgnored ->
-                                                Toast.makeText(context, R.string.toast_already_exists, Toast.LENGTH_SHORT).show()
+                                                Toast.makeText(
+                                                    context,
+                                                    R.string.toast_already_exists,
+                                                    Toast.LENGTH_SHORT
+                                                ).show()
                                         }
-                                         isFabExpanded = false
+                                        isFabExpanded = false
                                     }
                                 )
                                 if (genAiTextAvailable) {
                                     ExtendedFloatingActionButton(
                                         text = { Text(text = stringResource(R.string.fab_cat_comment_label)) },
                                         icon = {
-                                            Box(modifier = Modifier.size(24.dp), contentAlignment = Alignment.Center) {
+                                            Box(
+                                                modifier = Modifier.size(24.dp),
+                                                contentAlignment = Alignment.Center
+                                            ) {
                                                 Text(text = "🐱", fontSize = 16.sp)
                                             }
                                         },
@@ -492,7 +559,11 @@ fun MainScreen(
                                                     CatCommentDialogActivity.start(context.applicationContext)
                                                 }
                                             } catch (e: Exception) {
-                                                Log.e("MainScreen", "Failed to start CatCommentDialogActivity: ${e.message}", e)
+                                                Log.e(
+                                                    "MainScreen",
+                                                    "Failed to start CatCommentDialogActivity: ${e.message}",
+                                                    e
+                                                )
                                             }
                                         }
                                     )
@@ -500,7 +571,12 @@ fun MainScreen(
                                 // Camera capture button (no runtime CAMERA permission requested)
                                 ExtendedFloatingActionButton(
                                     text = { Text(text = stringResource(R.string.fab_take_photo)) },
-                                    icon = { Icon(Icons.Default.CameraAlt, contentDescription = null) },
+                                    icon = {
+                                        Icon(
+                                            Icons.Default.CameraAlt,
+                                            contentDescription = null
+                                        )
+                                    },
                                     onClick = {
                                         // Create temp file in cache and launch camera
                                         try {
@@ -509,24 +585,43 @@ fun MainScreen(
                                                 ".jpg",
                                                 context.cacheDir
                                             ).apply { deleteOnExit() }
-                                            val uri = androidx.core.content.FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", photoFile)
+                                            val uri =
+                                                androidx.core.content.FileProvider.getUriForFile(
+                                                    context,
+                                                    "${context.packageName}.fileprovider",
+                                                    photoFile
+                                                )
                                             pendingPhotoFile = photoFile
                                             pendingPhotoUri = uri
                                             takePictureLauncher.launch(uri)
                                             isFabExpanded = false
                                         } catch (e: Exception) {
-                                            Log.e("MainScreen", "Failed to create temp file for camera: ${e.message}", e)
-                                            Toast.makeText(context, R.string.error_open_image, Toast.LENGTH_SHORT).show()
+                                            Log.e(
+                                                "MainScreen",
+                                                "Failed to create temp file for camera: ${e.message}",
+                                                e
+                                            )
+                                            Toast.makeText(
+                                                context,
+                                                R.string.error_open_image,
+                                                Toast.LENGTH_SHORT
+                                            ).show()
                                         }
                                     }
                                 )
                                 SmallFloatingActionButton(onClick = { isFabExpanded = false }) {
-                                    Icon(Icons.Default.Close, contentDescription = stringResource(R.string.fab_close_menu))
+                                    Icon(
+                                        Icons.Default.Close,
+                                        contentDescription = stringResource(R.string.fab_close_menu)
+                                    )
                                 }
                             }
                         } else {
                             FloatingActionButton(onClick = { isFabExpanded = true }) {
-                                Icon(Icons.Default.Add, contentDescription = stringResource(R.string.fab_paste_clipboard))
+                                Icon(
+                                    Icons.Default.Add,
+                                    contentDescription = stringResource(R.string.fab_paste_clipboard)
+                                )
                             }
                         }
                     }
@@ -588,379 +683,520 @@ fun MainScreen(
                             .reorderable(reorderState),
                         state = lazyListState,
                         contentPadding = PaddingValues(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                        verticalArrangement = Arrangement.Top // remove global spacing so header+memos can be contiguous
                     ) {
-                        items(memoGroups, key = { it.category }) { group ->
-                            ReorderableItem(state = reorderState, key = group.category) { _ ->
-                                val isCustomCategory = customCategories.contains(group.category)
-                                CategoryAccordion(
-                                    group = group,
-                                    isExpanded = group.category in expandedCategories,
-                                    context = context,
-                                    isCustomCategory = isCustomCategory,
-                                    categoriesWithNew = categoriesWithNew,
-                                    newMemoIds = newMemoIds,
-                                    onHeaderClick = { viewModel.toggleCategoryExpanded(group.category) },
-                                    onDeleteCategory = {
-                                        deleteTarget = group.category
-                                        deleteTargetIsCustomCategory = isCustomCategory
-                                        showDeleteConfirmationDialog = true
-                                    },
-                                    onDeleteMemo = { memo ->
-                                        deleteTarget = memo
-                                        deleteTargetIsCustomCategory = false
-                                        showDeleteConfirmationDialog = true
-                                    },
-                                    onEditCategory = { memo ->
-                                        manualCategoryMemo = memo
-                                        manualCategoryInput = memo.category
-                                        manualCategoryError = null
-                                        isFabExpanded = false
-                                    },
-                                    onReanalyzeMemo = { memo ->
-                                        pendingReanalyzeMemo = memo
-                                        isFabExpanded = false
-                                    },
-                                    onMemoUsed = { id -> viewModel.recordMemoUsed(id) },
-                                    dragHandle = Modifier.detectReorder(reorderState),
-                                    uiDisplayMode = uiDisplayModeSetting,
-                                    genAiTextAvailable = genAiTextAvailable
-                                )
+                        // Render each category as flattened items: header (reorderable) + memo items (when expanded).
+                        memoGroups.forEach { group ->
+                            val isCustomCategory = customCategories.contains(group.category)
+
+                            // Header (reorderable)
+                            item(key = group.category) {
+                                ReorderableItem(state = reorderState, key = group.category) { _ ->
+                                    val headerShape = if (group.category in expandedCategories && group.memos.isNotEmpty()) {
+                                        RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp, bottomStart = 0.dp, bottomEnd = 0.dp)
+                                    } else {
+                                        RoundedCornerShape(12.dp)
+                                    }
+                                    Card(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        shape = headerShape,
+                                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+                                    ) {
+                                        Row(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .clickable(
+                                                    indication = null,
+                                                    interactionSource = remember { MutableInteractionSource() }
+                                                ) { viewModel.toggleCategoryExpanded(group.category) }
+                                                .padding(
+                                                    start = 16.dp,
+                                                    end = 16.dp,
+                                                    top = 2.dp,
+                                                    bottom = 2.dp
+                                                ),
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Row(
+                                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                modifier = Modifier.weight(1f)
+                                            ) {
+                                                Icon(
+                                                    if (group.category in expandedCategories) Icons.Default.ExpandMore else Icons.Default.ChevronRight,
+                                                    contentDescription = null
+                                                )
+                                                // Show category name and memo count
+                                                Text(
+                                                    text = "${group.category} (${group.memos.size})",
+                                                    style = MaterialTheme.typography.titleMedium,
+                                                    fontWeight = FontWeight.Bold
+                                                )
+                                                if (group.category in categoriesWithNew) {
+                                                    Spacer(modifier = Modifier.width(6.dp))
+                                                    Box(
+                                                        modifier = Modifier
+                                                            .background(
+                                                                color = Color(0xFFFFF59D),
+                                                                shape = RoundedCornerShape(8.dp)
+                                                            )
+                                                            .padding(
+                                                                horizontal = 6.dp,
+                                                                vertical = 2.dp
+                                                            )
+                                                    ) {
+                                                        Text(
+                                                            text = "New!",
+                                                            style = MaterialTheme.typography.labelSmall,
+                                                            color = Color.Red
+                                                        )
+                                                    }
+                                                }
+                                            }
+
+                                            Row(
+                                                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                val deleteIcon = Icons.Default.Delete
+                                                val deleteContentDescription =
+                                                    if (isCustomCategory) {
+                                                        stringResource(R.string.dialog_delete_custom_category_message)
+                                                    } else {
+                                                        stringResource(R.string.action_delete_category)
+                                                    }
+                                                IconButton(onClick = {
+                                                    deleteTarget = group.category
+                                                    deleteTargetIsCustomCategory = isCustomCategory
+                                                    showDeleteConfirmationDialog = true
+                                                }) {
+                                                    Icon(deleteIcon, deleteContentDescription)
+                                                }
+                                                Icon(
+                                                    imageVector = Icons.Default.DragHandle,
+                                                    contentDescription = stringResource(R.string.cd_category_drag_handle),
+                                                    modifier = Modifier.detectReorder(reorderState)
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
+                            // When expanded, emit an optional divider and the memos as separate items so scrolling performance/stability is preserved.
+                            if (group.category in expandedCategories) {
+                                item { HorizontalDivider() }
+                                val memos = group.memos
+                                itemsIndexed(memos, key = { _, m -> m.id }) { idx, memo ->
+                                    val isFirst = idx == 0
+                                    val isLast = idx == memos.size - 1
+                                    MemoCard(
+                                        memo = memo,
+                                        onDelete = {
+                                            deleteTarget = memo
+                                            deleteTargetIsCustomCategory = false
+                                            showDeleteConfirmationDialog = true
+                                        },
+                                        onEditCategory = {
+                                            manualCategoryMemo = memo
+                                            manualCategoryInput = memo.category
+                                            manualCategoryError = null
+                                            isFabExpanded = false
+                                        },
+                                        onReanalyze = {
+                                            pendingReanalyzeMemo = memo
+                                            isFabExpanded = false
+                                        },
+                                        onUsed = { id -> viewModel.recordMemoUsed(id) },
+                                        newMemoIds = newMemoIds,
+                                        appUiDisplayMode = uiDisplayModeSetting,
+                                        genAiTextAvailable = genAiTextAvailable,
+                                        isFirstInGroup = isFirst,
+                                        isLastInGroup = isLast
+                                    )
+                                }
+                            }
+
+                            // Add spacing between category groups only (so header+its memos remain contiguous)
+                            item {
+                                Spacer(modifier = Modifier.height(8.dp))
                             }
                         }
                     }
                 }
             }
         }
-    }
 
-    if (showSortDialog) {
-        SortModeDialog(
-            currentMode = sortMode,
-            onModeSelected = { mode ->
-                viewModel.setSortMode(mode)
-                showSortDialog = false
-            },
-            onDismiss = { showSortDialog = false },
-            hasManualOrder = hasManualOrder
-        )
-    }
+        if (showSortDialog) {
+            SortModeDialog(
+                currentMode = sortMode,
+                onModeSelected = { mode ->
+                    viewModel.setSortMode(mode)
+                    showSortDialog = false
+                },
+                onDismiss = { showSortDialog = false },
+                hasManualOrder = hasManualOrder
+            )
+        }
 
-    if (showAddCategoryDialog) {
-        AddCustomCategoryDialog(
-            existingCategories = availableCategories,
-            onConfirm = { categoryName ->
-                viewModel.addCustomCategory(categoryName)
-                showAddCategoryDialog = false
-            },
-            onDismiss = { showAddCategoryDialog = false }
-        )
-    }
+        if (showAddCategoryDialog) {
+            AddCustomCategoryDialog(
+                existingCategories = availableCategories,
+                onConfirm = { categoryName ->
+                    viewModel.addCustomCategory(categoryName)
+                    showAddCategoryDialog = false
+                },
+                onDismiss = { showAddCategoryDialog = false }
+            )
+        }
 
-    if (showDeleteConfirmationDialog) {
-        val isCategory = deleteTarget is String
-        AlertDialog(
-            onDismissRequest = { showDeleteConfirmationDialog = false },
-            icon = {
-                Icon(
-                    imageVector = if (isCategory) Icons.Default.Warning else Icons.Default.Delete,
-                    contentDescription = null,
-                    tint = if (isCategory) MaterialTheme.colorScheme.error else LocalContentColor.current
-                )
-            },
-            title = {
-                Text(
-                    text = when {
-                        isCategory && deleteTargetIsCustomCategory -> stringResource(R.string.dialog_delete_custom_category_title)
-                        isCategory -> stringResource(R.string.dialog_delete_category_title)
-                        else -> stringResource(R.string.dialog_delete_memo_title)
-                    }
-                )
-            },
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text(
-                        text = if (isCategory) {
-                            val messageRes = if (deleteTargetIsCustomCategory) {
-                                R.string.dialog_delete_custom_category_message
-                            } else {
-                                R.string.dialog_delete_category_message
-                            }
-                            stringResource(messageRes)
-                        } else {
-                            stringResource(R.string.dialog_delete_memo_message)
-                        }
-                    )
-                    if (isCategory && !deleteTargetIsCustomCategory) {
-                        Text(
-                            text = stringResource(R.string.dialog_delete_category_warning),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.error
-                        )
-                    }
-                }
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        when (val target = deleteTarget) {
-                            is String -> {
-                                if (deleteTargetIsCustomCategory) {
-                                    viewModel.removeCustomCategory(target)
-                                } else {
-                                    viewModel.deleteCategory(target)
-                                }
-                            }
-                            is Memo -> viewModel.deleteMemo(target)
-                        }
-                        deleteTargetIsCustomCategory = false
-                        showDeleteConfirmationDialog = false
-                    }
-                ) {
-                    Text(stringResource(R.string.dialog_delete_confirm))
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = {
-                    showDeleteConfirmationDialog = false
-                    deleteTargetIsCustomCategory = false
-                }) {
-                    Text(stringResource(R.string.dialog_cancel))
-                }
-            }
-        )
-    }
-
-    if (pendingReanalyzeMemo != null) {
-        AlertDialog(
-            onDismissRequest = { pendingReanalyzeMemo = null },
-            icon = { Icon(Icons.Default.Refresh, contentDescription = null) },
-            title = { Text(stringResource(R.string.dialog_reanalyze_title)) },
-            text = {
-                Text(stringResource(R.string.dialog_reanalyze_message))
-            },
-            confirmButton = {
-                TextButton(onClick = {
-                    pendingReanalyzeMemo?.let { memo ->
-                        viewModel.reanalyzeMemo(context, memo.id)
-                    }
-                    pendingReanalyzeMemo = null
-                }) {
-                    Text(stringResource(R.string.dialog_reanalyze_confirm))
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { pendingReanalyzeMemo = null }) {
-                    Text(stringResource(R.string.dialog_cancel))
-                }
-            }
-        )
-    }
-
-    if (manualCategoryMemo != null) {
-        ManualCategoryDialog(
-            availableCategories = availableCategories,
-            categoryValue = manualCategoryInput,
-            errorMessage = manualCategoryError,
-            onCategoryChange = { updated ->
-                manualCategoryInput = updated
-                manualCategoryError = null
-            },
-            onDismiss = clearManualCategoryState,
-            onSave = handleManualCategorySave
-        )
-    }
-
-    if (showConsentDialogBeforeTutorial) {
-        AlertDialog(
-            onDismissRequest = {
-                viewModel.setAnalyticsCollectionEnabled(false)
-                com.machi.memoiz.analytics.AnalyticsManager.setCollectionEnabled(context, false)
-                try {
-                    FirebaseCrashlytics.getInstance().setCrashlyticsCollectionEnabled(false)
-                } catch (e: Exception) {
-                    Log.w("MainScreen", "Failed to set Crashlytics collection: ${e.message}")
-                }
-                viewModel.setConsentDialogShownSync(true)
-                showConsentDialogBeforeTutorial = false
-                showTutorialDialog = true
-            },
-            title = { Text(stringResource(R.string.tutorial_step_consent_title)) },
-            text = {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Image(
-                        painter = painterResource(R.drawable.report),
+        if (showDeleteConfirmationDialog) {
+            val isCategory = deleteTarget is String
+            AlertDialog(
+                onDismissRequest = { showDeleteConfirmationDialog = false },
+                icon = {
+                    Icon(
+                        imageVector = if (isCategory) Icons.Default.Warning else Icons.Default.Delete,
                         contentDescription = null,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .heightIn(max = 180.dp)
-                            .clip(RoundedCornerShape(8.dp)),
-                        contentScale = ContentScale.Crop
+                        tint = if (isCategory) MaterialTheme.colorScheme.error else LocalContentColor.current
                     )
-                    Spacer(modifier = Modifier.height(12.dp))
-                    Text(stringResource(R.string.tutorial_step_consent_body))
-
-                    Spacer(modifier = Modifier.height(12.dp))
-                }
-            },
-            confirmButton = {
-                 TextButton(onClick = {
-                     viewModel.setAnalyticsCollectionEnabled(true)
-                     com.machi.memoiz.analytics.AnalyticsManager.setCollectionEnabled(context, true)
-                     try {
-                         FirebaseCrashlytics.getInstance().setCrashlyticsCollectionEnabled(true)
-                     } catch (e: Exception) {
-                         Log.w("MainScreen", "Failed to enable Crashlytics: ${e.message}")
-                     }
-                     viewModel.setConsentDialogShownSync(true)
-                     showConsentDialogBeforeTutorial = false
-                     showTutorialDialog = true
-                 }) {
-                     Text(stringResource(R.string.ok))
-                 }
-             },
-             dismissButton = {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    val privacyUrl = stringResource(R.string.privacy_policy_url)
-                    TextButton(onClick = {
-                        try {
-                            val uri = android.net.Uri.parse(privacyUrl)
-                            val intent = Intent(Intent.ACTION_VIEW, uri).apply { addFlags(Intent.FLAG_ACTIVITY_NEW_TASK) }
-                            context.startActivity(intent)
-                        } catch (_: Exception) { }
-                    }) {
-                        Text(stringResource(R.string.privacy_policy_init))
+                },
+                title = {
+                    Text(
+                        text = when {
+                            isCategory && deleteTargetIsCustomCategory -> stringResource(R.string.dialog_delete_custom_category_title)
+                            isCategory -> stringResource(R.string.dialog_delete_category_title)
+                            else -> stringResource(R.string.dialog_delete_memo_title)
+                        }
+                    )
+                },
+                text = {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text(
+                            text = if (isCategory) {
+                                val messageRes = if (deleteTargetIsCustomCategory) {
+                                    R.string.dialog_delete_custom_category_message
+                                } else {
+                                    R.string.dialog_delete_category_message
+                                }
+                                stringResource(messageRes)
+                            } else {
+                                stringResource(R.string.dialog_delete_memo_message)
+                            }
+                        )
+                        if (isCategory && !deleteTargetIsCustomCategory) {
+                            Text(
+                                text = stringResource(R.string.dialog_delete_category_warning),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.error
+                            )
+                        }
                     }
+                },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            when (val target = deleteTarget) {
+                                is String -> {
+                                    if (deleteTargetIsCustomCategory) {
+                                        viewModel.removeCustomCategory(target)
+                                    } else {
+                                        viewModel.deleteCategory(target)
+                                    }
+                                }
 
-                    Spacer(modifier = Modifier.width(8.dp))
-
+                                is Memo -> viewModel.deleteMemo(target)
+                            }
+                            deleteTargetIsCustomCategory = false
+                            showDeleteConfirmationDialog = false
+                        }
+                    ) {
+                        Text(stringResource(R.string.dialog_delete_confirm))
+                    }
+                },
+                dismissButton = {
                     TextButton(onClick = {
+                        showDeleteConfirmationDialog = false
+                        deleteTargetIsCustomCategory = false
+                    }) {
+                        Text(stringResource(R.string.dialog_cancel))
+                    }
+                }
+            )
+
+            if (pendingReanalyzeMemo != null) {
+                AlertDialog(
+                    onDismissRequest = { pendingReanalyzeMemo = null },
+                    icon = { Icon(Icons.Default.Refresh, contentDescription = null) },
+                    title = { Text(stringResource(R.string.dialog_reanalyze_title)) },
+                    text = {
+                        Text(stringResource(R.string.dialog_reanalyze_message))
+                    },
+                    confirmButton = {
+                        TextButton(onClick = {
+                            pendingReanalyzeMemo?.let { memo ->
+                                viewModel.reanalyzeMemo(context, memo.id)
+                            }
+                            pendingReanalyzeMemo = null
+                        }) {
+                            Text(stringResource(R.string.dialog_reanalyze_confirm))
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { pendingReanalyzeMemo = null }) {
+                            Text(stringResource(R.string.dialog_cancel))
+                        }
+                    }
+                )
+            }
+
+            if (manualCategoryMemo != null) {
+                ManualCategoryDialog(
+                    availableCategories = availableCategories,
+                    categoryValue = manualCategoryInput,
+                    errorMessage = manualCategoryError,
+                    onCategoryChange = { updated ->
+                        manualCategoryInput = updated
+                        manualCategoryError = null
+                    },
+                    onDismiss = clearManualCategoryState,
+                    onSave = handleManualCategorySave
+                )
+            }
+
+            if (showConsentDialogBeforeTutorial) {
+                AlertDialog(
+                    onDismissRequest = {
                         viewModel.setAnalyticsCollectionEnabled(false)
-                        AnalyticsManager.setCollectionEnabled(context, false)
+                        com.machi.memoiz.analytics.AnalyticsManager.setCollectionEnabled(
+                            context,
+                            false
+                        )
                         try {
-                            FirebaseCrashlytics.getInstance().isCrashlyticsCollectionEnabled = false
+                            FirebaseCrashlytics.getInstance().setCrashlyticsCollectionEnabled(false)
                         } catch (e: Exception) {
-                            Log.w("MainScreen", "Failed to disable Crashlytics: ${e.message}")
+                            Log.w(
+                                "MainScreen",
+                                "Failed to set Crashlytics collection: ${e.message}"
+                            )
                         }
                         viewModel.setConsentDialogShownSync(true)
                         showConsentDialogBeforeTutorial = false
                         showTutorialDialog = true
-                    }) {
-                        Text(stringResource(R.string.no))
-                    }
-                }
-            }
-        )
-    }
+                    },
+                    title = { Text(stringResource(R.string.tutorial_step_consent_title)) },
+                    text = {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Image(
+                                painter = painterResource(R.drawable.report),
+                                contentDescription = null,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .heightIn(max = 180.dp)
+                                    .clip(RoundedCornerShape(8.dp)),
+                                contentScale = ContentScale.Crop
+                            )
+                            Spacer(modifier = Modifier.height(12.dp))
+                            Text(stringResource(R.string.tutorial_step_consent_body))
 
-    if (showTutorialDialog) {
-        TutorialDialog(viewModel = viewModel,
-            onFinished = {
-                showTutorialDialog = false
-                viewModel.markTutorialSeen()
-                if (genAiDialogShown) return@TutorialDialog
-                scope.launch {
-                    val manager = com.machi.memoiz.service.GenAiStatusManager(context.applicationContext)
-                    try {
-                        val status = manager.checkAll()
-                        if (status.anyUnavailable() || status.anyDownloadable()) {
-                            GenAiStatusCheckDialogActivity.start(context.applicationContext)
-                            genAiDialogShown = true
+                            Spacer(modifier = Modifier.height(12.dp))
                         }
-                     } catch (e: Exception) {
-                         e.printStackTrace()
-                         try {
-                            GenAiStatusCheckDialogActivity.start(context.applicationContext)
-                             genAiDialogShown = true
-                         } catch (ignored: Exception) {
-                         }
-                     } finally {
-                         manager.close()
-                     }
-                }
-             },
-            includeMemoizCommentStep = genAiTextAvailable
-         )
-     }
+                    },
+                    confirmButton = {
+                        TextButton(onClick = {
+                            viewModel.setAnalyticsCollectionEnabled(true)
+                            com.machi.memoiz.analytics.AnalyticsManager.setCollectionEnabled(
+                                context,
+                                true
+                            )
+                            try {
+                                FirebaseCrashlytics.getInstance()
+                                    .setCrashlyticsCollectionEnabled(true)
+                            } catch (e: Exception) {
+                                Log.w("MainScreen", "Failed to enable Crashlytics: ${e.message}")
+                            }
+                            viewModel.setConsentDialogShownSync(true)
+                            showConsentDialogBeforeTutorial = false
+                            showTutorialDialog = true
+                        }) {
+                            Text(stringResource(R.string.ok))
+                        }
+                    },
+                    dismissButton = {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            val privacyUrl = stringResource(R.string.privacy_policy_url)
+                            TextButton(onClick = {
+                                try {
+                                    val uri = android.net.Uri.parse(privacyUrl)
+                                    val intent = Intent(
+                                        Intent.ACTION_VIEW,
+                                        uri
+                                    ).apply { addFlags(Intent.FLAG_ACTIVITY_NEW_TASK) }
+                                    context.startActivity(intent)
+                                } catch (_: Exception) {
+                                }
+                            }) {
+                                Text(stringResource(R.string.privacy_policy_init))
+                            }
 
-    if (showCreateMemoDialog) {
-        AlertDialog(
-            onDismissRequest = {
-                showCreateMemoDialog = false
-                createMemoText = ""
-                createMemoError = null
-            },
-            title = { Text(stringResource(R.string.dialog_create_memo_title)) },
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text(stringResource(R.string.dialog_create_memo_message))
-                    OutlinedTextField(
-                        value = createMemoText,
-                        onValueChange = {
-                            createMemoText = it
-                            createMemoError = null
+                            Spacer(modifier = Modifier.width(8.dp))
+
+                            TextButton(onClick = {
+                                viewModel.setAnalyticsCollectionEnabled(false)
+                                AnalyticsManager.setCollectionEnabled(context, false)
+                                try {
+                                    FirebaseCrashlytics.getInstance().isCrashlyticsCollectionEnabled =
+                                        false
+                                } catch (e: Exception) {
+                                    Log.w(
+                                        "MainScreen",
+                                        "Failed to disable Crashlytics: ${e.message}"
+                                    )
+                                }
+                                viewModel.setConsentDialogShownSync(true)
+                                showConsentDialogBeforeTutorial = false
+                                showTutorialDialog = true
+                            }) {
+                                Text(stringResource(R.string.no))
+                            }
+                        }
+                    }
+                )
+
+                if (showTutorialDialog) {
+                    TutorialDialog(
+                        viewModel = viewModel,
+                        onFinished = {
+                            showTutorialDialog = false
+                            viewModel.markTutorialSeen()
+                            if (genAiDialogShown) return@TutorialDialog
+                            scope.launch {
+                                val manager =
+                                    com.machi.memoiz.service.GenAiStatusManager(context.applicationContext)
+                                try {
+                                    val status = manager.checkAll()
+                                    if (status.anyUnavailable() || status.anyDownloadable()) {
+                                        GenAiStatusCheckDialogActivity.start(context.applicationContext)
+                                        genAiDialogShown = true
+                                    }
+                                } catch (e: Exception) {
+                                    e.printStackTrace()
+                                    try {
+                                        GenAiStatusCheckDialogActivity.start(context.applicationContext)
+                                        genAiDialogShown = true
+                                    } catch (ignored: Exception) {
+                                    }
+                                } finally {
+                                    manager.close()
+                                }
+                            }
                         },
-                        label = { Text(stringResource(R.string.dialog_create_memo_placeholder)) },
-                        isError = createMemoError != null,
-                        supportingText = createMemoError?.let { err -> { Text(err) } },
-                        minLines = 3,
-                        maxLines = 6,
-                        modifier = Modifier.fillMaxWidth()
+                        includeMemoizCommentStep = genAiTextAvailable
                     )
                 }
-            },
-            confirmButton = {
-                TextButton(onClick = {
-                    val trimmed = createMemoText.trim()
-                    if (trimmed.isEmpty()) {
-                        createMemoError = createMemoErrorEmpty
-                        return@TextButton
-                    }
-                    val result = ContentProcessingLauncher.enqueueManualMemoWithResult(context, trimmed)
-                    when (result) {
-                        ContentProcessingLauncher.EnqueueResult.Enqueued -> { /* no-op */ }
-                        ContentProcessingLauncher.EnqueueResult.NothingToCategorize ->
-                            Toast.makeText(context, R.string.nothing_to_categorize, Toast.LENGTH_SHORT).show()
-                        ContentProcessingLauncher.EnqueueResult.DuplicateIgnored ->
-                            Toast.makeText(context, R.string.toast_already_exists, Toast.LENGTH_SHORT).show()
-                    }
-                     showCreateMemoDialog = false
-                     createMemoText = ""
-                     createMemoError = null
-                 }) {
 
-                    Text(stringResource(R.string.dialog_add))
+                if (showCreateMemoDialog) {
+                    AlertDialog(
+                        onDismissRequest = {
+                            showCreateMemoDialog = false
+                            createMemoText = ""
+                            createMemoError = null
+                        },
+                        title = { Text(stringResource(R.string.dialog_create_memo_title)) },
+                        text = {
+                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Text(stringResource(R.string.dialog_create_memo_message))
+                                OutlinedTextField(
+                                    value = createMemoText,
+                                    onValueChange = {
+                                        createMemoText = it
+                                        createMemoError = null
+                                    },
+                                    label = { Text(stringResource(R.string.dialog_create_memo_placeholder)) },
+                                    isError = createMemoError != null,
+                                    supportingText = createMemoError?.let { err -> { Text(err) } },
+                                    minLines = 3,
+                                    maxLines = 6,
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+                            }
+                        },
+                        confirmButton = {
+                            TextButton(onClick = {
+                                val trimmed = createMemoText.trim()
+                                if (trimmed.isEmpty()) {
+                                    createMemoError = createMemoErrorEmpty
+                                    return@TextButton
+                                }
+                                val result = ContentProcessingLauncher.enqueueManualMemoWithResult(
+                                    context,
+                                    trimmed
+                                )
+                                when (result) {
+                                    ContentProcessingLauncher.EnqueueResult.Enqueued -> { /* no-op */
+                                    }
+
+                                    ContentProcessingLauncher.EnqueueResult.NothingToCategorize ->
+                                        Toast.makeText(
+                                            context,
+                                            R.string.nothing_to_categorize,
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+
+                                    ContentProcessingLauncher.EnqueueResult.DuplicateIgnored ->
+                                        Toast.makeText(
+                                            context,
+                                            R.string.toast_already_exists,
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+                                }
+                                showCreateMemoDialog = false
+                                createMemoText = ""
+                                createMemoError = null
+                            }) {
+
+                                Text(stringResource(R.string.dialog_add))
+                            }
+                        },
+                        dismissButton = {
+                            TextButton(onClick = {
+                                showCreateMemoDialog = false
+                                createMemoText = ""
+                                createMemoError = null
+                            }) {
+                                Text(stringResource(R.string.dialog_cancel))
+                            }
+                        }
+                    )
                 }
-            },
-            dismissButton = {
-                TextButton(onClick = {
-                    showCreateMemoDialog = false
-                    createMemoText = ""
-                    createMemoError = null
-                }) {
-                    Text(stringResource(R.string.dialog_cancel))
+
+                Log.d(
+                    "MainScreen",
+                    "MainScreen composed entry: preferencesLoaded=$preferencesLoaded shouldShowTutorial=$shouldShowTutorial genAiDialogShown=$genAiDialogShown"
+                )
+
+                // Observe lifecycle to reliably detect when the Activity/Screen is left.
+                // Mark the main screen as seen on ON_STOP so new memos are treated as read when user leaves.
+                val lifecycleOwner = LocalLifecycleOwner.current
+                DisposableEffect(lifecycleOwner) {
+                    val observer = LifecycleEventObserver { _, event ->
+                        if (event == androidx.lifecycle.Lifecycle.Event.ON_STOP) {
+                            Log.d(
+                                "MainScreen",
+                                "Lifecycle ON_STOP: marking main screen seen and clearing genAiDialogShown"
+                            )
+                            viewModel.markMainScreenSeen()
+                            genAiDialogShown = false
+                        }
+                    }
+                    lifecycleOwner.lifecycle.addObserver(observer)
+                    onDispose {
+                        lifecycleOwner.lifecycle.removeObserver(observer)
+                        Log.d("MainScreen", "MainScreen disposed; removed lifecycle observer")
+                    }
                 }
             }
-        )
-    }
-
-    Log.d("MainScreen", "MainScreen composed entry: preferencesLoaded=$preferencesLoaded shouldShowTutorial=$shouldShowTutorial genAiDialogShown=$genAiDialogShown")
-
-    // Observe lifecycle to reliably detect when the Activity/Screen is left.
-    // Mark the main screen as seen on ON_STOP so new memos are treated as read when user leaves.
-    val lifecycleOwner = LocalLifecycleOwner.current
-    DisposableEffect(lifecycleOwner) {
-        val observer = LifecycleEventObserver { _, event ->
-            if (event == androidx.lifecycle.Lifecycle.Event.ON_STOP) {
-                Log.d("MainScreen", "Lifecycle ON_STOP: marking main screen seen and clearing genAiDialogShown")
-                viewModel.markMainScreenSeen()
-                genAiDialogShown = false
-            }
-        }
-        lifecycleOwner.lifecycle.addObserver(observer)
-        onDispose {
-            lifecycleOwner.lifecycle.removeObserver(observer)
-            Log.d("MainScreen", "MainScreen disposed; removed lifecycle observer")
         }
     }
 }
@@ -1174,7 +1410,8 @@ private fun CategoryAccordion(
                         contentDescription = null
                     )
                     Text(
-                        text = group.category,
+                        // Show category name and memo count
+                        text = "${group.category} (${group.memos.size})",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold
                     )
@@ -1207,24 +1444,25 @@ private fun CategoryAccordion(
                 }
             }
 
-            AnimatedVisibility(
-                visible = isExpanded,
-                enter = expandVertically(),
-                exit = shrinkVertically()
-            ) {
-                Column {
-                    HorizontalDivider()
-                    group.memos.forEach { memo ->
-                        MemoCard(
-                            memo = memo,
-                            onDelete = { onDeleteMemo(memo) },
-                            onEditCategory = { onEditCategory(memo) },
-                            onReanalyze = { onReanalyzeMemo(memo) },
-                            onUsed = { id -> onMemoUsed(id) },
-                            newMemoIds = newMemoIds,
-                            appUiDisplayMode = uiDisplayMode,
-                            genAiTextAvailable = genAiTextAvailable
-                        )
+            // Use conditional composition instead of AnimatedVisibility to avoid applying to deactivated LayoutNodes during list scrolling.
+            Column {
+                if (isExpanded) {
+                    Column {
+                        HorizontalDivider()
+                        group.memos.forEach { memo ->
+                            key(memo.id) {
+                                MemoCard(
+                                    memo = memo,
+                                    onDelete = { onDeleteMemo(memo) },
+                                    onEditCategory = { onEditCategory(memo) },
+                                    onReanalyze = { onReanalyzeMemo(memo) },
+                                    onUsed = { id -> onMemoUsed(id) },
+                                    newMemoIds = newMemoIds,
+                                    appUiDisplayMode = uiDisplayMode,
+                                    genAiTextAvailable = genAiTextAvailable
+                                )
+                            }
+                        }
                     }
                 }
             }
@@ -1242,7 +1480,9 @@ private fun MemoCard(
     onUsed: (Long) -> Unit = {},
     newMemoIds: Set<Long> = emptySet(),
     appUiDisplayMode: com.machi.memoiz.data.datastore.UiDisplayMode? = null,
-    genAiTextAvailable: Boolean = false
+    genAiTextAvailable: Boolean = false,
+    isFirstInGroup: Boolean = false,
+    isLastInGroup: Boolean = false
 ) {
     val context = LocalContext.current
     val clipboardManager = LocalClipboardManager.current
@@ -1293,12 +1533,14 @@ private fun MemoCard(
             enabled = !readOnly && !memo.imageUri.isNullOrBlank(),
             onInvoke = { openImage() }
         )
+
         MemoType.WEB_SITE -> PrimaryAction(
             label = openString,
             icon = Icons.Default.OpenInNew,
             enabled = !readOnly,
             onInvoke = { openWebsite() }
         )
+
         else -> PrimaryAction(
             label = shareString,
             icon = Icons.Default.Share,
@@ -1310,311 +1552,407 @@ private fun MemoCard(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 14.dp)
     ) {
-        var summaryOverride by remember { mutableStateOf<String?>(null) }
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+        // Wrap card content in a Surface that uses rounded corners for group visuals.
+        val memoShape = RoundedCornerShape(
+            topStart = 0.dp,
+            topEnd = 0.dp,
+            bottomStart = if (isLastInGroup) 12.dp else 0.dp,
+            bottomEnd = if (isLastInGroup) 12.dp else 0.dp
+        )
+        Surface(
+            color = MaterialTheme.colorScheme.surfaceVariant,
+            shape = memoShape,
+            modifier = Modifier.fillMaxWidth()
         ) {
-            Row(
-                modifier = Modifier.weight(1f),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalAlignment = Alignment.CenterVertically
+            Column(
+                modifier = Modifier.padding(
+                    start = 16.dp,
+                    end = 16.dp,
+                    top = 8.dp,
+                    bottom = 14.dp
+                )
             ) {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    // Ensure icon keeps its size and the label sits clearly below it.
-                    MemoTypeIcon(memo.memoType)
-                    if (memo.id in newMemoIds) {
-                        Box(
-                            modifier = Modifier
-                                .background(color = Color(0xFFFFF59D), shape = RoundedCornerShape(6.dp))
-                                .padding(horizontal = 6.dp, vertical = 2.dp)
-                        ) {
-                            Text(text = "New!", style = MaterialTheme.typography.labelSmall, color = Color.Red)
-                        }
+                // Do NOT hold mutable state updated during composition here. Derive read-only values
+                // via remember to avoid triggering updates on deactivated nodes.
+                val webSummaryPair = remember(memo.summary) {
+                    val raw = memo.summary
+                    if (raw.isNullOrBlank()) null else {
+                        val first = raw.substringBefore("\n").trim().takeIf { it.isNotBlank() }
+                        val rest = raw.substringAfter("\n", "").trim().takeIf { it.isNotEmpty() }
+                        first to (rest ?: raw)
                     }
                 }
-                if (memo.subCategory != null) {
-                    AssistChip(
-                        onClick = { },
-                        enabled = !readOnly,
-                        label = { Text(memo.subCategory) },
-                        leadingIcon = {
-                            Icon(
-                                Icons.Default.Info,
-                                contentDescription = null,
-                                modifier = Modifier.size(14.dp)
+                val webTitle = webSummaryPair?.first
+                val webSummary = webSummaryPair?.second
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(
+                        modifier = Modifier.weight(1f),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            // Ensure icon keeps its size and the label sits clearly below it.
+                            MemoTypeIcon(memo.memoType)
+                            if (memo.id in newMemoIds) {
+                                Box(
+                                    modifier = Modifier
+                                        .background(
+                                            color = Color(0xFFFFF59D),
+                                            shape = RoundedCornerShape(6.dp)
+                                        )
+                                        .padding(horizontal = 6.dp, vertical = 2.dp)
+                                ) {
+                                    Text(
+                                        text = "New!",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = Color.Red
+                                    )
+                                }
+                            }
+                        }
+                        if (memo.subCategory != null) {
+                            AssistChip(
+                                onClick = { },
+                                enabled = !readOnly,
+                                label = { Text(memo.subCategory) },
+                                leadingIcon = {
+                                    Icon(
+                                        Icons.Default.Info,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(14.dp)
+                                    )
+                                }
                             )
                         }
-                    )
-                }
-            }
-
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                IconButton(
-                    onClick = {
-                        when {
-                            memo.memoType == MemoType.IMAGE && !memo.imageUri.isNullOrBlank() -> {
-                                val uri = runCatching { Uri.parse(memo.imageUri) }.getOrNull()
-                                uri?.let {
-                                    val sysClipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
-                                    val clip = android.content.ClipData.newUri(context.contentResolver, "image", it)
-                                    sysClipboard.setPrimaryClip(clip)
-                                    Toast.makeText(context, copiedToast, Toast.LENGTH_SHORT).show()
-                                }
-                            }
-                            memo.content.isNotBlank() -> {
-                                clipboardManager.setText(AnnotatedString(memo.content))
-                                Toast.makeText(context, copiedToast, Toast.LENGTH_SHORT).show()
-                            }
-                            !memo.summary.isNullOrBlank() -> {
-                                clipboardManager.setText(AnnotatedString(memo.summary))
-                                Toast.makeText(context, copiedToast, Toast.LENGTH_SHORT).show()
-                            }
-                        }
-                    },
-                    enabled = !readOnly
-                ) {
-                    Icon(Icons.Default.ContentCopy, contentDescription = copyContentDescription)
-                }
-
-                if (primaryAction.enabled) {
-                    IconButton(onClick = {
-                        primaryAction.onInvoke()
-                        onUsed(memo.id)
-                        menuExpanded = false
-                    }, enabled = primaryAction.enabled) {
-                        Icon(primaryAction.icon, contentDescription = primaryAction.label)
                     }
-                }
 
-                IconButton(onClick = { menuExpanded = true }, enabled = !readOnly) {
-                    Icon(Icons.Default.MoreVert, contentDescription = stringResource(R.string.cd_open_memo_menu))
-                }
-            }
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        IconButton(
+                            onClick = {
+                                when {
+                                    memo.memoType == MemoType.IMAGE && !memo.imageUri.isNullOrBlank() -> {
+                                        val uri =
+                                            runCatching { Uri.parse(memo.imageUri) }.getOrNull()
+                                        uri?.let {
+                                            val sysClipboard =
+                                                context.getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+                                            val clip = android.content.ClipData.newUri(
+                                                context.contentResolver,
+                                                "image",
+                                                it
+                                            )
+                                            sysClipboard.setPrimaryClip(clip)
+                                            Toast.makeText(context, copiedToast, Toast.LENGTH_SHORT)
+                                                .show()
+                                        }
+                                    }
 
-            Box {
-                DropdownMenu(expanded = menuExpanded, onDismissRequest = { menuExpanded = false }) {
-                    DropdownMenuItem(
-                        text = { Text(stringResource(R.string.dialog_edit_category_title)) },
-                        leadingIcon = { Icon(Icons.Default.Edit, contentDescription = null) },
-                        enabled = !readOnly,
-                        onClick = {
-                            menuExpanded = false
-                            if (!readOnly) onEditCategory()
-                        }
-                    )
-                    if (genAiTextAvailable) {
-                        DropdownMenuItem(
-                            text = { Text(stringResource(R.string.fab_cat_comment_label)) },
-                            leadingIcon = {
-                                Box(modifier = Modifier.size(24.dp), contentAlignment = Alignment.Center) {
-                                    Text(text = "🐱", fontSize = 14.sp)
+                                    memo.content.isNotBlank() -> {
+                                        clipboardManager.setText(AnnotatedString(memo.content))
+                                        Toast.makeText(context, copiedToast, Toast.LENGTH_SHORT)
+                                            .show()
+                                    }
+
+                                    !memo.summary.isNullOrBlank() -> {
+                                        clipboardManager.setText(AnnotatedString(memo.summary))
+                                        Toast.makeText(context, copiedToast, Toast.LENGTH_SHORT)
+                                            .show()
+                                    }
                                 }
                             },
-                            enabled = !readOnly,
-                            onClick = {
+                            enabled = !readOnly
+                        ) {
+                            Icon(
+                                Icons.Default.ContentCopy,
+                                contentDescription = copyContentDescription
+                            )
+                        }
+
+                        if (primaryAction.enabled) {
+                            IconButton(onClick = {
+                                primaryAction.onInvoke()
+                                onUsed(memo.id)
                                 menuExpanded = false
-                                try {
-                                    val act = context as? android.app.Activity
-                                    if (act != null) {
-                                        CatCommentDialogActivity.start(act, memo.id)
-                                    } else {
-                                        CatCommentDialogActivity.start(context.applicationContext, memo.id)
+                            }, enabled = primaryAction.enabled) {
+                                Icon(primaryAction.icon, contentDescription = primaryAction.label)
+                            }
+                        }
+
+                        IconButton(onClick = { menuExpanded = true }, enabled = !readOnly) {
+                            Icon(
+                                Icons.Default.MoreVert,
+                                contentDescription = stringResource(R.string.cd_open_memo_menu)
+                            )
+                        }
+                    }
+
+                    Box {
+                        DropdownMenu(
+                            expanded = menuExpanded,
+                            onDismissRequest = { menuExpanded = false }) {
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.dialog_edit_category_title)) },
+                                leadingIcon = {
+                                    Icon(
+                                        Icons.Default.Edit,
+                                        contentDescription = null
+                                    )
+                                },
+                                enabled = !readOnly,
+                                onClick = {
+                                    menuExpanded = false
+                                    if (!readOnly) onEditCategory()
+                                }
+                            )
+                            if (genAiTextAvailable) {
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(R.string.fab_cat_comment_label)) },
+                                    leadingIcon = {
+                                        Box(
+                                            modifier = Modifier.size(24.dp),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Text(text = "🐱", fontSize = 14.sp)
+                                        }
+                                    },
+                                    enabled = !readOnly,
+                                    onClick = {
+                                        menuExpanded = false
+                                        try {
+                                            val act = context as? android.app.Activity
+                                            if (act != null) {
+                                                CatCommentDialogActivity.start(act, memo.id)
+                                            } else {
+                                                CatCommentDialogActivity.start(
+                                                    context.applicationContext,
+                                                    memo.id
+                                                )
+                                            }
+                                        } catch (e: Exception) {
+                                            Log.e(
+                                                "MainScreen",
+                                                "Failed to start CatCommentDialogActivity from menu: ${e.message}",
+                                                e
+                                            )
+                                        }
                                     }
-                                } catch (e: Exception) {
-                                    Log.e("MainScreen", "Failed to start CatCommentDialogActivity from menu: ${e.message}", e)
+                                )
+                            }
+                            DropdownMenuItem(
+                                text = { Text(reanalyzeString) },
+                                leadingIcon = {
+                                    Icon(
+                                        Icons.Default.Refresh,
+                                        contentDescription = null
+                                    )
+                                },
+                                enabled = !readOnly,
+                                onClick = {
+                                    menuExpanded = false
+                                    if (!readOnly) onReanalyze()
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.memo_menu_delete)) },
+                                leadingIcon = {
+                                    Icon(
+                                        Icons.Default.Delete,
+                                        contentDescription = null
+                                    )
+                                },
+                                enabled = !readOnly,
+                                onClick = {
+                                    menuExpanded = false
+                                    if (!readOnly) onDelete()
+                                }
+                            )
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    if (!memo.imageUri.isNullOrBlank()) {
+                        if (memo.memoType == MemoType.IMAGE) {
+                            ImageThumbnailFrame(
+                                imageUri = memo.imageUri,
+                                contentDescription = stringResource(R.string.cd_memo_image),
+                                modifier = Modifier.size(140.dp)
+                            )
+                        } else {
+                            val imageModifier = Modifier.size(96.dp)
+                            val rememberedImageUri =
+                                remember(memo.imageUri) { runCatching { Uri.parse(memo.imageUri) }.getOrNull() }
+                            AsyncImage(
+                                model = rememberedImageUri,
+                                contentDescription = stringResource(R.string.cd_memo_image),
+                                modifier = imageModifier.clip(RoundedCornerShape(12.dp)),
+                                contentScale = ContentScale.Crop
+                            )
+                        }
+                    }
+
+                    Column(
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        when (memo.memoType) {
+                            MemoType.TEXT -> {
+                                val displayText = remember(memo.content) {
+                                    val maxChars = 240
+                                    if (memo.content.length <= maxChars) memo.content else memo.content.take(
+                                        maxChars
+                                    ) + "\u2026"
+                                }
+                                CampusNoteTextAligned(
+                                    text = displayText,
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+                            }
+
+                            MemoType.WEB_SITE -> {
+                                val displayText = remember(memo.content) {
+                                    val maxChars = 240
+                                    if (memo.content.length <= maxChars) memo.content else memo.content.take(
+                                        maxChars
+                                    ) + "\u2026"
+                                }
+                                ChromeStyleUrlBar(
+                                    url = displayText,
+                                    title = webTitle,
+                                    modifier = Modifier.fillMaxWidth(),
+                                    appUiDisplayMode = appUiDisplayMode
+                                )
+                                if (memo.content.length > displayText.length) {
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Text(
+                                        text = stringResource(R.string.action_share),
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
                                 }
                             }
-                        )
-                    }
-                    DropdownMenuItem(
-                        text = { Text(reanalyzeString) },
-                        leadingIcon = { Icon(Icons.Default.Refresh, contentDescription = null) },
-                        enabled = !readOnly,
-                        onClick = {
-                            menuExpanded = false
-                            if (!readOnly) onReanalyze()
-                        }
-                    )
-                    DropdownMenuItem(
-                        text = { Text(stringResource(R.string.memo_menu_delete)) },
-                        leadingIcon = { Icon(Icons.Default.Delete, contentDescription = null) },
-                        enabled = !readOnly,
-                        onClick = {
-                            menuExpanded = false
-                            if (!readOnly) onDelete()
-                        }
-                    )
-                }
-            }
-        }
 
-        Spacer(modifier = Modifier.height(8.dp))
+                            MemoType.IMAGE -> {
+                                // For image memos we intentionally do NOT render an inline prefixed Surface here.
+                                // The AI-generated description for images should be shown only in the speech bubble below
+                                // (with the robot emoji). Keeping this branch empty avoids duplicate descriptions.
+                            }
 
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            if (!memo.imageUri.isNullOrBlank()) {
-                if (memo.memoType == MemoType.IMAGE) {
-                    ImageThumbnailFrame(
-                        imageUri = memo.imageUri,
-                        contentDescription = stringResource(R.string.cd_memo_image),
-                        modifier = Modifier.size(140.dp)
-                    )
-                } else {
-                    val imageModifier = Modifier.size(96.dp)
-                    AsyncImage(
-                        model = Uri.parse(memo.imageUri),
-                        contentDescription = stringResource(R.string.cd_memo_image),
-                        modifier = imageModifier.clip(RoundedCornerShape(12.dp)),
-                        contentScale = ContentScale.Crop
-                    )
-                }
-            }
-
-            Column(
-                modifier = Modifier.weight(1f)
-            ) {
-                when (memo.memoType) {
-                    MemoType.TEXT -> {
-                        val displayText = remember(memo.content) {
-                            val maxChars = 240
-                            if (memo.content.length <= maxChars) memo.content else memo.content.take(maxChars) + "\u2026"
-                        }
-                        CampusNoteTextAligned(
-                            text = displayText,
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                    }
-                    MemoType.WEB_SITE -> {
-                        val displayText = remember(memo.content) {
-                            val maxChars = 240
-                            if (memo.content.length <= maxChars) memo.content else memo.content.take(maxChars) + "\u2026"
-                        }
-                        val (webTitle, webSummary) = remember(memo.summary) {
-                            val raw = memo.summary
-                            if (raw.isNullOrBlank()) null to null else {
-                                val first = raw.substringBefore("\n").trim().takeIf { it.isNotBlank() }
-                                val rest = raw.substringAfter("\n", "").trim().takeIf { it.isNotEmpty() }
-                                first to (rest ?: raw)
+                            else -> {
+                                if (memo.content.isNotBlank()) {
+                                    val imageDescription =
+                                        remember(memo.content) { "${AI_ROBOT_PREFIX} ${memo.content}" }
+                                    Surface(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        shape = RoundedCornerShape(16.dp),
+                                        color = MaterialTheme.colorScheme.surfaceVariant
+                                    ) {
+                                        Text(
+                                            text = imageDescription,
+                                            style = MaterialTheme.typography.bodyLarge,
+                                            color = MaterialTheme.colorScheme.onSurface,
+                                            maxLines = 5,
+                                            overflow = TextOverflow.Ellipsis,
+                                            modifier = Modifier.padding(
+                                                horizontal = 14.dp,
+                                                vertical = 12.dp
+                                            )
+                                        )
+                                    }
+                                }
                             }
                         }
-                        ChromeStyleUrlBar(
-                            url = displayText,
-                            title = webTitle,
-                            modifier = Modifier.fillMaxWidth(),
-                            appUiDisplayMode = appUiDisplayMode
-                        )
-                        if (memo.content.length > displayText.length) {
-                            Spacer(modifier = Modifier.height(4.dp))
+
+                        val bubbleText =
+                            remember(memo.memoType, memo.content, webSummary, memo.summary) {
+                                when (memo.memoType) {
+                                    MemoType.IMAGE -> memo.content
+                                    MemoType.WEB_SITE -> webSummary ?: memo.summary ?: memo.content
+                                    else -> null
+                                }
+                            }
+
+                        if (!bubbleText.isNullOrBlank() && (memo.memoType == MemoType.IMAGE || memo.memoType == MemoType.WEB_SITE)) {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Column(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalAlignment = Alignment.Start
+                            ) {
+                                SpeechBubble(
+                                    text = bubbleText,
+                                    modifier = Modifier.fillMaxWidth(),
+                                    maxWidthDp = 420.dp,
+                                    appUiDisplayMode = appUiDisplayMode,
+                                    startPadding = 24.dp,
+                                    showRobotEmoji = true
+                                )
+                            }
+                        }
+
+                        if (!memo.summary.isNullOrBlank() && memo.memoType != MemoType.IMAGE && bubbleText.isNullOrBlank()) {
+                            val cleaned =
+                                remember(memo.summary) { cleanSummary(webSummary ?: memo.summary) }
+                            val prefixedSummary = remember(cleaned, memo.memoType) {
+                                val needsPrefix =
+                                    memo.memoType == MemoType.IMAGE || memo.memoType == MemoType.WEB_SITE
+                                if (needsPrefix && !cleaned.isNullOrBlank()) "${AI_ROBOT_PREFIX} $cleaned" else cleaned.orEmpty()
+                            }
+                            Spacer(modifier = Modifier.height(12.dp))
+                            AiSummaryBlock(prefixedSummary)
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        memo.sourceApp?.let {
                             Text(
-                                text = stringResource(R.string.action_share),
+                                text = stringResource(R.string.label_source_app, it),
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
-                        summaryOverride = webSummary
-                    }
-                    MemoType.IMAGE -> {
-                        // For image memos we intentionally do NOT render an inline prefixed Surface here.
-                        // The AI-generated description for images should be shown only in the speech bubble below
-                        // (with the robot emoji). Keeping this branch empty avoids duplicate descriptions.
-                    }
-                    else -> {
-                        if (memo.content.isNotBlank()) {
-                            val imageDescription = remember(memo.content) { "${AI_ROBOT_PREFIX} ${memo.content}" }
-                            Surface(
-                                modifier = Modifier.fillMaxWidth(),
-                                shape = RoundedCornerShape(16.dp),
-                                color = MaterialTheme.colorScheme.surfaceVariant
-                            ) {
-                                Text(
-                                    text = imageDescription,
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    color = MaterialTheme.colorScheme.onSurface,
-                                    maxLines = 5,
-                                    overflow = TextOverflow.Ellipsis,
-                                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp)
-                                )
-                            }
+                        if (memo.isCategoryLocked) {
+                            Text(
+                                text = stringResource(R.string.manual_category_indicator),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.primary
+                            )
                         }
                     }
-                }
-
-                val bubbleText = remember(memo.memoType, memo.content, summaryOverride, memo.summary) {
-                    when (memo.memoType) {
-                        MemoType.IMAGE -> memo.content
-                        MemoType.WEB_SITE -> summaryOverride ?: memo.summary ?: memo.content
-                        else -> null
-                    }
-                }
-
-                if (!bubbleText.isNullOrBlank() && (memo.memoType == MemoType.IMAGE || memo.memoType == MemoType.WEB_SITE)) {
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.Start) {
-                        SpeechBubble(
-                            text = bubbleText,
-                            modifier = Modifier.fillMaxWidth(),
-                            maxWidthDp = 420.dp,
-                            appUiDisplayMode = appUiDisplayMode,
-                            startPadding = 24.dp,
-                            showRobotEmoji = true
-                        )
-                    }
-                }
-
-                if (!memo.summary.isNullOrBlank() && memo.memoType != MemoType.IMAGE && bubbleText.isNullOrBlank()) {
-                    val cleaned = remember(memo.summary) { cleanSummary(summaryOverride ?: memo.summary) }
-                    val prefixedSummary = remember(cleaned, memo.memoType) {
-                        val needsPrefix = memo.memoType == MemoType.IMAGE || memo.memoType == MemoType.WEB_SITE
-                        if (needsPrefix && !cleaned.isNullOrBlank()) "${AI_ROBOT_PREFIX} $cleaned" else cleaned.orEmpty()
-                    }
-                    Spacer(modifier = Modifier.height(12.dp))
-                    AiSummaryBlock(prefixedSummary)
-                }
-            }
-        }
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                memo.sourceApp?.let {
+                    Spacer(modifier = Modifier.width(12.dp))
                     Text(
-                        text = stringResource(R.string.label_source_app, it),
+                        text = formatTimestamp(memo.createdAt),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
-                if (memo.isCategoryLocked) {
-                    Text(
-                        text = stringResource(R.string.manual_category_indicator),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                }
-            }
-            Spacer(modifier = Modifier.width(12.dp))
-            Text(
-                text = formatTimestamp(memo.createdAt),
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
 
-        HorizontalDivider(modifier = Modifier.padding(top = 16.dp))
+                HorizontalDivider(modifier = Modifier.padding(top = 16.dp))
+            }
+        }
     }
 }
 
@@ -2034,8 +2372,9 @@ private fun ImageThumbnailFrame(
                     .background(Color(0xFFF7F7F7), shape = innerShape)
                     .padding(6.dp)
             ) {
+                val rememberedModel = remember(imageUri) { runCatching { Uri.parse(imageUri) }.getOrNull() }
                 AsyncImage(
-                    model = Uri.parse(imageUri),
+                    model = rememberedModel,
                     contentDescription = contentDescription,
                     modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(6.dp)),
                     contentScale = ContentScale.Crop
