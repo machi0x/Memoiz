@@ -924,278 +924,264 @@ fun MainScreen(
                     }
                 }
             )
+        }
 
-            if (pendingReanalyzeMemo != null) {
-                AlertDialog(
-                    onDismissRequest = { pendingReanalyzeMemo = null },
-                    icon = { Icon(Icons.Default.Refresh, contentDescription = null) },
-                    title = { Text(stringResource(R.string.dialog_reanalyze_title)) },
-                    text = {
-                        Text(stringResource(R.string.dialog_reanalyze_message))
-                    },
-                    confirmButton = {
-                        TextButton(onClick = {
-                            pendingReanalyzeMemo?.let { memo ->
-                                viewModel.reanalyzeMemo(context, memo.id)
-                            }
-                            pendingReanalyzeMemo = null
-                        }) {
-                            Text(stringResource(R.string.dialog_reanalyze_confirm))
+        if (pendingReanalyzeMemo != null) {
+            AlertDialog(
+                onDismissRequest = { pendingReanalyzeMemo = null },
+                icon = { Icon(Icons.Default.Refresh, contentDescription = null) },
+                title = { Text(stringResource(R.string.dialog_reanalyze_title)) },
+                text = {
+                    Text(stringResource(R.string.dialog_reanalyze_message))
+                },
+                confirmButton = {
+                    TextButton(onClick = {
+                        pendingReanalyzeMemo?.let { memo ->
+                            viewModel.reanalyzeMemo(context, memo.id)
                         }
-                    },
-                    dismissButton = {
-                        TextButton(onClick = { pendingReanalyzeMemo = null }) {
-                            Text(stringResource(R.string.dialog_cancel))
-                        }
+                        pendingReanalyzeMemo = null
+                    }) {
+                        Text(stringResource(R.string.dialog_reanalyze_confirm))
                     }
-                )
-            }
+                },
+                dismissButton = {
+                    TextButton(onClick = { pendingReanalyzeMemo = null }) {
+                        Text(stringResource(R.string.dialog_cancel))
+                    }
+                }
+            )
+        }
 
-            if (manualCategoryMemo != null) {
-                ManualCategoryDialog(
-                    availableCategories = availableCategories,
-                    categoryValue = manualCategoryInput,
-                    errorMessage = manualCategoryError,
-                    onCategoryChange = { updated ->
-                        manualCategoryInput = updated
-                        manualCategoryError = null
-                    },
-                    onDismiss = clearManualCategoryState,
-                    onSave = handleManualCategorySave
-                )
-            }
+        if (manualCategoryMemo != null) {
+            ManualCategoryDialog(
+                availableCategories = availableCategories,
+                categoryValue = manualCategoryInput,
+                errorMessage = manualCategoryError,
+                onCategoryChange = { updated ->
+                    manualCategoryInput = updated
+                    manualCategoryError = null
+                },
+                onDismiss = clearManualCategoryState,
+                onSave = handleManualCategorySave
+            )
+        }
 
-            if (showConsentDialogBeforeTutorial) {
-                AlertDialog(
-                    onDismissRequest = {
-                        viewModel.setAnalyticsCollectionEnabled(false)
+        if (showConsentDialogBeforeTutorial) {
+            AlertDialog(
+                onDismissRequest = {
+                    viewModel.setAnalyticsCollectionEnabled(false)
+                    com.machi.memoiz.analytics.AnalyticsManager.setCollectionEnabled(
+                        context,
+                        false
+                    )
+                    try {
+                        FirebaseCrashlytics.getInstance().setCrashlyticsCollectionEnabled(false)
+                    } catch (e: Exception) {
+                        Log.w(
+                            "MainScreen",
+                            "Failed to set Crashlytics collection: ${e.message}"
+                        )
+                    }
+                    viewModel.setConsentDialogShownSync(true)
+                    showConsentDialogBeforeTutorial = false
+                    showTutorialDialog = true
+                },
+                title = { Text(stringResource(R.string.tutorial_step_consent_title)) },
+                text = {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Image(
+                            painter = painterResource(R.drawable.report),
+                            contentDescription = null,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .heightIn(max = 180.dp)
+                                .clip(RoundedCornerShape(8.dp)),
+                            contentScale = ContentScale.Crop
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Text(stringResource(R.string.tutorial_step_consent_body))
+
+                        Spacer(modifier = Modifier.height(12.dp))
+                    }
+                },
+                confirmButton = {
+                    TextButton(onClick = {
+                        viewModel.setAnalyticsCollectionEnabled(true)
                         com.machi.memoiz.analytics.AnalyticsManager.setCollectionEnabled(
                             context,
-                            false
+                            true
                         )
                         try {
-                            FirebaseCrashlytics.getInstance().setCrashlyticsCollectionEnabled(false)
+                            FirebaseCrashlytics.getInstance()
+                                .setCrashlyticsCollectionEnabled(true)
                         } catch (e: Exception) {
-                            Log.w(
-                                "MainScreen",
-                                "Failed to set Crashlytics collection: ${e.message}"
-                            )
+                            Log.w("MainScreen", "Failed to enable Crashlytics: ${e.message}")
                         }
                         viewModel.setConsentDialogShownSync(true)
                         showConsentDialogBeforeTutorial = false
                         showTutorialDialog = true
-                    },
-                    title = { Text(stringResource(R.string.tutorial_step_consent_title)) },
-                    text = {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Image(
-                                painter = painterResource(R.drawable.report),
-                                contentDescription = null,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .heightIn(max = 180.dp)
-                                    .clip(RoundedCornerShape(8.dp)),
-                                contentScale = ContentScale.Crop
-                            )
-                            Spacer(modifier = Modifier.height(12.dp))
-                            Text(stringResource(R.string.tutorial_step_consent_body))
-
-                            Spacer(modifier = Modifier.height(12.dp))
-                        }
-                    },
-                    confirmButton = {
+                    }) {
+                        Text(stringResource(R.string.ok))
+                    }
+                },
+                dismissButton = {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        val privacyUrl = stringResource(R.string.privacy_policy_url)
                         TextButton(onClick = {
-                            viewModel.setAnalyticsCollectionEnabled(true)
-                            com.machi.memoiz.analytics.AnalyticsManager.setCollectionEnabled(
-                                context,
-                                true
-                            )
                             try {
-                                FirebaseCrashlytics.getInstance()
-                                    .setCrashlyticsCollectionEnabled(true)
+                                val uri = android.net.Uri.parse(privacyUrl)
+                                val intent = Intent(
+                                    Intent.ACTION_VIEW,
+                                    uri
+                                ).apply { addFlags(Intent.FLAG_ACTIVITY_NEW_TASK) }
+                                context.startActivity(intent)
+                            } catch (_: Exception) {
+                            }
+                        }) {
+                            Text(stringResource(R.string.privacy_policy_init))
+                        }
+
+                        Spacer(modifier = Modifier.width(8.dp))
+
+                        TextButton(onClick = {
+                            viewModel.setAnalyticsCollectionEnabled(false)
+                            AnalyticsManager.setCollectionEnabled(context, false)
+                            try {
+                                FirebaseCrashlytics.getInstance().isCrashlyticsCollectionEnabled =
+                                    false
                             } catch (e: Exception) {
-                                Log.w("MainScreen", "Failed to enable Crashlytics: ${e.message}")
+                                Log.w(
+                                    "MainScreen",
+                                    "Failed to disable Crashlytics: ${e.message}"
+                                )
                             }
                             viewModel.setConsentDialogShownSync(true)
                             showConsentDialogBeforeTutorial = false
                             showTutorialDialog = true
                         }) {
-                            Text(stringResource(R.string.ok))
-                        }
-                    },
-                    dismissButton = {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            val privacyUrl = stringResource(R.string.privacy_policy_url)
-                            TextButton(onClick = {
-                                try {
-                                    val uri = android.net.Uri.parse(privacyUrl)
-                                    val intent = Intent(
-                                        Intent.ACTION_VIEW,
-                                        uri
-                                    ).apply { addFlags(Intent.FLAG_ACTIVITY_NEW_TASK) }
-                                    context.startActivity(intent)
-                                } catch (_: Exception) {
-                                }
-                            }) {
-                                Text(stringResource(R.string.privacy_policy_init))
-                            }
-
-                            Spacer(modifier = Modifier.width(8.dp))
-
-                            TextButton(onClick = {
-                                viewModel.setAnalyticsCollectionEnabled(false)
-                                AnalyticsManager.setCollectionEnabled(context, false)
-                                try {
-                                    FirebaseCrashlytics.getInstance().isCrashlyticsCollectionEnabled =
-                                        false
-                                } catch (e: Exception) {
-                                    Log.w(
-                                        "MainScreen",
-                                        "Failed to disable Crashlytics: ${e.message}"
-                                    )
-                                }
-                                viewModel.setConsentDialogShownSync(true)
-                                showConsentDialogBeforeTutorial = false
-                                showTutorialDialog = true
-                            }) {
-                                Text(stringResource(R.string.no))
-                            }
+                            Text(stringResource(R.string.no))
                         }
                     }
-                )
-
-                if (showTutorialDialog) {
-                    TutorialDialog(
-                        viewModel = viewModel,
-                        onFinished = {
-                            showTutorialDialog = false
-                            viewModel.markTutorialSeen()
-                            if (genAiDialogShown) return@TutorialDialog
-                            scope.launch {
-                                val manager =
-                                    com.machi.memoiz.service.GenAiStatusManager(context.applicationContext)
-                                try {
-                                    val status = manager.checkAll()
-                                    if (status.anyUnavailable() || status.anyDownloadable()) {
-                                        GenAiStatusCheckDialogActivity.start(context.applicationContext)
-                                        genAiDialogShown = true
-                                    }
-                                } catch (e: Exception) {
-                                    e.printStackTrace()
-                                    try {
-                                        GenAiStatusCheckDialogActivity.start(context.applicationContext)
-                                        genAiDialogShown = true
-                                    } catch (ignored: Exception) {
-                                    }
-                                } finally {
-                                    manager.close()
-                                }
-                            }
-                        },
-                        includeMemoizCommentStep = genAiTextAvailable
-                    )
                 }
+            )
+        }
 
-                if (showCreateMemoDialog) {
-                    AlertDialog(
-                        onDismissRequest = {
-                            showCreateMemoDialog = false
-                            createMemoText = ""
-                            createMemoError = null
-                        },
-                        title = { Text(stringResource(R.string.dialog_create_memo_title)) },
-                        text = {
-                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                Text(stringResource(R.string.dialog_create_memo_message))
-                                OutlinedTextField(
-                                    value = createMemoText,
-                                    onValueChange = {
-                                        createMemoText = it
-                                        createMemoError = null
-                                    },
-                                    label = { Text(stringResource(R.string.dialog_create_memo_placeholder)) },
-                                    isError = createMemoError != null,
-                                    supportingText = createMemoError?.let { err -> { Text(err) } },
-                                    minLines = 3,
-                                    maxLines = 6,
-                                    modifier = Modifier.fillMaxWidth()
-                                )
+        if (showTutorialDialog) {
+            TutorialDialog(
+                viewModel = viewModel,
+                onFinished = {
+                    showTutorialDialog = false
+                    viewModel.markTutorialSeen()
+                    if (genAiDialogShown) return@TutorialDialog
+                    scope.launch {
+                        val manager =
+                            com.machi.memoiz.service.GenAiStatusManager(context.applicationContext)
+                        try {
+                            val status = manager.checkAll()
+                            if (status.anyUnavailable() || status.anyDownloadable()) {
+                                GenAiStatusCheckDialogActivity.start(context.applicationContext)
+                                genAiDialogShown = true
                             }
-                        },
-                        confirmButton = {
-                            TextButton(onClick = {
-                                val trimmed = createMemoText.trim()
-                                if (trimmed.isEmpty()) {
-                                    createMemoError = createMemoErrorEmpty
-                                    return@TextButton
-                                }
-                                val result = ContentProcessingLauncher.enqueueManualMemoWithResult(
-                                    context,
-                                    trimmed
-                                )
-                                when (result) {
-                                    ContentProcessingLauncher.EnqueueResult.Enqueued -> { /* no-op */
-                                    }
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                            try {
+                                GenAiStatusCheckDialogActivity.start(context.applicationContext)
+                                genAiDialogShown = true
+                            } catch (ignored: Exception) {
+                            }
+                        } finally {
+                            manager.close()
+                        }
+                    }
+                },
+                includeMemoizCommentStep = genAiTextAvailable
+            )
+        }
 
-                                    ContentProcessingLauncher.EnqueueResult.NothingToCategorize ->
-                                        Toast.makeText(
-                                            context,
-                                            R.string.nothing_to_categorize,
-                                            Toast.LENGTH_SHORT
-                                        ).show()
-
-                                    ContentProcessingLauncher.EnqueueResult.DuplicateIgnored ->
-                                        Toast.makeText(
-                                            context,
-                                            R.string.toast_already_exists,
-                                            Toast.LENGTH_SHORT
-                                        ).show()
-                                }
-                                showCreateMemoDialog = false
-                                createMemoText = ""
+        if (showCreateMemoDialog) {
+            AlertDialog(
+                onDismissRequest = {
+                    showCreateMemoDialog = false
+                    createMemoText = ""
+                    createMemoError = null
+                },
+                title = { Text(stringResource(R.string.dialog_create_memo_title)) },
+                text = {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text(stringResource(R.string.dialog_create_memo_message))
+                        OutlinedTextField(
+                            value = createMemoText,
+                            onValueChange = {
+                                createMemoText = it
                                 createMemoError = null
-                            }) {
-
-                                Text(stringResource(R.string.dialog_add))
-                            }
-                        },
-                        dismissButton = {
-                            TextButton(onClick = {
-                                showCreateMemoDialog = false
-                                createMemoText = ""
-                                createMemoError = null
-                            }) {
-                                Text(stringResource(R.string.dialog_cancel))
-                            }
+                            },
+                            label = { Text(stringResource(R.string.dialog_create_memo_placeholder)) },
+                            isError = createMemoError != null,
+                            supportingText = createMemoError?.let { err -> { Text(err) } },
+                            minLines = 3,
+                            maxLines = 6,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                },
+                confirmButton = {
+                    TextButton(onClick = {
+                        val trimmed = createMemoText.trim()
+                        if (trimmed.isEmpty()) {
+                            createMemoError = createMemoErrorEmpty
+                            return@TextButton
                         }
+                        val result = ContentProcessingLauncher.enqueueManualMemoWithResult(context, trimmed)
+                        when (result) {
+                            ContentProcessingLauncher.EnqueueResult.Enqueued -> { /* no-op */ }
+                            ContentProcessingLauncher.EnqueueResult.NothingToCategorize ->
+                                Toast.makeText(context, R.string.nothing_to_categorize, Toast.LENGTH_SHORT).show()
+                            ContentProcessingLauncher.EnqueueResult.DuplicateIgnored ->
+                                Toast.makeText(context, R.string.toast_already_exists, Toast.LENGTH_SHORT).show()
+                        }
+                        showCreateMemoDialog = false
+                        createMemoText = ""
+                        createMemoError = null
+                    }) {
+
+                        Text(stringResource(R.string.dialog_add))
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = {
+                        showCreateMemoDialog = false
+                        createMemoText = ""
+                        createMemoError = null
+                    }) {
+                        Text(stringResource(R.string.dialog_cancel))
+                    }
+                }
+            )
+        }
+
+        Log.d(
+            "MainScreen",
+            "MainScreen composed entry: preferencesLoaded=$preferencesLoaded shouldShowTutorial=$shouldShowTutorial genAiDialogShown=$genAiDialogShown"
+        )
+
+        // Observe lifecycle to reliably detect when the Activity/Screen is left.
+        // Mark the main screen as seen on ON_STOP so new memos are treated as read when user leaves.
+        val lifecycleOwner = LocalLifecycleOwner.current
+        DisposableEffect(lifecycleOwner) {
+            val observer = LifecycleEventObserver { _, event ->
+                if (event == androidx.lifecycle.Lifecycle.Event.ON_STOP) {
+                    Log.d(
+                        "MainScreen",
+                        "Lifecycle ON_STOP: marking main screen seen and clearing genAiDialogShown"
                     )
+                    viewModel.markMainScreenSeen()
+                    genAiDialogShown = false
                 }
-
-                Log.d(
-                    "MainScreen",
-                    "MainScreen composed entry: preferencesLoaded=$preferencesLoaded shouldShowTutorial=$shouldShowTutorial genAiDialogShown=$genAiDialogShown"
-                )
-
-                // Observe lifecycle to reliably detect when the Activity/Screen is left.
-                // Mark the main screen as seen on ON_STOP so new memos are treated as read when user leaves.
-                val lifecycleOwner = LocalLifecycleOwner.current
-                DisposableEffect(lifecycleOwner) {
-                    val observer = LifecycleEventObserver { _, event ->
-                        if (event == androidx.lifecycle.Lifecycle.Event.ON_STOP) {
-                            Log.d(
-                                "MainScreen",
-                                "Lifecycle ON_STOP: marking main screen seen and clearing genAiDialogShown"
-                            )
-                            viewModel.markMainScreenSeen()
-                            genAiDialogShown = false
-                        }
-                    }
-                    lifecycleOwner.lifecycle.addObserver(observer)
-                    onDispose {
-                        lifecycleOwner.lifecycle.removeObserver(observer)
-                        Log.d("MainScreen", "MainScreen disposed; removed lifecycle observer")
-                    }
-                }
+            }
+            lifecycleOwner.lifecycle.addObserver(observer)
+            onDispose {
+                lifecycleOwner.lifecycle.removeObserver(observer)
+                Log.d("MainScreen", "MainScreen disposed; removed lifecycle observer")
             }
         }
     }
