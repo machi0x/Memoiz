@@ -342,9 +342,12 @@ class MainViewModel(
             current.clear()
             current.addAll(displayedCategories)
         }
-        if (fromIndex !in current.indices || toIndex !in current.indices) return
+        if (fromIndex !in current.indices || toIndex !in 0..current.size) return
+        if (fromIndex == toIndex) return
         val item = current.removeAt(fromIndex)
-        current.add(toIndex, item)
+        // Use toIndex directly as the desired insertion position; clamp to current.size after removal.
+        val safeInsertIndex = toIndex.coerceIn(0, current.size)
+        current.add(safeInsertIndex, item)
         _categoryOrder.value = current
         viewModelScope.launch { preferencesManager.updateCategoryOrder(current) }
     }

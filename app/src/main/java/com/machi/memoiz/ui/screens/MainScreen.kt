@@ -249,12 +249,20 @@ fun MainScreen(
     val autoHideFab = memoGroups.isNotEmpty()
 
     val lazyListState = rememberLazyListState()
+    // Since we render each category group as a single LazyColumn item (header + its memos inside),
+    // the reorder library indices correspond directly to category positions. Call viewModel.onCategoryMoved directly.
     val reorderState = rememberReorderableLazyListState(
         listState = lazyListState,
         onMove = { from, to ->
-            viewModel.onCategoryMoved(from.index, to.index, displayedCategories)
+            try {
+                Log.d("MainScreen", "reorder onMove from=${from.index} to=${to.index} visible=${memoGroups.map { it.category }}")
+            } catch (e: Exception) {
+            }
+            viewModel.onCategoryMoved(from.index, to.index, memoGroups.map { it.category })
         }
     )
+    // Drag handle modifier for items: callers/inline code can use `dragHandle` to attach reorder behavior.
+    val dragHandle = Modifier.detectReorder(reorderState)
     var isFabExpanded by remember { mutableStateOf(false) }
     var isFabVisible by remember { mutableStateOf(true) }
 
@@ -685,142 +693,140 @@ fun MainScreen(
                         contentPadding = PaddingValues(16.dp),
                         verticalArrangement = Arrangement.Top // remove global spacing so header+memos can be contiguous
                     ) {
-                        // Render each category as flattened items: header (reorderable) + memo items (when expanded).
+                        // Render each category as a single LazyColumn item: header + optional memos inside.
                         memoGroups.forEach { group ->
                             val isCustomCategory = customCategories.contains(group.category)
-
-                            // Header (reorderable)
                             item(key = group.category) {
                                 ReorderableItem(state = reorderState, key = group.category) { _ ->
+                                    // Render the whole group (header + memos) inside one item so reorder moves the group.
                                     val headerShape = if (group.category in expandedCategories && group.memos.isNotEmpty()) {
                                         RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp, bottomStart = 0.dp, bottomEnd = 0.dp)
                                     } else {
                                         RoundedCornerShape(12.dp)
                                     }
-                                    Card(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        shape = headerShape,
-                                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
-                                    ) {
-                                        Row(
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .clickable(
-                                                    indication = null,
-                                                    interactionSource = remember { MutableInteractionSource() }
-                                                ) { viewModel.toggleCategoryExpanded(group.category) }
-                                                .padding(
-                                                    start = 16.dp,
-                                                    end = 16.dp,
-                                                    top = 2.dp,
-                                                    bottom = 2.dp
-                                                ),
-                                            horizontalArrangement = Arrangement.SpaceBetween,
-                                            verticalAlignment = Alignment.CenterVertically
+                                    Column(modifier = Modifier.fillMaxWidth()) {
+                                        Card(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            shape = headerShape,
+                                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
                                         ) {
                                             Row(
-                                                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                                verticalAlignment = Alignment.CenterVertically,
-                                                modifier = Modifier.weight(1f)
-                                            ) {
-                                                Icon(
-                                                    if (group.category in expandedCategories) Icons.Default.ExpandMore else Icons.Default.ChevronRight,
-                                                    contentDescription = null
-                                                )
-                                                // Show category name and memo count
-                                                Text(
-                                                    text = "${group.category} (${group.memos.size})",
-                                                    style = MaterialTheme.typography.titleMedium,
-                                                    fontWeight = FontWeight.Bold
-                                                )
-                                                if (group.category in categoriesWithNew) {
-                                                    Spacer(modifier = Modifier.width(6.dp))
-                                                    Box(
-                                                        modifier = Modifier
-                                                            .background(
-                                                                color = Color(0xFFFFF59D),
-                                                                shape = RoundedCornerShape(8.dp)
-                                                            )
-                                                            .padding(
-                                                                horizontal = 6.dp,
-                                                                vertical = 2.dp
-                                                            )
-                                                    ) {
-                                                        Text(
-                                                            text = "New!",
-                                                            style = MaterialTheme.typography.labelSmall,
-                                                            color = Color.Red
-                                                        )
-                                                    }
-                                                }
-                                            }
-
-                                            Row(
-                                                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .padding(
+                                                        start = 16.dp,
+                                                        end = 16.dp,
+                                                        top = 2.dp,
+                                                        bottom = 2.dp
+                                                    ),
+                                                horizontalArrangement = Arrangement.SpaceBetween,
                                                 verticalAlignment = Alignment.CenterVertically
                                             ) {
-                                                val deleteIcon = Icons.Default.Delete
-                                                val deleteContentDescription =
-                                                    if (isCustomCategory) {
-                                                        stringResource(R.string.dialog_delete_custom_category_message)
-                                                    } else {
-                                                        stringResource(R.string.action_delete_category)
+                                                Row(
+                                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                                    verticalAlignment = Alignment.CenterVertically,
+                                                    modifier = Modifier.weight(1f)
+                                                        .clickable(
+                                                            indication = null,
+                                                            interactionSource = remember { MutableInteractionSource() }
+                                                        ) { viewModel.toggleCategoryExpanded(group.category) }
+                                                ) {
+                                                    Icon(
+                                                        if (group.category in expandedCategories) Icons.Default.ExpandMore else Icons.Default.ChevronRight,
+                                                        contentDescription = null
+                                                    )
+                                                    Text(
+                                                        text = "${group.category} (${group.memos.size})",
+                                                        style = MaterialTheme.typography.titleMedium,
+                                                        fontWeight = FontWeight.Bold
+                                                    )
+                                                    if (group.category in categoriesWithNew) {
+                                                        Spacer(modifier = Modifier.width(6.dp))
+                                                        Box(
+                                                            modifier = Modifier
+                                                                .background(
+                                                                    color = Color(0xFFFFF59D),
+                                                                    shape = RoundedCornerShape(8.dp)
+                                                                )
+                                                                .padding(
+                                                                    horizontal = 6.dp,
+                                                                    vertical = 2.dp
+                                                                )
+                                                        ) {
+                                                            Text(
+                                                                text = "New!",
+                                                                style = MaterialTheme.typography.labelSmall,
+                                                                color = Color.Red
+                                                            )
+                                                        }
                                                     }
-                                                IconButton(onClick = {
-                                                    deleteTarget = group.category
-                                                    deleteTargetIsCustomCategory = isCustomCategory
-                                                    showDeleteConfirmationDialog = true
-                                                }) {
-                                                    Icon(deleteIcon, deleteContentDescription)
                                                 }
-                                                Icon(
-                                                    imageVector = Icons.Default.DragHandle,
-                                                    contentDescription = stringResource(R.string.cd_category_drag_handle),
-                                                    modifier = Modifier.detectReorder(reorderState)
-                                                )
+
+                                                Row(
+                                                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                                    verticalAlignment = Alignment.CenterVertically
+                                                ) {
+                                                    val deleteIcon = Icons.Default.Delete
+                                                    val deleteContentDescription =
+                                                        if (isCustomCategory) {
+                                                            stringResource(R.string.dialog_delete_custom_category_message)
+                                                        } else {
+                                                            stringResource(R.string.action_delete_category)
+                                                        }
+                                                    IconButton(onClick = {
+                                                        deleteTarget = group.category
+                                                        deleteTargetIsCustomCategory = isCustomCategory
+                                                        showDeleteConfirmationDialog = true
+                                                    }) {
+                                                        Icon(deleteIcon, deleteContentDescription)
+                                                    }
+                                                    Icon(
+                                                        imageVector = Icons.Default.DragHandle,
+                                                        contentDescription = stringResource(R.string.cd_category_drag_handle),
+                                                        modifier = dragHandle
+                                                    )
+                                                }
                                             }
                                         }
+
+                                        // Expanded memos rendered inside the same item so group moves together.
+                                        if (group.category in expandedCategories) {
+                                            Column {
+                                                HorizontalDivider()
+                                                group.memos.forEachIndexed { idx, memo ->
+                                                    val isFirst = idx == 0
+                                                    val isLast = idx == group.memos.size - 1
+                                                    MemoCard(
+                                                        memo = memo,
+                                                        onDelete = {
+                                                            deleteTarget = memo
+                                                            deleteTargetIsCustomCategory = false
+                                                            showDeleteConfirmationDialog = true
+                                                        },
+                                                        onEditCategory = {
+                                                            manualCategoryMemo = memo
+                                                            manualCategoryInput = memo.category
+                                                            manualCategoryError = null
+                                                            isFabExpanded = false
+                                                        },
+                                                        onReanalyze = {
+                                                            pendingReanalyzeMemo = memo
+                                                            isFabExpanded = false
+                                                        },
+                                                        onUsed = { id -> viewModel.recordMemoUsed(id) },
+                                                        newMemoIds = newMemoIds,
+                                                        appUiDisplayMode = uiDisplayModeSetting,
+                                                        genAiTextAvailable = genAiTextAvailable,
+                                                        isFirstInGroup = isFirst,
+                                                        isLastInGroup = isLast
+                                                    )
+                                                }
+                                            }
+                                        }
+
+                                        Spacer(modifier = Modifier.height(8.dp))
                                     }
                                 }
-                            }
-
-                            // When expanded, emit an optional divider and the memos as separate items so scrolling performance/stability is preserved.
-                            if (group.category in expandedCategories) {
-                                item { HorizontalDivider() }
-                                val memos = group.memos
-                                itemsIndexed(memos, key = { _, m -> m.id }) { idx, memo ->
-                                    val isFirst = idx == 0
-                                    val isLast = idx == memos.size - 1
-                                    MemoCard(
-                                        memo = memo,
-                                        onDelete = {
-                                            deleteTarget = memo
-                                            deleteTargetIsCustomCategory = false
-                                            showDeleteConfirmationDialog = true
-                                        },
-                                        onEditCategory = {
-                                            manualCategoryMemo = memo
-                                            manualCategoryInput = memo.category
-                                            manualCategoryError = null
-                                            isFabExpanded = false
-                                        },
-                                        onReanalyze = {
-                                            pendingReanalyzeMemo = memo
-                                            isFabExpanded = false
-                                        },
-                                        onUsed = { id -> viewModel.recordMemoUsed(id) },
-                                        newMemoIds = newMemoIds,
-                                        appUiDisplayMode = uiDisplayModeSetting,
-                                        genAiTextAvailable = genAiTextAvailable,
-                                        isFirstInGroup = isFirst,
-                                        isLastInGroup = isLast
-                                    )
-                                }
-                            }
-
-                            // Add spacing between category groups only (so header+its memos remain contiguous)
-                            item {
-                                Spacer(modifier = Modifier.height(8.dp))
                             }
                         }
                     }
@@ -1378,10 +1384,6 @@ private fun CategoryAccordion(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clickable(
-                        indication = null,
-                        interactionSource = remember { MutableInteractionSource() }
-                    ) { onHeaderClick() }
                     .padding(start = 16.dp, end = 16.dp, top = 2.dp, bottom = 2.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
@@ -1390,6 +1392,10 @@ private fun CategoryAccordion(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.weight(1f)
+                        .clickable(
+                            indication = null,
+                            interactionSource = remember { MutableInteractionSource() }
+                        ) { onHeaderClick() }
                 ) {
                     Icon(
                         if (isExpanded) Icons.Default.ExpandMore else Icons.Default.ChevronRight,
@@ -1892,16 +1898,16 @@ private fun MemoCard(
                         }
 
                         if (!memo.summary.isNullOrBlank() && memo.memoType != MemoType.IMAGE && bubbleText.isNullOrBlank()) {
-                            val cleaned =
-                                remember(memo.summary) { cleanSummary(webSummary ?: memo.summary) }
-                            val prefixedSummary = remember(cleaned, memo.memoType) {
-                                val needsPrefix =
-                                    memo.memoType == MemoType.IMAGE || memo.memoType == MemoType.WEB_SITE
-                                if (needsPrefix && !cleaned.isNullOrBlank()) "${AI_ROBOT_PREFIX} $cleaned" else cleaned.orEmpty()
-                            }
-                            Spacer(modifier = Modifier.height(12.dp))
-                            AiSummaryBlock(prefixedSummary)
-                        }
+                             val cleaned =
+                                 remember(memo.summary) { cleanSummary(webSummary ?: memo.summary) }
+                             val prefixedSummary = remember(cleaned, memo.memoType) {
+                                 val needsPrefix =
+                                     memo.memoType == MemoType.IMAGE || memo.memoType == MemoType.WEB_SITE
+                                 if (needsPrefix && !cleaned.isNullOrBlank()) "${AI_ROBOT_PREFIX} $cleaned" else cleaned.orEmpty()
+                             }
+                             Spacer(modifier = Modifier.height(12.dp))
+                             AiSummaryBlock(prefixedSummary)
+                         }
                     }
                 }
 
