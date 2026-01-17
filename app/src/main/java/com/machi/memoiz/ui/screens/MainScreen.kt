@@ -68,7 +68,7 @@ import com.machi.memoiz.R
 import com.machi.memoiz.data.entity.MemoType
 import com.machi.memoiz.domain.model.Memo
 import com.machi.memoiz.service.ContentProcessingLauncher
-import coil.compose.AsyncImage
+import coil.compose.rememberAsyncImagePainter
 import com.google.firebase.crashlytics.FirebaseCrashlytics
 import com.machi.memoiz.analytics.AnalyticsManager
 import com.machi.memoiz.ui.components.CampusNoteTextAligned
@@ -80,10 +80,6 @@ import com.machi.memoiz.ui.theme.Mplus1CodeReguar
 import java.text.DateFormat
 import java.util.*
 import kotlinx.coroutines.launch
-import org.burnoutcrew.reorderable.ReorderableItem
-import org.burnoutcrew.reorderable.detectReorder
-import org.burnoutcrew.reorderable.rememberReorderableLazyListState
-import org.burnoutcrew.reorderable.reorderable
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.lifecycle.LifecycleEventObserver
 
@@ -249,20 +245,9 @@ fun MainScreen(
     val autoHideFab = memoGroups.isNotEmpty()
 
     val lazyListState = rememberLazyListState()
-    // Since we render each category group as a single LazyColumn item (header + its memos inside),
-    // the reorder library indices correspond directly to category positions. Call viewModel.onCategoryMoved directly.
-    val reorderState = rememberReorderableLazyListState(
-        listState = lazyListState,
-        onMove = { from, to ->
-            try {
-                Log.d("MainScreen", "reorder onMove from=${from.index} to=${to.index} visible=${memoGroups.map { it.category }}")
-            } catch (e: Exception) {
-            }
-            viewModel.onCategoryMoved(from.index, to.index, memoGroups.map { it.category })
-        }
-    )
-    // Drag handle modifier for items: callers/inline code can use `dragHandle` to attach reorder behavior.
-    val dragHandle = Modifier.detectReorder(reorderState)
+    // Reorderable library temporarily disabled to avoid prefetch/subcompose conflicts during scrolling.
+    // If/when re-enabling, use rememberReorderableLazyListState and detectReorder and apply .reorderable to LazyColumn.
+    val dragHandle = Modifier
     var isFabExpanded by remember { mutableStateOf(false) }
     var isFabVisible by remember { mutableStateOf(true) }
 
@@ -489,148 +474,84 @@ fun MainScreen(
                 )
             },
             floatingActionButton = {
-                AnimatedVisibility(visible = isFabVisible) {
-                    AnimatedContent(targetState = isFabExpanded, label = "fab") { expanded ->
-                        if (expanded) {
-                            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                                ExtendedFloatingActionButton(
-                                    icon = { Icon(Icons.Default.Edit, contentDescription = null) },
-                                    text = { Text(text = fabCreateMemoLabel) },
-                                    onClick = {
-                                        showCreateMemoDialog = true
-                                        isFabExpanded = false
-                                    }
-                                )
-                                ExtendedFloatingActionButton(
-                                    text = { Text(text = fabPickImageLabel) },
-                                    icon = { Icon(Icons.Default.Image, contentDescription = null) },
-                                    onClick = {
-                                        imagePickerLauncher.launch(
-                                            PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
-                                        )
-                                        isFabExpanded = false
-                                    }
-                                )
-                                ExtendedFloatingActionButton(
-                                    text = { Text(text = fabPasteLabel) },
-                                    icon = {
-                                        Icon(
-                                            Icons.Default.ContentPaste,
-                                            contentDescription = null
-                                        )
-                                    },
-                                    onClick = {
-                                        val result =
-                                            ContentProcessingLauncher.enqueueFromClipboardWithResult(
-                                                context
-                                            )
-                                        when (result) {
-                                            ContentProcessingLauncher.EnqueueResult.Enqueued -> { /* no-op */
-                                            }
-
-                                            ContentProcessingLauncher.EnqueueResult.NothingToCategorize ->
-                                                Toast.makeText(
-                                                    context,
-                                                    R.string.nothing_to_categorize,
-                                                    Toast.LENGTH_SHORT
-                                                ).show()
-
-                                            ContentProcessingLauncher.EnqueueResult.DuplicateIgnored ->
-                                                Toast.makeText(
-                                                    context,
-                                                    R.string.toast_already_exists,
-                                                    Toast.LENGTH_SHORT
-                                                ).show()
-                                        }
-                                        isFabExpanded = false
-                                    }
-                                )
-                                if (genAiTextAvailable) {
-                                    ExtendedFloatingActionButton(
-                                        text = { Text(text = stringResource(R.string.fab_cat_comment_label)) },
-                                        icon = {
-                                            Box(
-                                                modifier = Modifier.size(24.dp),
-                                                contentAlignment = Alignment.Center
-                                            ) {
-                                                Text(text = "🐱", fontSize = 16.sp)
-                                            }
-                                        },
-                                        onClick = {
-                                            Log.d("MainScreen", "CatComment FAB clicked")
-                                            isFabExpanded = false
-                                            try {
-                                                val act = context as? android.app.Activity
-                                                if (act != null) {
-                                                    CatCommentDialogActivity.start(act)
-                                                } else {
-                                                    CatCommentDialogActivity.start(context.applicationContext)
-                                                }
-                                            } catch (e: Exception) {
-                                                Log.e(
-                                                    "MainScreen",
-                                                    "Failed to start CatCommentDialogActivity: ${e.message}",
-                                                    e
-                                                )
-                                            }
-                                        }
-                                    )
+                // Use simple conditional composition to avoid AnimatedVisibility/AnimatedContent
+                if (isFabVisible) {
+                    if (isFabExpanded) {
+                        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                            ExtendedFloatingActionButton(
+                                icon = { Icon(Icons.Default.Edit, contentDescription = null) },
+                                text = { Text(text = fabCreateMemoLabel) },
+                                onClick = {
+                                    showCreateMemoDialog = true
+                                    isFabExpanded = false
                                 }
-                                // Camera capture button (no runtime CAMERA permission requested)
+                            )
+                            ExtendedFloatingActionButton(
+                                text = { Text(text = fabPickImageLabel) },
+                                icon = { Icon(Icons.Default.Image, contentDescription = null) },
+                                onClick = {
+                                    imagePickerLauncher.launch(
+                                        PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                                    )
+                                    isFabExpanded = false
+                                }
+                            )
+                            ExtendedFloatingActionButton(
+                                text = { Text(text = fabPasteLabel) },
+                                icon = {
+                                    Icon(Icons.Default.ContentPaste, contentDescription = null)
+                                },
+                                onClick = {
+                                    val result = ContentProcessingLauncher.enqueueFromClipboardWithResult(context)
+                                    when (result) {
+                                        ContentProcessingLauncher.EnqueueResult.Enqueued -> { /* no-op */ }
+                                        ContentProcessingLauncher.EnqueueResult.NothingToCategorize ->
+                                            Toast.makeText(context, R.string.nothing_to_categorize, Toast.LENGTH_SHORT).show()
+                                        ContentProcessingLauncher.EnqueueResult.DuplicateIgnored ->
+                                            Toast.makeText(context, R.string.toast_already_exists, Toast.LENGTH_SHORT).show()
+                                    }
+                                    isFabExpanded = false
+                                }
+                            )
+                            if (genAiTextAvailable) {
                                 ExtendedFloatingActionButton(
-                                    text = { Text(text = stringResource(R.string.fab_take_photo)) },
-                                    icon = {
-                                        Icon(
-                                            Icons.Default.CameraAlt,
-                                            contentDescription = null
-                                        )
-                                    },
+                                    text = { Text(text = stringResource(R.string.fab_cat_comment_label)) },
+                                    icon = { Box(modifier = Modifier.size(24.dp), contentAlignment = Alignment.Center) { Text(text = "🐱", fontSize = 16.sp) } },
                                     onClick = {
-                                        // Create temp file in cache and launch camera
+                                        isFabExpanded = false
                                         try {
-                                            val photoFile = java.io.File.createTempFile(
-                                                "memoiz_camera_${System.currentTimeMillis()}",
-                                                ".jpg",
-                                                context.cacheDir
-                                            ).apply { deleteOnExit() }
-                                            val uri =
-                                                androidx.core.content.FileProvider.getUriForFile(
-                                                    context,
-                                                    "${context.packageName}.fileprovider",
-                                                    photoFile
-                                                )
-                                            pendingPhotoFile = photoFile
-                                            pendingPhotoUri = uri
-                                            takePictureLauncher.launch(uri)
-                                            isFabExpanded = false
+                                            val act = context as? android.app.Activity
+                                            if (act != null) CatCommentDialogActivity.start(act) else CatCommentDialogActivity.start(context.applicationContext)
                                         } catch (e: Exception) {
-                                            Log.e(
-                                                "MainScreen",
-                                                "Failed to create temp file for camera: ${e.message}",
-                                                e
-                                            )
-                                            Toast.makeText(
-                                                context,
-                                                R.string.error_open_image,
-                                                Toast.LENGTH_SHORT
-                                            ).show()
+                                            Log.e("MainScreen", "Failed to start CatCommentDialogActivity: ${e.message}", e)
                                         }
                                     }
                                 )
-                                SmallFloatingActionButton(onClick = { isFabExpanded = false }) {
-                                    Icon(
-                                        Icons.Default.Close,
-                                        contentDescription = stringResource(R.string.fab_close_menu)
-                                    )
+                            }
+                            ExtendedFloatingActionButton(
+                                text = { Text(text = stringResource(R.string.fab_take_photo)) },
+                                icon = { Icon(Icons.Default.CameraAlt, contentDescription = null) },
+                                onClick = {
+                                    try {
+                                        val photoFile = java.io.File.createTempFile("memoiz_camera_${System.currentTimeMillis()}", ".jpg", context.cacheDir).apply { deleteOnExit() }
+                                        val uri = androidx.core.content.FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", photoFile)
+                                        pendingPhotoFile = photoFile
+                                        pendingPhotoUri = uri
+                                        takePictureLauncher.launch(uri)
+                                        isFabExpanded = false
+                                    } catch (e: Exception) {
+                                        Log.e("MainScreen", "Failed to create temp file for camera: ${e.message}", e)
+                                        Toast.makeText(context, R.string.error_open_image, Toast.LENGTH_SHORT).show()
+                                    }
                                 }
+                            )
+                            SmallFloatingActionButton(onClick = { isFabExpanded = false }) {
+                                Icon(Icons.Default.Close, contentDescription = stringResource(R.string.fab_close_menu))
                             }
-                        } else {
-                            FloatingActionButton(onClick = { isFabExpanded = true }) {
-                                Icon(
-                                    Icons.Default.Add,
-                                    contentDescription = stringResource(R.string.fab_paste_clipboard)
-                                )
-                            }
+                        }
+                    } else {
+                        FloatingActionButton(onClick = { isFabExpanded = true }) {
+                            Icon(Icons.Default.Add, contentDescription = stringResource(R.string.fab_paste_clipboard))
                         }
                     }
                 }
@@ -686,146 +607,105 @@ fun MainScreen(
                     }
                 } else {
                     LazyColumn(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .reorderable(reorderState),
+                        modifier = Modifier.fillMaxSize(),
                         state = lazyListState,
                         contentPadding = PaddingValues(16.dp),
-                        verticalArrangement = Arrangement.Top // remove global spacing so header+memos can be contiguous
+                        verticalArrangement = Arrangement.Top
                     ) {
-                        // Render each category as a single LazyColumn item: header + optional memos inside.
                         memoGroups.forEach { group ->
                             val isCustomCategory = customCategories.contains(group.category)
-                            item(key = group.category) {
-                                ReorderableItem(state = reorderState, key = group.category) { _ ->
-                                    // Render the whole group (header + memos) inside one item so reorder moves the group.
-                                    val headerShape = if (group.category in expandedCategories && group.memos.isNotEmpty()) {
-                                        RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp, bottomStart = 0.dp, bottomEnd = 0.dp)
-                                    } else {
-                                        RoundedCornerShape(12.dp)
-                                    }
-                                    Column(modifier = Modifier.fillMaxWidth()) {
-                                        Card(
-                                            modifier = Modifier.fillMaxWidth(),
-                                            shape = headerShape,
-                                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+                            // Header item
+                            item(key = "cat:${group.category}") {
+                                val headerShape = if (group.category in expandedCategories && group.memos.isNotEmpty()) {
+                                    RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp, bottomStart = 0.dp, bottomEnd = 0.dp)
+                                } else {
+                                    RoundedCornerShape(12.dp)
+                                }
+                                Column(modifier = Modifier.fillMaxWidth()) {
+                                    Card(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        shape = headerShape,
+                                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+                                    ) {
+                                        Row(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(start = 16.dp, end = 16.dp, top = 2.dp, bottom = 2.dp),
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                            verticalAlignment = Alignment.CenterVertically
                                         ) {
                                             Row(
-                                                modifier = Modifier
-                                                    .fillMaxWidth()
-                                                    .padding(
-                                                        start = 16.dp,
-                                                        end = 16.dp,
-                                                        top = 2.dp,
-                                                        bottom = 2.dp
-                                                    ),
-                                                horizontalArrangement = Arrangement.SpaceBetween,
-                                                verticalAlignment = Alignment.CenterVertically
+                                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                modifier = Modifier.weight(1f)
+                                                    .clickable(indication = null, interactionSource = remember { MutableInteractionSource() }) { viewModel.toggleCategoryExpanded(group.category) }
                                             ) {
-                                                Row(
-                                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                                    verticalAlignment = Alignment.CenterVertically,
-                                                    modifier = Modifier.weight(1f)
-                                                        .clickable(
-                                                            indication = null,
-                                                            interactionSource = remember { MutableInteractionSource() }
-                                                        ) { viewModel.toggleCategoryExpanded(group.category) }
-                                                ) {
-                                                    Icon(
-                                                        if (group.category in expandedCategories) Icons.Default.ExpandMore else Icons.Default.ChevronRight,
-                                                        contentDescription = null
-                                                    )
-                                                    Text(
-                                                        text = "${group.category} (${group.memos.size})",
-                                                        style = MaterialTheme.typography.titleMedium,
-                                                        fontWeight = FontWeight.Bold
-                                                    )
-                                                    if (group.category in categoriesWithNew) {
-                                                        Spacer(modifier = Modifier.width(6.dp))
-                                                        Box(
-                                                            modifier = Modifier
-                                                                .background(
-                                                                    color = Color(0xFFFFF59D),
-                                                                    shape = RoundedCornerShape(8.dp)
-                                                                )
-                                                                .padding(
-                                                                    horizontal = 6.dp,
-                                                                    vertical = 2.dp
-                                                                )
-                                                        ) {
-                                                            Text(
-                                                                text = "New!",
-                                                                style = MaterialTheme.typography.labelSmall,
-                                                                color = Color.Red
-                                                            )
-                                                        }
+                                                Icon(if (group.category in expandedCategories) Icons.Default.ExpandMore else Icons.Default.ChevronRight, contentDescription = null)
+                                                Text(text = "${group.category} (${group.memos.size})", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                                                if (group.category in categoriesWithNew) {
+                                                    Spacer(modifier = Modifier.width(6.dp))
+                                                    Box(modifier = Modifier.background(color = Color(0xFFFFF59D), shape = RoundedCornerShape(8.dp)).padding(horizontal = 6.dp, vertical = 2.dp)) {
+                                                        Text(text = "New!", style = MaterialTheme.typography.labelSmall, color = Color.Red)
                                                     }
                                                 }
+                                            }
 
-                                                Row(
-                                                    horizontalArrangement = Arrangement.spacedBy(4.dp),
-                                                    verticalAlignment = Alignment.CenterVertically
-                                                ) {
-                                                    val deleteIcon = Icons.Default.Delete
-                                                    val deleteContentDescription =
-                                                        if (isCustomCategory) {
-                                                            stringResource(R.string.dialog_delete_custom_category_message)
-                                                        } else {
-                                                            stringResource(R.string.action_delete_category)
-                                                        }
-                                                    IconButton(onClick = {
-                                                        deleteTarget = group.category
-                                                        deleteTargetIsCustomCategory = isCustomCategory
-                                                        showDeleteConfirmationDialog = true
-                                                    }) {
-                                                        Icon(deleteIcon, deleteContentDescription)
-                                                    }
-                                                    Icon(
-                                                        imageVector = Icons.Default.DragHandle,
-                                                        contentDescription = stringResource(R.string.cd_category_drag_handle),
-                                                        modifier = dragHandle
-                                                    )
-                                                }
+                                            Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
+                                                val deleteIcon = Icons.Default.Delete
+                                                val deleteContentDescription = if (isCustomCategory) stringResource(R.string.dialog_delete_custom_category_message) else stringResource(R.string.action_delete_category)
+                                                IconButton(onClick = {
+                                                    deleteTarget = group.category
+                                                    deleteTargetIsCustomCategory = isCustomCategory
+                                                    showDeleteConfirmationDialog = true
+                                                }) { Icon(deleteIcon, deleteContentDescription) }
+                                                Icon(imageVector = Icons.Default.DragHandle, contentDescription = stringResource(R.string.cd_category_drag_handle), modifier = Modifier)
                                             }
                                         }
-
-                                        // Expanded memos rendered inside the same item so group moves together.
-                                        if (group.category in expandedCategories) {
-                                            Column {
-                                                HorizontalDivider()
-                                                group.memos.forEachIndexed { idx, memo ->
-                                                    val isFirst = idx == 0
-                                                    val isLast = idx == group.memos.size - 1
-                                                    MemoCard(
-                                                        memo = memo,
-                                                        onDelete = {
-                                                            deleteTarget = memo
-                                                            deleteTargetIsCustomCategory = false
-                                                            showDeleteConfirmationDialog = true
-                                                        },
-                                                        onEditCategory = {
-                                                            manualCategoryMemo = memo
-                                                            manualCategoryInput = memo.category
-                                                            manualCategoryError = null
-                                                            isFabExpanded = false
-                                                        },
-                                                        onReanalyze = {
-                                                            pendingReanalyzeMemo = memo
-                                                            isFabExpanded = false
-                                                        },
-                                                        onUsed = { id -> viewModel.recordMemoUsed(id) },
-                                                        newMemoIds = newMemoIds,
-                                                        appUiDisplayMode = uiDisplayModeSetting,
-                                                        genAiTextAvailable = genAiTextAvailable,
-                                                        isFirstInGroup = isFirst,
-                                                        isLastInGroup = isLast
-                                                    )
-                                                }
-                                            }
-                                        }
-
-                                        Spacer(modifier = Modifier.height(8.dp))
                                     }
+                                    // When category is expanded and has memos, show a divider directly under header
+                                    if (group.category in expandedCategories && group.memos.isNotEmpty()) {
+                                        HorizontalDivider()
+                                    }
+                                    // no spacer here so header and first memo stay visually connected when expanded
+                                }
+                            }
+
+                            // Memo items (separate items) when expanded
+                            if (group.category in expandedCategories) {
+                                items(group.memos, key = { memo -> "memo:${memo.id}" }) { memo ->
+                                    val idx = group.memos.indexOf(memo)
+                                    val isFirst = idx == 0
+                                    val isLast = idx == group.memos.size - 1
+                                    MemoCard(
+                                        memo = memo,
+                                        onDelete = {
+                                            deleteTarget = memo
+                                            deleteTargetIsCustomCategory = false
+                                            showDeleteConfirmationDialog = true
+                                        },
+                                        onEditCategory = {
+                                            manualCategoryMemo = memo
+                                            manualCategoryInput = memo.category
+                                            manualCategoryError = null
+                                            isFabExpanded = false
+                                        },
+                                        onReanalyze = {
+                                            pendingReanalyzeMemo = memo
+                                            isFabExpanded = false
+                                        },
+                                        onUsed = { id -> viewModel.recordMemoUsed(id) },
+                                        newMemoIds = newMemoIds,
+                                        appUiDisplayMode = uiDisplayModeSetting,
+                                        genAiTextAvailable = genAiTextAvailable,
+                                        isFirstInGroup = isFirst,
+                                        isLastInGroup = isLast
+                                    )
+                                }
+                            }
+                            // End of group spacing: ensure last memo is visually separated from next header
+                            item {
+                                Column(modifier = Modifier.fillMaxWidth()) {
+                                    Spacer(modifier = Modifier.height(6.dp))
                                 }
                             }
                         }
@@ -1561,7 +1441,7 @@ private fun MemoCard(
                 modifier = Modifier.padding(
                     start = 16.dp,
                     end = 16.dp,
-                    top = 8.dp,
+                    top = if (isFirstInGroup) 0.dp else 8.dp,
                     bottom = 14.dp
                 )
             ) {
@@ -1791,8 +1671,8 @@ private fun MemoCard(
                             val imageModifier = Modifier.size(96.dp)
                             val rememberedImageUri =
                                 remember(memo.imageUri) { runCatching { Uri.parse(memo.imageUri) }.getOrNull() }
-                            AsyncImage(
-                                model = rememberedImageUri,
+                            Image(
+                                painter = rememberAsyncImagePainter(rememberedImageUri),
                                 contentDescription = stringResource(R.string.cd_memo_image),
                                 modifier = imageModifier.clip(RoundedCornerShape(12.dp)),
                                 contentScale = ContentScale.Crop
@@ -2364,9 +2244,10 @@ private fun ImageThumbnailFrame(
                     .background(Color(0xFFF7F7F7), shape = innerShape)
                     .padding(6.dp)
             ) {
-                val rememberedModel = remember(imageUri) { runCatching { Uri.parse(imageUri) }.getOrNull() }
-                AsyncImage(
-                    model = rememberedModel,
+                val rememberedImageUri =
+                    remember(imageUri) { runCatching { Uri.parse(imageUri) }.getOrNull() }
+                Image(
+                    painter = rememberAsyncImagePainter(rememberedImageUri),
                     contentDescription = contentDescription,
                     modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(6.dp)),
                     contentScale = ContentScale.Crop

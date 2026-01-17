@@ -1,6 +1,7 @@
 package com.machi.memoiz.ui.components
 
 import android.net.Uri
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
@@ -8,7 +9,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
-import coil.compose.AsyncImage
+import coil.compose.rememberAsyncImagePainter
 import com.machi.memoiz.data.entity.MemoType
 import com.machi.memoiz.domain.model.Memo
 import androidx.compose.ui.draw.clip
@@ -27,8 +28,8 @@ fun MemoPreview(
         when (memo.memoType) {
             MemoType.IMAGE -> {
                 if (!memo.imageUri.isNullOrBlank()) {
-                    AsyncImage(
-                        model = Uri.parse(memo.imageUri),
+                    Image(
+                        painter = rememberAsyncImagePainter(Uri.parse(memo.imageUri)),
                         contentDescription = null,
                         modifier = Modifier
                             .fillMaxWidth()
