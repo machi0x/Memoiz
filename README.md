@@ -37,6 +37,8 @@
 - **Pin color for image memos**: image memos that include an app-local copy (file:// or FileProvider URI owned by the app) display a red pin; image memos that only reference an external URI show a blue pin.
 - **Manual Category Dialog**: lets users type a new category (auto-saved as "My Category") or pick from existing ones via a dropdown.
 
+- For the authoritative behavioral specification of the Main Screen, see `docs/main_ui_spec.md`.
+
 ### Management Utilities
 - **Re-analyze dialog** warns that categories/summaries may change while memo type remains fixed; re-analyze runs per-memo and will not run AI work while the app is backgrounded.
 - **Category order** persists after drag-and-drop via `toast_category_order_saved` feedback.
