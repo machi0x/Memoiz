@@ -79,6 +79,9 @@
     <string name="dialog_delete_custom_category_warning">必要な場合は、各メモのメニューから再解析を実行するか、手動でカテゴリを変更してください。</string>
     <string name="cd_remove_custom_category">このマイカテゴリを削除</string>
     <string name="cd_category_drag_handle">ドラッグしてカテゴリを並べ替え</string>
+    <string name="move_up">上に移動</string>
+    <string name="move_down">下に移動</string>
+    <string name="move_close">閉じる</string>
     <string name="toast_category_order_saved">カテゴリの順序を更新しました</string>
     <string name="toast_merge_enqueued">バックグラウンドで再解析を予定しました。</string>
     <string name="dialog_reanalyze_title">再解析しますか？</string>
