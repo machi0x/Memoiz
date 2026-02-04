@@ -48,30 +48,28 @@ class PreferencesDataStoreManager(private val context: Context) {
         private const val SP_FILE_NAME = "memoiz_shared_prefs"
         private const val SP_KEY_HAS_SEEN_TUTORIAL = "has_seen_tutorial"
         private const val SP_KEY_SHOW_TUTORIAL_ON_NEXT_LAUNCH = "show_tutorial_on_next_launch"
+        // New: tutorial flags stored in DataStore
+        private val HAS_SEEN_TUTORIAL_DS_KEY = androidx.datastore.preferences.core.booleanPreferencesKey("ds_has_seen_tutorial")
+        private val SHOW_TUTORIAL_ON_NEXT_LAUNCH_DS_KEY = androidx.datastore.preferences.core.booleanPreferencesKey("ds_show_tutorial_on_next_launch")
+
         // New: immediate-sync key for analytics collection (mirror of DataStore for sync reads)
         private const val SP_KEY_ANALYTICS_COLLECTION = "analytics_collection_sp"
         private const val SP_KEY_CONSENT_DIALOG_SHOWN = "consent_dialog_shown"
     }
 
-    // SharedPreferences + DataStore combined flow: keep DataStore for heavier prefs and
-    // SharedPreferences for immediate tutorial flags.
+    // SharedPreferences + DataStore combined flow: keep DataStore for heavy prefs and
+    // SharedPreferences for immediate consistency (only for analytics/legacy now).
     private val sharedPrefs: SharedPreferences = context.getSharedPreferences(SP_FILE_NAME, Context.MODE_PRIVATE)
-    // Use a Triple to include the new analyticsCollectionEnabled immediate value
+    
+    // Use a tuple to include only the analyticsCollectionEnabled immediate value
+    // Tutorial flags are removed from here as they are now in DataStore
     private val _sharedPrefFlow = MutableStateFlow(
-        Triple(
-            sharedPrefs.getBoolean(SP_KEY_HAS_SEEN_TUTORIAL, false),
-            sharedPrefs.getBoolean(SP_KEY_SHOW_TUTORIAL_ON_NEXT_LAUNCH, false),
-            sharedPrefs.getBoolean(SP_KEY_ANALYTICS_COLLECTION, false)
-        )
+        sharedPrefs.getBoolean(SP_KEY_ANALYTICS_COLLECTION, false)
     )
 
     private val spListener = SharedPreferences.OnSharedPreferenceChangeListener { sp, key ->
-        if (key == SP_KEY_HAS_SEEN_TUTORIAL || key == SP_KEY_SHOW_TUTORIAL_ON_NEXT_LAUNCH || key == SP_KEY_ANALYTICS_COLLECTION) {
-            _sharedPrefFlow.value = Triple(
-                sp.getBoolean(SP_KEY_HAS_SEEN_TUTORIAL, false),
-                sp.getBoolean(SP_KEY_SHOW_TUTORIAL_ON_NEXT_LAUNCH, false),
-                sp.getBoolean(SP_KEY_ANALYTICS_COLLECTION, false)
-            )
+        if (key == SP_KEY_ANALYTICS_COLLECTION) {
+            _sharedPrefFlow.value = sp.getBoolean(SP_KEY_ANALYTICS_COLLECTION, false)
         }
     }
 
@@ -82,13 +80,37 @@ class PreferencesDataStoreManager(private val context: Context) {
     val userPreferencesFlow: Flow<UserPreferences> = combine(
         context.dataStore.data,
         _sharedPrefFlow
-    ) { preferences, spPair ->
+    ) { preferences, analyticsSp ->
+        // DataStore values
+        val dsHasSeen = preferences[HAS_SEEN_TUTORIAL_DS_KEY]
+        val dsShowNext = preferences[SHOW_TUTORIAL_ON_NEXT_LAUNCH_DS_KEY] ?: false
+
+        // Migration/Fallback Logic:
+        // If DataStore doesn't have the "seen" flag yet (null), but SharedPreferences (Legacy) says TRUE,
+        // then we respect the legacy value. This handles the migration case so users don't see tutorial again.
+        val finalHasSeen = if (dsHasSeen != null) {
+            dsHasSeen
+        } else {
+            // Check legacy SP
+            val legacySeen = sharedPrefs.getBoolean(SP_KEY_HAS_SEEN_TUTORIAL, false)
+            if (legacySeen) {
+                // We should eventually persist this into DataStore, but for the flow emission
+                // we treat it as seen. Ideally we trigger a write here, but side-effects in flow
+                // transformers are tricky. We rely on the fact that once they finish tutorial again
+                // (if ever) or we could do a one-time migration job elsewhere.
+                // For now, "read-through" fallback is sufficient to prevent display.
+                true
+            } else {
+                false
+            }
+        }
+
         UserPreferences(
             customCategories = preferences[CUSTOM_CATEGORIES_KEY] ?: emptySet(),
             categoryOrder = preferences[CATEGORY_ORDER_KEY]?.split(',')?.filter { it.isNotBlank() } ?: emptyList(),
-            hasSeenTutorial = spPair.first,
-            showTutorialOnNextLaunch = spPair.second,
-            analyticsCollectionEnabled = preferences[ANALYTICS_COLLECTION_KEY]?.toBoolean() ?: spPair.third,
+            hasSeenTutorial = finalHasSeen,
+            showTutorialOnNextLaunch = dsShowNext,
+            analyticsCollectionEnabled = preferences[ANALYTICS_COLLECTION_KEY]?.toBoolean() ?: analyticsSp,
             uiDisplayMode = UiDisplayMode.fromString(preferences[UI_DISPLAY_MODE_KEY]),
             lastMainScreenSeenAt = preferences[LAST_MAIN_SCREEN_SEEN_AT_KEY]?.toLongOrNull() ?: 0L
         )
@@ -250,19 +272,23 @@ class PreferencesDataStoreManager(private val context: Context) {
         }
     }
 
-    fun markTutorialSeen() {
-        android.util.Log.d("PreferencesDataStore", "markTutorialSeen() called — writing has_seen_tutorial = true to SharedPreferences")
-        sharedPrefs.edit().putBoolean(SP_KEY_HAS_SEEN_TUTORIAL, true).putBoolean(SP_KEY_SHOW_TUTORIAL_ON_NEXT_LAUNCH, false).apply()
-        // update the flow immediately (SharedPreferences listener will also update it)
-        _sharedPrefFlow.value = Triple(true, false, _sharedPrefFlow.value.third)
-        android.util.Log.d("PreferencesDataStore", "markTutorialSeen() completed — write finished")
+    suspend fun markTutorialSeen() {
+        android.util.Log.d("PreferencesDataStore", "markTutorialSeen() called — persist to DataStore")
+        context.dataStore.edit { preferences ->
+            preferences[HAS_SEEN_TUTORIAL_DS_KEY] = true
+            preferences[SHOW_TUTORIAL_ON_NEXT_LAUNCH_DS_KEY] = false
+        }
+        // Also clear legacy SP to keep it clean (and prevent confusion if we ever fallback)
+        sharedPrefs.edit().remove(SP_KEY_HAS_SEEN_TUTORIAL).remove(SP_KEY_SHOW_TUTORIAL_ON_NEXT_LAUNCH).apply()
     }
 
-    fun requestTutorial() {
-        android.util.Log.d("PreferencesDataStore", "requestTutorial() called — writing show_tutorial_on_next_launch = true to SharedPreferences")
-        sharedPrefs.edit().putBoolean(SP_KEY_SHOW_TUTORIAL_ON_NEXT_LAUNCH, true).apply()
-        _sharedPrefFlow.value = Triple(_sharedPrefFlow.value.first, true, _sharedPrefFlow.value.third)
-        android.util.Log.d("PreferencesDataStore", "requestTutorial() completed — write finished")
+    suspend fun requestTutorial() {
+        android.util.Log.d("PreferencesDataStore", "requestTutorial() called — persist to DataStore")
+        context.dataStore.edit { preferences ->
+            preferences[SHOW_TUTORIAL_ON_NEXT_LAUNCH_DS_KEY] = true
+        }
+        // Also clear legacy SP
+        sharedPrefs.edit().remove(SP_KEY_SHOW_TUTORIAL_ON_NEXT_LAUNCH).apply()
     }
 
     suspend fun setUiDisplayMode(mode: UiDisplayMode) {
@@ -301,7 +327,7 @@ class PreferencesDataStoreManager(private val context: Context) {
         // Mirror to SharedPreferences for immediate sync reads
         sharedPrefs.edit().putBoolean(SP_KEY_ANALYTICS_COLLECTION, enabled).apply()
         // Update flow immediately
-        _sharedPrefFlow.value = Triple(_sharedPrefFlow.value.first, _sharedPrefFlow.value.second, enabled)
+        _sharedPrefFlow.value = enabled
     }
 
     /** Synchronous convenience method to set SharedPreferences immediately (no DataStore write)
@@ -309,7 +335,7 @@ class PreferencesDataStoreManager(private val context: Context) {
      */
     fun setAnalyticsCollectionEnabledSync(enabled: Boolean) {
         sharedPrefs.edit().putBoolean(SP_KEY_ANALYTICS_COLLECTION, enabled).apply()
-        _sharedPrefFlow.value = Triple(_sharedPrefFlow.value.first, _sharedPrefFlow.value.second, enabled)
+        _sharedPrefFlow.value = enabled
     }
 
     /** Persist the time (epoch ms) when the MainScreen was last seen/left. */
